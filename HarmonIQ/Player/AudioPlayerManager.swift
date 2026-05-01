@@ -41,6 +41,11 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     /// Cleared when a track plays successfully or the queue empties.
     @Published private(set) var playbackError: String?
 
+    /// Counter that increments every time `play(track:in:)` is invoked by the
+    /// user. ContentView observes this to auto-present the now-playing sheet
+    /// so a track tap immediately opens the Winamp interface.
+    @Published private(set) var presentNowPlayingTick: Int = 0
+
     /// stableIDs of tracks that have started playing in this app session — fuels Discovery Mix.
     private(set) var sessionPlayedIDs: Set<String> = []
 
@@ -63,6 +68,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         activeSmartMode = nil
         loadQueue(normalized, startIndex: startIdx)
         playCurrent()
+        presentNowPlayingTick &+= 1
     }
 
     func playAll(_ tracks: [Track], startAt index: Int = 0) {
@@ -70,6 +76,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         activeSmartMode = nil
         loadQueue(tracks, startIndex: max(0, min(index, tracks.count - 1)))
         playCurrent()
+        presentNowPlayingTick &+= 1
     }
 
     /// Build a queue with a SmartPlayMode and start playback. Disables manual shuffle so
@@ -81,6 +88,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         isShuffleEnabled = false
         loadQueue(queue, startIndex: 0)
         playCurrent()
+        presentNowPlayingTick &+= 1
     }
 
     func togglePlayPause() {
@@ -182,6 +190,15 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         do {
             stopDisplayLink()
             releaseAccessRoot()
+
+            // Re-activate the audio session in case an interruption (phone
+            // call, Siri, another app) deactivated it. Without this, the file
+            // loads and "plays" but produces no audible output.
+            let session = AVAudioSession.sharedInstance()
+            if session.category != .playback {
+                try? session.setCategory(.playback, mode: .default, options: [])
+            }
+            try? session.setActive(true, options: [])
 
             // Resolve security-scoped access for the root drive that owns this track.
             guard let root = LibraryStore.shared.roots.first(where: { $0.id == track.rootBookmarkID }) else {
