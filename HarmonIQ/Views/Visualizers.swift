@@ -153,12 +153,11 @@ final class VisualizerEngine: ObservableObject {
 // MARK: - Drawing
 
 private func drawScanlines(context: GraphicsContext, size: CGSize) {
-    var ctx = context
     let lineH: CGFloat = 2
     var y: CGFloat = 0
     let color = Color.white.opacity(0.04)
     while y < size.height {
-        ctx.fill(Path(CGRect(x: 0, y: y, width: size.width, height: 1)), with: .color(color))
+        context.fill(Path(CGRect(x: 0, y: y, width: size.width, height: 1)), with: .color(color))
         y += lineH
     }
 }
