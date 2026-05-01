@@ -11,13 +11,6 @@ struct SkinnedMainView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var scrubbingPosition: Double? = nil
-    @State private var bottomPanel: BottomPanel = .playlist
-
-    private enum BottomPanel: String, CaseIterable, Identifiable {
-        case playlist = "Playlist"
-        case equalizer = "Equalizer"
-        var id: String { rawValue }
-    }
 
     var body: some View {
         GeometryReader { geo in
@@ -66,27 +59,21 @@ struct SkinnedMainView: View {
                     .background(Color.black.opacity(0.85))
                 }
 
-                Picker("", selection: $bottomPanel) {
-                    ForEach(BottomPanel.allCases) { p in
-                        Text(p.rawValue).tag(p)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 10)
-                .padding(.top, 8)
-                .padding(.bottom, 6)
+                // Stack the equalizer above the playlist to match Winamp's
+                // top-to-bottom window order. The EQ takes a fixed height
+                // (sliders + labels need consistent room); the playlist gets
+                // the remaining flexible space and scrolls internally when
+                // the queue is long.
+                SkinnedEqualizerView()
+                    .frame(height: 200)
+                    .padding(.horizontal, 10)
+                    .padding(.top, 8)
 
-                Group {
-                    switch bottomPanel {
-                    case .playlist:
-                        SkinnedPlaylistView()
-                    case .equalizer:
-                        SkinnedEqualizerView()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, 10)
-                .padding(.bottom, 10)
+                SkinnedPlaylistView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.horizontal, 10)
+                    .padding(.top, 8)
+                    .padding(.bottom, 10)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color.black.ignoresSafeArea())
