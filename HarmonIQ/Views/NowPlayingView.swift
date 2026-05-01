@@ -160,8 +160,15 @@ struct NowPlayingView: View {
                             .font(.title3)
                     }
                     .chromeButton(pressed: player.repeatMode != .off)
+
+                    SleepTimerButton()
+                        .environmentObject(player)
                 }
                 .padding(.top, 4)
+
+                SleepTimerCountdown()
+                    .environmentObject(player)
+                    .padding(.bottom, 4)
 
                 if let mode = player.activeSmartMode {
                     HStack(spacing: 6) {
