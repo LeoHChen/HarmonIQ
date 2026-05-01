@@ -28,6 +28,18 @@ struct FoldersView: View {
                                 }
                             }
                         }
+                        .swipeActions {
+                            Button(role: .destructive) {
+                                library.removeRoot(root)
+                            } label: {
+                                Label("Remove", systemImage: "trash")
+                            }
+                        }
+                    }
+                    .onDelete { offsets in
+                        for idx in offsets {
+                            library.removeRoot(library.roots[idx])
+                        }
                     }
                 }
             }
