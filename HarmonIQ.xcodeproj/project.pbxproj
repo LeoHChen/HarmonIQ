@@ -11,19 +11,34 @@
 		0323B3047D47591B359097DF /* AlbumsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D685B9A89C2B6EDCCCB4AB /* AlbumsView.swift */; };
 		0875DAB5569B83DC801CA7B8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4D55B677D3210BEAEDFEA0C5 /* Assets.xcassets */; };
 		16F8F24D50C9EB96562011DC /* SmartPlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A31A65F1BCE09BD374018CC4 /* SmartPlay.swift */; };
+		378FEA2A2125F0710167C4EE /* ScrollingBitmapText.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB566E7DBDC9F95DA534869C /* ScrollingBitmapText.swift */; };
 		3A5F09869BC9EA7F4DC88B35 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D6EA2A86E18C3306B3A4BFC /* ContentView.swift */; };
 		3EE13B1011444446AF4C9346 /* MusicIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D861E89EB0B0713F92113EE /* MusicIndexer.swift */; };
 		409179BD52B576D6D435FD06 /* NowPlayingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B633D01EE0A630588055E78D /* NowPlayingManager.swift */; };
+		4ADB0C6545C514B0C7DD74BC /* SkinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4AF615B9FD22338A53B687E /* SkinManager.swift */; };
 		4F0642BBF49AF0AD060D3949 /* Playlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = D210ACF5D89E9E21A1496719 /* Playlist.swift */; };
 		5CCAA8466F69FB84BF8B02A6 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347E6294D599CCE0B3003D2E /* SharedComponents.swift */; };
 		5DB383E665EE8EAE33D78E9C /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F130079612D4D04F3BDAF75 /* LibraryStore.swift */; };
+		69A2102040E365274784D9BD /* SpriteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6203F24B0D3D962883456DA /* SpriteButton.swift */; };
 		75DC9743887154D3D3823A75 /* Track.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC1E5260F8BCC82F22321CD /* Track.swift */; };
+		76F4F5DD1D5A5F6E1D1863D8 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = EC4820A900BD0CE57BB886C3 /* ZIPFoundation */; };
 		77B3E1181A2A2CBFAD277C5E /* SmartPlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE503899DE0AC71DEE6E6B7 /* SmartPlayView.swift */; };
+		77D9EEF75A3909296BEF427B /* SkinSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC7D5B7F672E031A0E10CD5 /* SkinSettingsView.swift */; };
+		791A8D34EE8AB6E905502339 /* BitmapNumbers.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED17D95227132C92484D37D4 /* BitmapNumbers.swift */; };
 		7F8EEECCAE52592D4BBAF6D1 /* BookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BA0C5DAF97A47E057019501 /* BookmarkStore.swift */; };
+		89D7DBC59590AF415A3B0191 /* SkinnedVolumeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 645788E38767A20E50B440A4 /* SkinnedVolumeSlider.swift */; };
+		8CEA6C7112AA776066EDEE1E /* BitmapSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5341339CB5BD57C71DD7EC /* BitmapSlider.swift */; };
 		8E0DD1135723468147BBB31D /* PlaylistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4DEE2EB2331B3F5BB20CB2 /* PlaylistsView.swift */; };
+		8EA86E02734B08EA09994A4C /* SkinLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1C8025A0B96CB360C84D6A /* SkinLoader.swift */; };
 		9546DB969B9FE4BEBDBF9F76 /* FoldersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E35D430429E1AB1C5D29D971 /* FoldersView.swift */; };
+		95C1D7862712B1AF3530D399 /* SkinFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982616423A6BC3BB174F0A2E /* SkinFormat.swift */; };
 		A10BD1CC54DC77E7DF551BA6 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CA5D219A5FF2CBA19A0E003 /* LibraryView.swift */; };
+		A9D09BD270A0DB94DD3F50C4 /* SkinnedMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A690CB3BB86B25F3B2E899 /* SkinnedMainView.swift */; };
+		ADFA445F84DD3EDB1A55C5DB /* WinampSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BBB248B178FE1FCF612ED97 /* WinampSkin.swift */; };
+		B5EE909DC0FD5E4684D545F9 /* Skins in Resources */ = {isa = PBXBuildFile; fileRef = 7D9E86967B7801F70269E055 /* Skins */; };
+		BFEC72EA12BDE9A75C6FFEB2 /* SkinnedVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D68585262E7BD5EBB3CDF779 /* SkinnedVisualizer.swift */; };
 		C7F097C03E3F811A8FFD64F6 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F01297D60CC5B6C050170B45 /* Preview Assets.xcassets */; };
+		CBDFA717362848840E08B642 /* BitmapText.swift in Sources */ = {isa = PBXBuildFile; fileRef = F995634B51E300AA46B6DBF7 /* BitmapText.swift */; };
 		CE1BF955311C8DB60D692FE8 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38FE23F9FF831246E93D46D0 /* NowPlayingView.swift */; };
 		D14CC8746BAA04AFF959DFB5 /* MetadataExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F53B7620084258E7F659C7D7 /* MetadataExtractor.swift */; };
 		D2EA2CFCD49E1790A8904149 /* WinampTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A34D43E2D09B36F9A92DF67 /* WinampTheme.swift */; };
@@ -45,30 +60,70 @@
 		3D6EA2A86E18C3306B3A4BFC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		4A34D43E2D09B36F9A92DF67 /* WinampTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinampTheme.swift; sourceTree = "<group>"; };
 		4D55B677D3210BEAEDFEA0C5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5CC7D5B7F672E031A0E10CD5 /* SkinSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinSettingsView.swift; sourceTree = "<group>"; };
+		645788E38767A20E50B440A4 /* SkinnedVolumeSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedVolumeSlider.swift; sourceTree = "<group>"; };
 		6A922A09FC20BC24E0180727 /* Visualizers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Visualizers.swift; sourceTree = "<group>"; };
 		6E48BCF53895F042489D6F8B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7D9E86967B7801F70269E055 /* Skins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Skins; path = HarmonIQ/Resources/Skins; sourceTree = SOURCE_ROOT; };
 		8CA5D219A5FF2CBA19A0E003 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerManager.swift; sourceTree = "<group>"; };
+		982616423A6BC3BB174F0A2E /* SkinFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinFormat.swift; sourceTree = "<group>"; };
 		9BA0C5DAF97A47E057019501 /* BookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkStore.swift; sourceTree = "<group>"; };
+		9BBB248B178FE1FCF612ED97 /* WinampSkin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinampSkin.swift; sourceTree = "<group>"; };
 		9D861E89EB0B0713F92113EE /* MusicIndexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicIndexer.swift; sourceTree = "<group>"; };
 		9F130079612D4D04F3BDAF75 /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
 		A31A65F1BCE09BD374018CC4 /* SmartPlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlay.swift; sourceTree = "<group>"; };
+		A4AF615B9FD22338A53B687E /* SkinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinManager.swift; sourceTree = "<group>"; };
 		AA4029B61958E1D8F6162CCA /* HarmonIQApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonIQApp.swift; sourceTree = "<group>"; };
+		AC1C8025A0B96CB360C84D6A /* SkinLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinLoader.swift; sourceTree = "<group>"; };
 		AF43538DAF9F07E1F7428FE1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B633D01EE0A630588055E78D /* NowPlayingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingManager.swift; sourceTree = "<group>"; };
 		BAE503899DE0AC71DEE6E6B7 /* SmartPlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlayView.swift; sourceTree = "<group>"; };
+		BB566E7DBDC9F95DA534869C /* ScrollingBitmapText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingBitmapText.swift; sourceTree = "<group>"; };
 		BEFB4D3197C2EC465A4B964C /* DriveLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriveLibraryStore.swift; sourceTree = "<group>"; };
 		C20AD805166CAC672F2833BC /* HarmonIQ.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HarmonIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4D685B9A89C2B6EDCCCB4AB /* AlbumsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumsView.swift; sourceTree = "<group>"; };
+		C6203F24B0D3D962883456DA /* SpriteButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteButton.swift; sourceTree = "<group>"; };
+		CE5341339CB5BD57C71DD7EC /* BitmapSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapSlider.swift; sourceTree = "<group>"; };
 		D0243B50E58BF70DF26D99D0 /* AllTracksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllTracksView.swift; sourceTree = "<group>"; };
 		D210ACF5D89E9E21A1496719 /* Playlist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playlist.swift; sourceTree = "<group>"; };
+		D68585262E7BD5EBB3CDF779 /* SkinnedVisualizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedVisualizer.swift; sourceTree = "<group>"; };
 		DCC1E5260F8BCC82F22321CD /* Track.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Track.swift; sourceTree = "<group>"; };
 		E35D430429E1AB1C5D29D971 /* FoldersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldersView.swift; sourceTree = "<group>"; };
+		ED17D95227132C92484D37D4 /* BitmapNumbers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapNumbers.swift; sourceTree = "<group>"; };
 		F01297D60CC5B6C050170B45 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		F1A690CB3BB86B25F3B2E899 /* SkinnedMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedMainView.swift; sourceTree = "<group>"; };
 		F53B7620084258E7F659C7D7 /* MetadataExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataExtractor.swift; sourceTree = "<group>"; };
+		F995634B51E300AA46B6DBF7 /* BitmapText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapText.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFrameworksBuildPhase section */
+		CFDC84B13D7A3446503B2110 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				76F4F5DD1D5A5F6E1D1863D8 /* ZIPFoundation in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXGroup section */
+		26B82CBABF6097B115C7FD68 /* Skin */ = {
+			isa = PBXGroup;
+			children = (
+				ED17D95227132C92484D37D4 /* BitmapNumbers.swift */,
+				CE5341339CB5BD57C71DD7EC /* BitmapSlider.swift */,
+				F995634B51E300AA46B6DBF7 /* BitmapText.swift */,
+				BB566E7DBDC9F95DA534869C /* ScrollingBitmapText.swift */,
+				F1A690CB3BB86B25F3B2E899 /* SkinnedMainView.swift */,
+				D68585262E7BD5EBB3CDF779 /* SkinnedVisualizer.swift */,
+				645788E38767A20E50B440A4 /* SkinnedVolumeSlider.swift */,
+				C6203F24B0D3D962883456DA /* SpriteButton.swift */,
+			);
+			path = Skin;
+			sourceTree = "<group>";
+		};
 		45559C604578B47631409FD8 /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -92,6 +147,7 @@
 			children = (
 				7656DA2359AD617623ABE7E7 /* Preview Content */,
 				4D55B677D3210BEAEDFEA0C5 /* Assets.xcassets */,
+				7D9E86967B7801F70269E055 /* Skins */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -115,6 +171,7 @@
 		78C0FBC76EAEEFBCCF68B6C8 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				26B82CBABF6097B115C7FD68 /* Skin */,
 				C4D685B9A89C2B6EDCCCB4AB /* AlbumsView.swift */,
 				D0243B50E58BF70DF26D99D0 /* AllTracksView.swift */,
 				21D6E4A738A357E6A860D0E0 /* ArtistsView.swift */,
@@ -126,6 +183,7 @@
 				32550B9D7779BCA0DDA5827D /* SearchView.swift */,
 				AF43538DAF9F07E1F7428FE1 /* SettingsView.swift */,
 				347E6294D599CCE0B3003D2E /* SharedComponents.swift */,
+				5CC7D5B7F672E031A0E10CD5 /* SkinSettingsView.swift */,
 				BAE503899DE0AC71DEE6E6B7 /* SmartPlayView.swift */,
 				6A922A09FC20BC24E0180727 /* Visualizers.swift */,
 				4A34D43E2D09B36F9A92DF67 /* WinampTheme.swift */,
@@ -141,6 +199,7 @@
 				D28E41CA4EC4610E249F46F4 /* Persistence */,
 				8B9672760105FAA96F2576E3 /* Player */,
 				619F06FDDA0CD190BCFD40C0 /* Resources */,
+				D38B3EEA7E0A561010DC85B4 /* Skins */,
 				78C0FBC76EAEEFBCCF68B6C8 /* Views */,
 				AA4029B61958E1D8F6162CCA /* HarmonIQApp.swift */,
 				6E48BCF53895F042489D6F8B /* Info.plist */,
@@ -168,6 +227,17 @@
 			path = Persistence;
 			sourceTree = "<group>";
 		};
+		D38B3EEA7E0A561010DC85B4 /* Skins */ = {
+			isa = PBXGroup;
+			children = (
+				982616423A6BC3BB174F0A2E /* SkinFormat.swift */,
+				AC1C8025A0B96CB360C84D6A /* SkinLoader.swift */,
+				A4AF615B9FD22338A53B687E /* SkinManager.swift */,
+				9BBB248B178FE1FCF612ED97 /* WinampSkin.swift */,
+			);
+			path = Skins;
+			sourceTree = "<group>";
+		};
 		F5EC0A912B27BB293C13F285 = {
 			isa = PBXGroup;
 			children = (
@@ -185,6 +255,7 @@
 			buildPhases = (
 				B086249171BDEA708B022895 /* Sources */,
 				1BD17726AF9A8E1BBBA5EFA5 /* Resources */,
+				CFDC84B13D7A3446503B2110 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -192,6 +263,7 @@
 			);
 			name = HarmonIQ;
 			packageProductDependencies = (
+				EC4820A900BD0CE57BB886C3 /* ZIPFoundation */,
 			);
 			productName = HarmonIQ;
 			productReference = C20AD805166CAC672F2833BC /* HarmonIQ.app */;
@@ -220,6 +292,9 @@
 			);
 			mainGroup = F5EC0A912B27BB293C13F285;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D7F7BBAF59CB25CC58B93E6E /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 677A0BB1CDB8BB423F8BA7E6 /* Products */;
 			projectDirPath = "";
@@ -237,6 +312,7 @@
 			files = (
 				0875DAB5569B83DC801CA7B8 /* Assets.xcassets in Resources */,
 				C7F097C03E3F811A8FFD64F6 /* Preview Assets.xcassets in Resources */,
+				B5EE909DC0FD5E4684D545F9 /* Skins in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -251,6 +327,9 @@
 				E1D2A557F273963F3ABFCFC5 /* AllTracksView.swift in Sources */,
 				DA3451E853523F3F3794A302 /* ArtistsView.swift in Sources */,
 				DCF4418A459E115EF770E6D9 /* AudioPlayerManager.swift in Sources */,
+				791A8D34EE8AB6E905502339 /* BitmapNumbers.swift in Sources */,
+				8CEA6C7112AA776066EDEE1E /* BitmapSlider.swift in Sources */,
+				CBDFA717362848840E08B642 /* BitmapText.swift in Sources */,
 				7F8EEECCAE52592D4BBAF6D1 /* BookmarkStore.swift in Sources */,
 				3A5F09869BC9EA7F4DC88B35 /* ContentView.swift in Sources */,
 				DC9F3F437F7B059AD8D253B5 /* DriveLibraryStore.swift in Sources */,
@@ -264,13 +343,23 @@
 				CE1BF955311C8DB60D692FE8 /* NowPlayingView.swift in Sources */,
 				4F0642BBF49AF0AD060D3949 /* Playlist.swift in Sources */,
 				8E0DD1135723468147BBB31D /* PlaylistsView.swift in Sources */,
+				378FEA2A2125F0710167C4EE /* ScrollingBitmapText.swift in Sources */,
 				F01E667FD20EFB46CB5AF202 /* SearchView.swift in Sources */,
 				01E3439E649010D829D7AB8A /* SettingsView.swift in Sources */,
 				5CCAA8466F69FB84BF8B02A6 /* SharedComponents.swift in Sources */,
+				95C1D7862712B1AF3530D399 /* SkinFormat.swift in Sources */,
+				8EA86E02734B08EA09994A4C /* SkinLoader.swift in Sources */,
+				4ADB0C6545C514B0C7DD74BC /* SkinManager.swift in Sources */,
+				77D9EEF75A3909296BEF427B /* SkinSettingsView.swift in Sources */,
+				A9D09BD270A0DB94DD3F50C4 /* SkinnedMainView.swift in Sources */,
+				BFEC72EA12BDE9A75C6FFEB2 /* SkinnedVisualizer.swift in Sources */,
+				89D7DBC59590AF415A3B0191 /* SkinnedVolumeSlider.swift in Sources */,
 				16F8F24D50C9EB96562011DC /* SmartPlay.swift in Sources */,
 				77B3E1181A2A2CBFAD277C5E /* SmartPlayView.swift in Sources */,
+				69A2102040E365274784D9BD /* SpriteButton.swift in Sources */,
 				75DC9743887154D3D3823A75 /* Track.swift in Sources */,
 				EC778E91CBFC41C1A6A09A2A /* Visualizers.swift in Sources */,
+				ADFA445F84DD3EDB1A55C5DB /* WinampSkin.swift in Sources */,
 				D2EA2CFCD49E1790A8904149 /* WinampTheme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -469,6 +558,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D7F7BBAF59CB25CC58B93E6E /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.19;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		EC4820A900BD0CE57BB886C3 /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D7F7BBAF59CB25CC58B93E6E /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 27EC6F01F1FD7FF01CCCB4F0 /* Project object */;
 }

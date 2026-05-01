@@ -42,6 +42,16 @@ struct SettingsView: View {
                 }
             }
 
+            Section {
+                NavigationLink {
+                    SkinSettingsView()
+                } label: {
+                    Label("Skins", systemImage: "paintpalette")
+                }
+            } header: {
+                Text("Appearance")
+            }
+
             Section("About") {
                 LabeledContent("App", value: "HarmonIQ")
                 LabeledContent("Version", value: "1.0")

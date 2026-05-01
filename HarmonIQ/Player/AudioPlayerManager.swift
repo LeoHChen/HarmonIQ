@@ -29,6 +29,15 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     @Published var repeatMode: RepeatMode = .off
     @Published private(set) var activeSmartMode: SmartPlayMode? = nil
 
+    /// 0...1 master volume; persisted to AVAudioPlayer when set.
+    @Published var volume: Float = 0.85 {
+        didSet { player?.volume = volume }
+    }
+    /// -1...1 stereo balance.
+    @Published var balance: Float = 0 {
+        didSet { player?.pan = balance }
+    }
+
     /// stableIDs of tracks that have started playing in this app session — fuels Discovery Mix.
     private(set) var sessionPlayedIDs: Set<String> = []
 
@@ -189,6 +198,8 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             let avPlayer = try AVAudioPlayer(contentsOf: fileURL)
             avPlayer.delegate = self
             avPlayer.isMeteringEnabled = true
+            avPlayer.volume = volume
+            avPlayer.pan = balance
             avPlayer.prepareToPlay()
             self.player = avPlayer
             self.duration = avPlayer.duration > 0 ? avPlayer.duration : track.duration

@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var library: LibraryStore
     @EnvironmentObject var player: AudioPlayerManager
+    @EnvironmentObject var skinManager: SkinManager
     @State private var showNowPlaying = false
 
     var body: some View {
@@ -31,7 +32,11 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showNowPlaying) {
-            NowPlayingView()
+            if skinManager.activeSkin != nil {
+                SkinnedMainView()
+            } else {
+                NowPlayingView()
+            }
         }
     }
 }

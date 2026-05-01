@@ -6,6 +6,7 @@ struct HarmonIQApp: App {
     @StateObject private var library = LibraryStore.shared
     @StateObject private var player = AudioPlayerManager.shared
     @StateObject private var indexer = MusicIndexer.shared
+    @StateObject private var skinManager = SkinManager.shared
 
     init() {
         Self.configureAudioSession()
@@ -18,6 +19,7 @@ struct HarmonIQApp: App {
                 .environmentObject(library)
                 .environmentObject(player)
                 .environmentObject(indexer)
+                .environmentObject(skinManager)
                 .preferredColorScheme(.dark)
                 .tint(WinampTheme.accent)
                 .task {
