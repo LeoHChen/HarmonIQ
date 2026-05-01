@@ -11,6 +11,13 @@ struct SkinnedMainView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var scrubbingPosition: Double? = nil
+    @State private var bottomPanel: BottomPanel = .playlist
+
+    private enum BottomPanel: String, CaseIterable, Identifiable {
+        case playlist = "Playlist"
+        case equalizer = "Equalizer"
+        var id: String { rawValue }
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -43,7 +50,43 @@ struct SkinnedMainView: View {
                         .frame(width: canvasW, height: canvasH, alignment: .topLeading)
                 }
                 .frame(width: canvasW, height: canvasH)
-                Spacer(minLength: 0)
+
+                if let err = player.playbackError {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text(err)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.orange)
+                            .lineLimit(2)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.black.opacity(0.85))
+                }
+
+                Picker("", selection: $bottomPanel) {
+                    ForEach(BottomPanel.allCases) { p in
+                        Text(p.rawValue).tag(p)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 10)
+                .padding(.top, 8)
+                .padding(.bottom, 6)
+
+                Group {
+                    switch bottomPanel {
+                    case .playlist:
+                        SkinnedPlaylistView()
+                    case .equalizer:
+                        SkinnedEqualizerView()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, 10)
+                .padding(.bottom, 10)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color.black.ignoresSafeArea())
