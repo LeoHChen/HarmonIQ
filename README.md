@@ -61,6 +61,29 @@ design/                      # Icon design + render script
 project.yml                  # XcodeGen source
 ```
 
+## Releases
+
+See [GitHub Releases](https://github.com/LeoHChen/HarmonIQ/releases) for the full notes and tag history.
+
+### v0.3 — 2026-05-01
+- Albums and Artists drill-downs work again (taps push into detail instead of looping).
+- Album detail header redesigned: centered Winamp card with aligned PLAY / SHUFFLE.
+- "PLAYER" row in BROWSE returns to the now-playing sheet; icon pulses with a live audio-level glow + 3-bar mini-VU.
+- Skin picker overhauled: tap to cycle, long-press for a scrollable sheet, mirrored on the SwiftUI player.
+- Four more bundled skins: Bento Classified, Crystal Display, Glass Factory, Luna Steel.
+- Recent searches persisted (LRU, 10), shown when the search field is empty.
+- README added.
+
+### v0.2 — 2026-05-01
+- EQ and Playlist panels now skin alongside the main player; switching skins recolors the entire now-playing sheet.
+- Skin picker added to the SwiftUI (None) player.
+- Mini player removed (auto-present-on-tap handles reopening the player).
+- Fixed bogus read-only flag on every picked folder; on-drive index writes now work on writable locations.
+- Folder delete added to Library → Folders view.
+
+### v0.1
+- Initial release.
+
 ## Acknowledgements
 
 Skin parsing leans on classic Winamp 2.x specs and the file format documented at [archive.org's Winamp Skin Museum](https://archive.org/details/winampskins).
