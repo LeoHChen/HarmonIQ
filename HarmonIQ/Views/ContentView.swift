@@ -38,6 +38,14 @@ struct ContentView: View {
                 NowPlayingView()
             }
         }
+        // Auto-present the player when the user taps a track anywhere in the
+        // app. AudioPlayerManager increments presentNowPlayingTick on every
+        // user-initiated play() / playAll() / playSmart() call (but NOT on
+        // Next/Previous from inside the player), so the sheet pops up on
+        // first selection without re-triggering as playback advances.
+        .onReceive(player.$presentNowPlayingTick.dropFirst()) { _ in
+            showNowPlaying = true
+        }
     }
 }
 
