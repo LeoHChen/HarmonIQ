@@ -15,9 +15,13 @@ final class SkinManager: ObservableObject {
 
     init() {
         reload()
-        // Restore last active skin (by display name).
+        // Restore last active skin (by display name). An empty string is the
+        // explicit "no skin" sentinel — we only auto-pick a default when no
+        // preference has ever been saved.
         let savedName = UserDefaults.standard.string(forKey: activeSkinKey)
-        if let name = savedName, let match = skins.first(where: { $0.displayName == name }) {
+        if savedName == "" {
+            activeSkin = nil
+        } else if let name = savedName, let match = skins.first(where: { $0.displayName == name }) {
             activeSkin = match
         } else {
             activeSkin = skins.first
@@ -61,6 +65,12 @@ final class SkinManager: ObservableObject {
     func selectSkin(_ skin: WinampSkin) {
         activeSkin = skin
         UserDefaults.standard.set(skin.displayName, forKey: activeSkinKey)
+    }
+
+    /// Disable skinning and fall back to the native SwiftUI now-playing view.
+    func clearSkin() {
+        activeSkin = nil
+        UserDefaults.standard.set("", forKey: activeSkinKey)
     }
 
     /// Copy a user-picked .wsz into the imported-skins directory and reload. Returns

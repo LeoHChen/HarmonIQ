@@ -8,15 +8,34 @@ struct SkinnedMainView: View {
     @EnvironmentObject var skinManager: SkinManager
     @EnvironmentObject var player: AudioPlayerManager
     @StateObject private var visEngine = VisualizerEngine()
+    @Environment(\.dismiss) private var dismiss
 
     @State private var scrubbingPosition: Double? = nil
 
     var body: some View {
         GeometryReader { geo in
-            let pixel = max(1, floor(geo.size.width / SkinFormat.mainWindowSize.width))
+            // Fractional scale so the player fills the screen width even when the
+            // device width isn't an integer multiple of 275px. Sprites are still
+            // rendered with nearest-neighbor sampling (.interpolation(.none)) so
+            // the chunky look survives the non-integer scale.
+            let pixel = max(1, geo.size.width / SkinFormat.mainWindowSize.width)
             let canvasW = SkinFormat.mainWindowSize.width * pixel
             let canvasH = SkinFormat.mainWindowSize.height * pixel
             VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.white.opacity(0.85), .black.opacity(0.6))
+                    }
+                    .accessibilityLabel("Close")
+                    .padding(.horizontal, 12)
+                    .padding(.top, 4)
+                    .padding(.bottom, 6)
+                }
                 ZStack(alignment: .topLeading) {
                     background(pixel: pixel, size: CGSize(width: canvasW, height: canvasH))
 
