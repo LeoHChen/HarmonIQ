@@ -11,6 +11,7 @@ struct SkinnedMainView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var scrubbingPosition: Double? = nil
+    @State private var showSkinPicker = false
 
     var body: some View {
         GeometryReader { geo in
@@ -22,29 +23,36 @@ struct SkinnedMainView: View {
             let canvasW = SkinFormat.mainWindowSize.width * pixel
             let canvasH = SkinFormat.mainWindowSize.height * pixel
             VStack(spacing: 0) {
-                HStack {
-                    Menu {
-                        Button {
-                            skinManager.clearSkin()
-                        } label: {
-                            Label("None (SwiftUI player)",
-                                  systemImage: skinManager.activeSkin == nil ? "checkmark" : "circle")
-                        }
-                        Divider()
-                        ForEach(skinManager.skins) { skin in
-                            Button {
-                                skinManager.selectSkin(skin)
-                            } label: {
-                                Label(skin.displayName,
-                                      systemImage: skinManager.activeSkin?.id == skin.id ? "checkmark" : "circle")
-                            }
-                        }
+                HStack(spacing: 8) {
+                    // Tap to cycle to the next skin. The Menu form scrolls poorly
+                    // on iPhone once you have a dozen+ skins installed; cycling
+                    // is one tap and shows the new name inline.
+                    Button {
+                        skinManager.cycleToNextSkin()
                     } label: {
-                        Image(systemName: "paintpalette.fill")
-                            .font(.title2)
-                            .foregroundStyle(.white.opacity(0.85), .black.opacity(0.6))
+                        HStack(spacing: 6) {
+                            Image(systemName: "paintpalette.fill")
+                                .font(.title2)
+                                .foregroundStyle(.white.opacity(0.85), .black.opacity(0.6))
+                            Text(skinManager.activeSkin?.displayName ?? "No Skin")
+                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.85))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.black.opacity(0.45), in: Capsule())
                     }
-                    .accessibilityLabel("Switch skin")
+                    .accessibilityLabel("Cycle to next skin")
+                    .simultaneousGesture(
+                        // Long-press opens a scrollable picker. The contextual
+                        // menu we used before couldn't scroll once the skin
+                        // list grew past the screen height.
+                        LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                            showSkinPicker = true
+                        }
+                    )
 
                     Spacer()
 
@@ -101,6 +109,10 @@ struct SkinnedMainView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color.black.ignoresSafeArea())
+        }
+        .sheet(isPresented: $showSkinPicker) {
+            SkinPickerSheet()
+                .environmentObject(skinManager)
         }
     }
 
@@ -348,5 +360,80 @@ private extension View {
         self
             .frame(width: width * pixel, height: height * pixel, alignment: .topLeading)
             .offset(x: origin.x * pixel, y: origin.y * pixel)
+    }
+}
+
+/// Scrollable skin picker. Used as a sheet from the in-player skin button —
+/// the contextual menu form ran out of room once we shipped a dozen+ skins.
+struct SkinPickerSheet: View {
+    @EnvironmentObject var skinManager: SkinManager
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button {
+                        skinManager.clearSkin()
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color.black)
+                                Image(systemName: "circle.slash")
+                                    .foregroundStyle(.white.opacity(0.7))
+                            }
+                            .frame(width: 64, height: 28)
+                            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Color.white.opacity(0.15)))
+                            Text("None (SwiftUI player)")
+                            Spacer()
+                            if skinManager.activeSkin == nil {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.tint)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                Section("Skins") {
+                    ForEach(skinManager.skins) { skin in
+                        Button {
+                            skinManager.selectSkin(skin)
+                            dismiss()
+                        } label: {
+                            HStack(spacing: 12) {
+                                if let main = skin.main {
+                                    Image(uiImage: main)
+                                        .interpolation(.none)
+                                        .resizable()
+                                        .frame(width: 64, height: 28)
+                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                                        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Color.white.opacity(0.15)))
+                                } else {
+                                    Rectangle().fill(Color.gray)
+                                        .frame(width: 64, height: 28)
+                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                                }
+                                Text(skin.displayName)
+                                Spacer()
+                                if skinManager.activeSkin?.id == skin.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(.tint)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .navigationTitle("Switch Skin")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 }

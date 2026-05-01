@@ -11,7 +11,9 @@ struct ArtistsView: View {
                                systemImage: "music.mic")
             } else {
                 List(library.allArtists, id: \.self) { artist in
-                    NavigationLink(value: artist) {
+                    NavigationLink {
+                        ArtistDetailView(artist: artist)
+                    } label: {
                         HStack {
                             Image(systemName: "person.fill")
                                 .foregroundStyle(.secondary)
@@ -23,9 +25,6 @@ struct ArtistsView: View {
                                 .font(.caption.monospacedDigit())
                         }
                     }
-                }
-                .navigationDestination(for: String.self) { artist in
-                    ArtistDetailView(artist: artist)
                 }
             }
         }

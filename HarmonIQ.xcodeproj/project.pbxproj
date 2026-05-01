@@ -33,12 +33,13 @@
 		9546DB969B9FE4BEBDBF9F76 /* FoldersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E35D430429E1AB1C5D29D971 /* FoldersView.swift */; };
 		95C1D7862712B1AF3530D399 /* SkinFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982616423A6BC3BB174F0A2E /* SkinFormat.swift */; };
 		A10BD1CC54DC77E7DF551BA6 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CA5D219A5FF2CBA19A0E003 /* LibraryView.swift */; };
+		A93B5C6D7E8F90A1B2C3D4E5 /* SandboxRootStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F1A8B2D9C3E4F5061728394 /* SandboxRootStore.swift */; };
 		A9D09BD270A0DB94DD3F50C4 /* SkinnedMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A690CB3BB86B25F3B2E899 /* SkinnedMainView.swift */; };
-		C1D2E3F405061718292A3B4C /* SkinnedPlaylistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E3F405061718292A3B4C5D /* SkinnedPlaylistView.swift */; };
-		C2E3F405061718292A3B4C5D /* SkinnedEqualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F405061718292A3B4C5D6E /* SkinnedEqualizerView.swift */; };
 		ADFA445F84DD3EDB1A55C5DB /* WinampSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BBB248B178FE1FCF612ED97 /* WinampSkin.swift */; };
 		B5EE909DC0FD5E4684D545F9 /* Skins in Resources */ = {isa = PBXBuildFile; fileRef = 7D9E86967B7801F70269E055 /* Skins */; };
 		BFEC72EA12BDE9A75C6FFEB2 /* SkinnedVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D68585262E7BD5EBB3CDF779 /* SkinnedVisualizer.swift */; };
+		C1D2E3F405061718292A3B4C /* SkinnedPlaylistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E3F405061718292A3B4C5D /* SkinnedPlaylistView.swift */; };
+		C2E3F405061718292A3B4C5D /* SkinnedEqualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F405061718292A3B4C5D6E /* SkinnedEqualizerView.swift */; };
 		C7F097C03E3F811A8FFD64F6 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F01297D60CC5B6C050170B45 /* Preview Assets.xcassets */; };
 		CBDFA717362848840E08B642 /* BitmapText.swift in Sources */ = {isa = PBXBuildFile; fileRef = F995634B51E300AA46B6DBF7 /* BitmapText.swift */; };
 		CE1BF955311C8DB60D692FE8 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38FE23F9FF831246E93D46D0 /* NowPlayingView.swift */; };
@@ -47,7 +48,6 @@
 		DA3451E853523F3F3794A302 /* ArtistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21D6E4A738A357E6A860D0E0 /* ArtistsView.swift */; };
 		DAC622E13BE984A57D2E9C86 /* HarmonIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA4029B61958E1D8F6162CCA /* HarmonIQApp.swift */; };
 		DC9F3F437F7B059AD8D253B5 /* DriveLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEFB4D3197C2EC465A4B964C /* DriveLibraryStore.swift */; };
-		A93B5C6D7E8F90A1B2C3D4E5 /* SandboxRootStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F1A8B2D9C3E4F5061728394 /* SandboxRootStore.swift */; };
 		DCF4418A459E115EF770E6D9 /* AudioPlayerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */; };
 		E1D2A557F273963F3ABFCFC5 /* AllTracksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0243B50E58BF70DF26D99D0 /* AllTracksView.swift */; };
 		EC778E91CBFC41C1A6A09A2A /* Visualizers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A922A09FC20BC24E0180727 /* Visualizers.swift */; };
@@ -67,6 +67,7 @@
 		645788E38767A20E50B440A4 /* SkinnedVolumeSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedVolumeSlider.swift; sourceTree = "<group>"; };
 		6A922A09FC20BC24E0180727 /* Visualizers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Visualizers.swift; sourceTree = "<group>"; };
 		6E48BCF53895F042489D6F8B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		6F1A8B2D9C3E4F5061728394 /* SandboxRootStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxRootStore.swift; sourceTree = "<group>"; };
 		7D9E86967B7801F70269E055 /* Skins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Skins; path = HarmonIQ/Resources/Skins; sourceTree = SOURCE_ROOT; };
 		8CA5D219A5FF2CBA19A0E003 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerManager.swift; sourceTree = "<group>"; };
@@ -84,21 +85,20 @@
 		BAE503899DE0AC71DEE6E6B7 /* SmartPlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlayView.swift; sourceTree = "<group>"; };
 		BB566E7DBDC9F95DA534869C /* ScrollingBitmapText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingBitmapText.swift; sourceTree = "<group>"; };
 		BEFB4D3197C2EC465A4B964C /* DriveLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriveLibraryStore.swift; sourceTree = "<group>"; };
-		6F1A8B2D9C3E4F5061728394 /* SandboxRootStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxRootStore.swift; sourceTree = "<group>"; };
-		C20AD805166CAC672F2833BC /* HarmonIQ.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HarmonIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C20AD805166CAC672F2833BC /* HarmonIQ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HarmonIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4D685B9A89C2B6EDCCCB4AB /* AlbumsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumsView.swift; sourceTree = "<group>"; };
 		C6203F24B0D3D962883456DA /* SpriteButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteButton.swift; sourceTree = "<group>"; };
 		CE5341339CB5BD57C71DD7EC /* BitmapSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapSlider.swift; sourceTree = "<group>"; };
 		D0243B50E58BF70DF26D99D0 /* AllTracksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllTracksView.swift; sourceTree = "<group>"; };
 		D210ACF5D89E9E21A1496719 /* Playlist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playlist.swift; sourceTree = "<group>"; };
+		D2E3F405061718292A3B4C5D /* SkinnedPlaylistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedPlaylistView.swift; sourceTree = "<group>"; };
 		D68585262E7BD5EBB3CDF779 /* SkinnedVisualizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedVisualizer.swift; sourceTree = "<group>"; };
 		DCC1E5260F8BCC82F22321CD /* Track.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Track.swift; sourceTree = "<group>"; };
 		E35D430429E1AB1C5D29D971 /* FoldersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldersView.swift; sourceTree = "<group>"; };
+		E3F405061718292A3B4C5D6E /* SkinnedEqualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedEqualizerView.swift; sourceTree = "<group>"; };
 		ED17D95227132C92484D37D4 /* BitmapNumbers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapNumbers.swift; sourceTree = "<group>"; };
 		F01297D60CC5B6C050170B45 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		F1A690CB3BB86B25F3B2E899 /* SkinnedMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedMainView.swift; sourceTree = "<group>"; };
-		D2E3F405061718292A3B4C5D /* SkinnedPlaylistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedPlaylistView.swift; sourceTree = "<group>"; };
-		E3F405061718292A3B4C5D6E /* SkinnedEqualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedEqualizerView.swift; sourceTree = "<group>"; };
 		F53B7620084258E7F659C7D7 /* MetadataExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataExtractor.swift; sourceTree = "<group>"; };
 		F995634B51E300AA46B6DBF7 /* BitmapText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapText.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -453,6 +453,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_ASSET_PATHS = "\"HarmonIQ/Resources/Preview Content\"";
+				DEVELOPMENT_TEAM = 79DDZ6D8WT;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = HarmonIQ/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -474,6 +475,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_ASSET_PATHS = "\"HarmonIQ/Resources/Preview Content\"";
+				DEVELOPMENT_TEAM = 79DDZ6D8WT;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = HarmonIQ/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
