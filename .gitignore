@@ -23,3 +23,6 @@ Carthage/Build/
 
 # Local agent / tooling state
 .claude/
+
+# Local-only reference imagery (skin grids, mockups, etc.)
+ref/
