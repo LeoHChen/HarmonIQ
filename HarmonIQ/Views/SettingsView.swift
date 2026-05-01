@@ -69,6 +69,15 @@ struct SettingsView: View {
     }
 
     private func addRoot(from url: URL) {
+        // The URL handed to us by UIDocumentPickerViewController is only
+        // transiently accessible. To capture *write* access in the bookmark
+        // we must explicitly start security scope before serializing it —
+        // otherwise the bookmark resolves later as read-only and every
+        // folder ends up flagged isReadOnly even when it's a writable
+        // location on the device.
+        let started = url.startAccessingSecurityScopedResource()
+        defer { if started { url.stopAccessingSecurityScopedResource() } }
+
         do {
             let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
             let root = LibraryRoot(displayName: url.lastPathComponent, bookmark: bookmark)
