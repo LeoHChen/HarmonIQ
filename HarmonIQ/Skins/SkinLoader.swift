@@ -14,7 +14,10 @@ enum SkinLoader {
     /// Load the skin at the given URL. Caller is responsible for security-scoped access
     /// if the URL points outside the app sandbox.
     static func load(from url: URL, isBundled: Bool) throws -> WinampSkin {
-        guard let archive = try? Archive(url: url, accessMode: .read) else {
+        let archive: Archive
+        do {
+            archive = try Archive(url: url, accessMode: .read)
+        } catch {
             throw SkinLoaderError.openFailed
         }
 
