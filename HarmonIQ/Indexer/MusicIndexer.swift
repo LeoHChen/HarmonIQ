@@ -59,9 +59,22 @@ final class MusicIndexer: ObservableObject {
         let started = resolvedURL.startAccessingSecurityScopedResource()
         defer { if started { resolvedURL.stopAccessingSecurityScopedResource() } }
 
-        // Make sure the on-drive HarmonIQ/ folder exists before we write into it.
+        // Try to create the on-drive HarmonIQ/ folder. If the picker handed us
+        // a read-only location (iOS system "Music", certain iCloud paths) the
+        // write fails — fall back to storing the index in the app sandbox via
+        // SandboxRootStore so the user can still use the drive.
+        var isReadOnly = false
         do {
             try DriveLibraryStore.ensureFolders(in: resolvedURL)
+        } catch let err as NSError where Self.isWritePermissionError(err) {
+            isReadOnly = true
+            await MainActor.run {
+                MusicIndexer.shared.statusMessage = "Drive is read-only — storing index on this device."
+                if var root = LibraryStore.shared.roots.first(where: { $0.id == rootID }) {
+                    root.isReadOnly = true
+                    LibraryStore.shared.updateRoot(root)
+                }
+            }
         } catch {
             await MainActor.run {
                 MusicIndexer.shared.isIndexing = false
@@ -115,21 +128,32 @@ final class MusicIndexer: ObservableObject {
             if let data = metadata.artworkData {
                 let albumKey = "\(metadata.albumArtist ?? metadata.artist ?? "Unknown")|\(metadata.album ?? "Unknown")"
                 let hash = sha1Hex(albumKey)
-                let driveTarget = driveArtworkDir.appendingPathComponent("\(hash).jpg")
                 let localTarget = localCacheDir.appendingPathComponent("\(hash).jpg")
-                if seenArtworkKeys.contains(hash) || FileManager.default.fileExists(atPath: driveTarget.path) {
-                    artworkPath = "\(hash).jpg"
-                    seenArtworkKeys.insert(hash)
-                    // Best-effort mirror to local cache if it doesn't already exist there.
-                    if !FileManager.default.fileExists(atPath: localTarget.path) {
-                        try? FileManager.default.copyItem(at: driveTarget, to: localTarget)
+                if isReadOnly {
+                    // No on-drive Artwork folder — write straight to local cache.
+                    if seenArtworkKeys.contains(hash) || FileManager.default.fileExists(atPath: localTarget.path) {
+                        artworkPath = "\(hash).jpg"
+                        seenArtworkKeys.insert(hash)
+                    } else if let saved = await MetadataExtractor.saveArtworkAsync(data, named: hash, to: localCacheDir) {
+                        artworkPath = saved
+                        seenArtworkKeys.insert(hash)
                     }
-                } else if let saved = await MetadataExtractor.saveArtworkAsync(data, named: hash, to: driveArtworkDir) {
-                    artworkPath = saved
-                    seenArtworkKeys.insert(hash)
-                    // Mirror the freshly written jpeg into the local cache.
-                    if !FileManager.default.fileExists(atPath: localTarget.path) {
-                        try? FileManager.default.copyItem(at: driveTarget, to: localTarget)
+                } else {
+                    let driveTarget = driveArtworkDir.appendingPathComponent("\(hash).jpg")
+                    if seenArtworkKeys.contains(hash) || FileManager.default.fileExists(atPath: driveTarget.path) {
+                        artworkPath = "\(hash).jpg"
+                        seenArtworkKeys.insert(hash)
+                        // Best-effort mirror to local cache if it doesn't already exist there.
+                        if !FileManager.default.fileExists(atPath: localTarget.path) {
+                            try? FileManager.default.copyItem(at: driveTarget, to: localTarget)
+                        }
+                    } else if let saved = await MetadataExtractor.saveArtworkAsync(data, named: hash, to: driveArtworkDir) {
+                        artworkPath = saved
+                        seenArtworkKeys.insert(hash)
+                        // Mirror the freshly written jpeg into the local cache.
+                        if !FileManager.default.fileExists(atPath: localTarget.path) {
+                            try? FileManager.default.copyItem(at: driveTarget, to: localTarget)
+                        }
                     }
                 }
             }
@@ -227,5 +251,24 @@ final class MusicIndexer: ObservableObject {
 
     private static func deriveTitleFromFilename(_ url: URL) -> String {
         url.deletingPathExtension().lastPathComponent.replacingOccurrences(of: "_", with: " ")
+    }
+
+    /// Cocoa surfaces "no permission to write" failures with a small set of error
+    /// codes, plus POSIX EACCES/EPERM/EROFS passthroughs from Foundation. Treat
+    /// any of those as "this folder is read-only, fall back to sandbox storage."
+    private static func isWritePermissionError(_ err: NSError) -> Bool {
+        if err.domain == NSCocoaErrorDomain {
+            if err.code == NSFileWriteNoPermissionError || err.code == NSFileWriteVolumeReadOnlyError {
+                return true
+            }
+        }
+        if err.domain == NSPOSIXErrorDomain {
+            // EACCES = 13, EPERM = 1, EROFS = 30
+            if err.code == 13 || err.code == 1 || err.code == 30 { return true }
+        }
+        if let underlying = err.userInfo[NSUnderlyingErrorKey] as? NSError {
+            return isWritePermissionError(underlying)
+        }
+        return false
     }
 }

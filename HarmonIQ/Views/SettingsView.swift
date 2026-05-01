@@ -25,7 +25,7 @@ struct SettingsView: View {
             } header: {
                 Text("Music Drives")
             } footer: {
-                Text("Pick any folder visible in Files — including a USB drive — and HarmonIQ will recursively index its audio files.")
+                Text("Pick any folder visible in Files — including a USB drive — and HarmonIQ will recursively index its audio files. If the folder is read-only, the index is stored on this device and cross-device portability is disabled.")
             }
 
             if indexer.isIndexing {
@@ -96,7 +96,17 @@ private struct DriveRow: View {
                 .foregroundStyle(.tint)
                 .frame(width: 32)
             VStack(alignment: .leading, spacing: 2) {
-                Text(root.displayName).font(.body)
+                HStack(spacing: 6) {
+                    Text(root.displayName).font(.body)
+                    if root.isReadOnly {
+                        Text("Read-only")
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.orange.opacity(0.25), in: Capsule())
+                            .foregroundStyle(Color.orange)
+                    }
+                }
                 Text(detailLine).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
