@@ -73,6 +73,20 @@ final class SkinManager: ObservableObject {
         UserDefaults.standard.set("", forKey: activeSkinKey)
     }
 
+    /// Advance to the next skin in `skins`, wrapping at the end. Used by the
+    /// in-player tap-to-cycle button — much faster than scrolling a menu when
+    /// many skins are installed.
+    func cycleToNextSkin() {
+        guard !skins.isEmpty else { return }
+        let next: WinampSkin
+        if let active = activeSkin, let idx = skins.firstIndex(where: { $0.id == active.id }) {
+            next = skins[(idx + 1) % skins.count]
+        } else {
+            next = skins[0]
+        }
+        selectSkin(next)
+    }
+
     /// Copy a user-picked .wsz into the imported-skins directory and reload. Returns
     /// the freshly-loaded skin on success.
     @discardableResult

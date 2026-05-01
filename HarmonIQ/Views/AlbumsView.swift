@@ -17,16 +17,15 @@ struct AlbumsView: View {
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 20) {
                         ForEach(library.allAlbums) { key in
-                            NavigationLink(value: key) {
+                            NavigationLink {
+                                AlbumDetailView(key: key)
+                            } label: {
                                 AlbumCard(key: key)
                             }
                             .buttonStyle(.plain)
                         }
                     }
                     .padding(16)
-                }
-                .navigationDestination(for: LibraryStore.AlbumKey.self) { key in
-                    AlbumDetailView(key: key)
                 }
             }
         }
@@ -57,39 +56,28 @@ struct AlbumDetailView: View {
 
     var body: some View {
         let tracks = library.tracks(forAlbum: key)
+        let totalDuration = tracks.reduce(0) { $0 + $1.duration }
+
         List {
             Section {
-                HStack(alignment: .top, spacing: 16) {
-                    ArtworkView(track: tracks.first, size: 110, cornerRadius: 10)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(key.album).font(.title3.weight(.bold))
-                        Text(key.artist).foregroundStyle(.secondary)
-                        if let year = tracks.first?.year {
-                            Text(String(year)).font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 6)
-                        HStack {
-                            Button {
-                                player.playAll(tracks, startAt: 0)
-                            } label: {
-                                Label("Play", systemImage: "play.fill")
-                            }
-                            .buttonStyle(.borderedProminent)
-                            Button {
-                                var shuffled = tracks
-                                shuffled.shuffle()
-                                player.isShuffleEnabled = true
-                                player.playAll(shuffled, startAt: 0)
-                            } label: {
-                                Label("Shuffle", systemImage: "shuffle")
-                            }
-                            .buttonStyle(.bordered)
-                        }
+                AlbumHeader(
+                    key: key,
+                    sample: tracks.first,
+                    trackCount: tracks.count,
+                    totalDuration: totalDuration,
+                    onPlay: { player.playAll(tracks, startAt: 0) },
+                    onShuffle: {
+                        var shuffled = tracks
+                        shuffled.shuffle()
+                        player.isShuffleEnabled = true
+                        player.playAll(shuffled, startAt: 0)
                     }
-                    Spacer()
-                }
-                .padding(.vertical, 8)
+                )
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             }
+
             Section {
                 ForEach(tracks) { track in
                     TrackRow(track: track, showArtwork: false)
@@ -104,5 +92,88 @@ struct AlbumDetailView: View {
         }
         .navigationTitle(key.album)
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct AlbumHeader: View {
+    let key: LibraryStore.AlbumKey
+    let sample: Track?
+    let trackCount: Int
+    let totalDuration: TimeInterval
+    let onPlay: () -> Void
+    let onShuffle: () -> Void
+
+    var body: some View {
+        VStack(spacing: 14) {
+            ArtworkView(track: sample, size: 180, cornerRadius: 12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(WinampTheme.bevelLight.opacity(0.35), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
+
+            VStack(spacing: 4) {
+                Text(key.album.uppercased())
+                    .font(WinampTheme.lcdFont(size: 16))
+                    .foregroundStyle(WinampTheme.lcdGlow)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                Text(key.artist.uppercased())
+                    .font(WinampTheme.lcdFont(size: 12))
+                    .foregroundStyle(Color(red: 0.85, green: 0.92, blue: 0.85))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                Text(metaLine)
+                    .font(WinampTheme.lcdFont(size: 10))
+                    .foregroundStyle(WinampTheme.lcdDim)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+
+            HStack(spacing: 10) {
+                AlbumActionButton(title: "PLAY", icon: "play.fill", isPrimary: true, action: onPlay)
+                AlbumActionButton(title: "SHUFFLE", icon: "shuffle", isPrimary: false, action: onShuffle)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 18)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var metaLine: String {
+        var parts: [String] = []
+        if let year = sample?.year { parts.append(String(year)) }
+        parts.append("\(trackCount) TRACK\(trackCount == 1 ? "" : "S")")
+        parts.append(formatDuration(totalDuration).uppercased())
+        return parts.joined(separator: " · ")
+    }
+}
+
+private struct AlbumActionButton: View {
+    let title: String
+    let icon: String
+    let isPrimary: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .bold))
+                Text(title)
+                    .font(WinampTheme.lcdFont(size: 12))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .foregroundStyle(isPrimary ? WinampTheme.lcdGlow : Color(red: 0.85, green: 0.92, blue: 0.85))
+            .background(WinampTheme.lcdBackground)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .strokeBorder(isPrimary ? WinampTheme.lcdGlow.opacity(0.6) : WinampTheme.bevelDark, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .shadow(color: isPrimary ? WinampTheme.lcdGlow.opacity(0.3) : .clear, radius: 3)
+        }
+        .buttonStyle(.plain)
     }
 }

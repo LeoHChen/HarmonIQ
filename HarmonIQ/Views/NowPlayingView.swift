@@ -5,6 +5,7 @@ struct NowPlayingView: View {
     @EnvironmentObject var skinManager: SkinManager
     @Environment(\.dismiss) private var dismiss
     @State private var seekingValue: Double?
+    @State private var showSkinPicker = false
 
     var body: some View {
         ZStack {
@@ -15,28 +16,22 @@ struct NowPlayingView: View {
                 // selecting "None (SwiftUI player)" left no way to switch
                 // back to a skinned player from the now-playing screen.
                 HStack {
-                    Menu {
-                        Button {
-                            skinManager.clearSkin()
-                        } label: {
-                            Label("None (SwiftUI player)",
-                                  systemImage: skinManager.activeSkin == nil ? "checkmark" : "circle")
-                        }
-                        Divider()
-                        ForEach(skinManager.skins) { skin in
-                            Button {
-                                skinManager.selectSkin(skin)
-                            } label: {
-                                Label(skin.displayName,
-                                      systemImage: skinManager.activeSkin?.id == skin.id ? "checkmark" : "circle")
-                            }
-                        }
+                    // Tap cycles to the next skin; long-press opens a
+                    // scrollable picker. Same affordance as the skinned
+                    // player so behavior is consistent across both views.
+                    Button {
+                        skinManager.cycleToNextSkin()
                     } label: {
                         Image(systemName: "paintpalette.fill")
                             .font(.title3)
                             .foregroundStyle(WinampTheme.lcdGlow.opacity(0.85))
                     }
-                    .accessibilityLabel("Switch skin")
+                    .simultaneousGesture(
+                        LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                            showSkinPicker = true
+                        }
+                    )
+                    .accessibilityLabel("Cycle to next skin")
 
                     Spacer()
 
@@ -179,6 +174,10 @@ struct NowPlayingView: View {
                 }
             }
             .padding(.bottom, 24)
+        }
+        .sheet(isPresented: $showSkinPicker) {
+            SkinPickerSheet()
+                .environmentObject(skinManager)
         }
     }
 

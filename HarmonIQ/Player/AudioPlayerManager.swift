@@ -81,6 +81,14 @@ final class AudioPlayerManager: NSObject, ObservableObject {
 
     /// Build a queue with a SmartPlayMode and start playback. Disables manual shuffle so
     /// the curator's order is honored.
+    /// Re-presents the now-playing sheet without touching playback. Used by the
+    /// "Player" entry in the library when the user has dismissed the sheet and
+    /// wants to get back to the current track.
+    func presentNowPlaying() {
+        guard currentTrack != nil else { return }
+        presentNowPlayingTick &+= 1
+    }
+
     func playSmart(mode: SmartPlayMode, from pool: [Track]) {
         let queue = SmartPlayBuilder.buildQueue(mode: mode, from: pool, recentlyPlayed: sessionPlayedIDs)
         guard !queue.isEmpty else { return }
