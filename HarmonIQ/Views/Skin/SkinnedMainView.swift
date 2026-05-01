@@ -326,14 +326,28 @@ struct SkinnedMainView: View {
                   width: SkinFormat.MainElement.shuffleButton.width,
                   height: SkinFormat.MainElement.shuffleButton.height)
 
-        // Repeat button
-        SpriteButton(
-            atlas: atlas,
-            normal: player.repeatMode == .off ? SkinFormat.ShufRep.repeatOff : SkinFormat.ShufRep.repeatOn,
-            pressed: player.repeatMode == .off ? SkinFormat.ShufRep.repeatOffDown : SkinFormat.ShufRep.repeatOnDown,
-            pixelSize: pixel
-        ) {
-            player.cycleRepeatMode()
+        // Repeat button — three states: off / all / one. The classic shufrep.bmp
+        // only ships off/on sprites, so we overlay a small "1" badge on top of
+        // the on-state when in single-track loop. This is the only way to make
+        // .all visually distinct from .one without a custom sprite per skin.
+        ZStack(alignment: .topTrailing) {
+            SpriteButton(
+                atlas: atlas,
+                normal: player.repeatMode == .off ? SkinFormat.ShufRep.repeatOff : SkinFormat.ShufRep.repeatOn,
+                pressed: player.repeatMode == .off ? SkinFormat.ShufRep.repeatOffDown : SkinFormat.ShufRep.repeatOnDown,
+                pixelSize: pixel
+            ) {
+                player.cycleRepeatMode()
+            }
+            if player.repeatMode == .one {
+                Text("1")
+                    .font(.system(size: max(8, 5 * pixel), weight: .heavy, design: .monospaced))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, max(2, 1 * pixel))
+                    .background(Color.black.opacity(0.8), in: Capsule())
+                    .allowsHitTesting(false)
+                    .padding(max(1, 1 * pixel))
+            }
         }
         .position(at: SkinFormat.MainElement.repeatButton.origin, pixel: pixel,
                   width: SkinFormat.MainElement.repeatButton.width,
