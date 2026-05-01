@@ -12,6 +12,7 @@ struct SkinnedMainView: View {
 
     @State private var scrubbingPosition: Double? = nil
     @State private var showSkinPicker = false
+    @State private var showSleepMenu = false
 
     var body: some View {
         GeometryReader { geo in
@@ -56,6 +57,9 @@ struct SkinnedMainView: View {
 
                     Spacer()
 
+                    SleepTimerButton()
+                        .environmentObject(player)
+
                     Button {
                         dismiss()
                     } label: {
@@ -75,6 +79,9 @@ struct SkinnedMainView: View {
                         .frame(width: canvasW, height: canvasH, alignment: .topLeading)
                 }
                 .frame(width: canvasW, height: canvasH)
+
+                SleepTimerCountdown()
+                    .environmentObject(player)
 
                 if let err = player.playbackError {
                     HStack(spacing: 6) {

@@ -46,10 +46,17 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     /// so a track tap immediately opens the Winamp interface.
     @Published private(set) var presentNowPlayingTick: Int = 0
 
+    // MARK: - Sleep timer
+    /// Non-nil when a fixed-duration timer is armed. Nil = no timer.
+    @Published private(set) var sleepTimerEndsAt: Date?
+    /// When true, playback stops at the natural end of the current track.
+    @Published private(set) var sleepStopAtTrackEnd: Bool = false
+
     /// stableIDs of tracks that have started playing in this app session — fuels Discovery Mix.
     private(set) var sessionPlayedIDs: Set<String> = []
 
     private var player: AVAudioPlayer?
+    private var sleepTimer: Timer?
     private var displayLink: CADisplayLink?
     private var accessRoot: URL?
     private var playOrder: [Int] = [] // indexes into queue
@@ -163,6 +170,34 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         case .all: repeatMode = .one
         case .one: repeatMode = .off
         }
+    }
+
+    // MARK: - Sleep timer
+
+    func setSleepTimer(minutes: Int) {
+        cancelSleepTimer()
+        let interval = TimeInterval(minutes * 60)
+        sleepTimerEndsAt = Date().addingTimeInterval(interval)
+        sleepStopAtTrackEnd = false
+        sleepTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.pause()
+                self?.sleepTimerEndsAt = nil
+                self?.sleepTimer = nil
+            }
+        }
+    }
+
+    func setSleepTimerEndOfTrack() {
+        cancelSleepTimer()
+        sleepStopAtTrackEnd = true
+    }
+
+    func cancelSleepTimer() {
+        sleepTimer?.invalidate()
+        sleepTimer = nil
+        sleepTimerEndsAt = nil
+        sleepStopAtTrackEnd = false
     }
 
     // MARK: - Internals
@@ -367,6 +402,11 @@ final class AudioPlayerManager: NSObject, ObservableObject {
 extension AudioPlayerManager: AVAudioPlayerDelegate {
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         Task { @MainActor in
+            if self.sleepStopAtTrackEnd {
+                self.pause()
+                self.sleepStopAtTrackEnd = false
+                return
+            }
             if self.repeatMode == .one {
                 self.playCurrent()
             } else {
