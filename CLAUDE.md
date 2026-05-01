@@ -16,7 +16,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
 
 Available destinations: `xcodebuild -showdestinations -project HarmonIQ.xcodeproj -scheme HarmonIQ`.
 
-There is no test target and no lint config. Build is the only check.
+There is no automated test target and no lint config. The build is the static check; functional verification is the manual smoke list in [`TESTING.md`](TESTING.md), which **must be run** for any PR that touches code (section A always; other sections per PR scope). The PR template at `.github/PULL_REQUEST_TEMPLATE.md` enforces this with checkboxes.
 
 ### XcodeGen
 
