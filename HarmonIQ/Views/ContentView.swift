@@ -24,12 +24,6 @@ struct ContentView: View {
                     .tabItem { Label("Settings", systemImage: "gearshape") }
             }
             .scrollContentBackground(.hidden)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if player.currentTrack != nil {
-                    MiniPlayerView()
-                        .onTapGesture { showNowPlaying = true }
-                }
-            }
         }
         .sheet(isPresented: $showNowPlaying) {
             if skinManager.activeSkin != nil {
