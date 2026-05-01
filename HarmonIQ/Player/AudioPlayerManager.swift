@@ -37,6 +37,9 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     @Published var balance: Float = 0 {
         didSet { player?.pan = balance }
     }
+    /// User-visible reason the most recent play attempt failed, or nil if none.
+    /// Cleared when a track plays successfully or the queue empties.
+    @Published private(set) var playbackError: String?
 
     /// stableIDs of tracks that have started playing in this app session — fuels Discovery Mix.
     private(set) var sessionPlayedIDs: Set<String> = []
@@ -206,13 +209,32 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             avPlayer.play()
             isPlaying = true
             currentTime = 0
+            playbackError = nil
             startDisplayLink()
             NowPlayingManager.shared.update(track: track, isPlaying: true, currentTime: 0, duration: self.duration)
         } catch {
             print("[HarmonIQ] Failed to play \(track.filename): \(error)")
             isPlaying = false
             stopDisplayLink()
+            playbackError = "Can't play \(track.filename): \(Self.friendlyMessage(for: error))"
         }
+    }
+
+    /// Translates the most common AVFoundation playback failures into something the
+    /// user can act on. Apple Music downloads (DRM-protected .m4p) and the
+    /// Files-app system folders that contain them are the usual culprits on
+    /// iPhone — surface that explicitly so the silence isn't mysterious.
+    private static func friendlyMessage(for error: Error) -> String {
+        let ns = error as NSError
+        if ns.domain == NSOSStatusErrorDomain {
+            // 'fmt?' / 'pty?' / -39 etc. all arrive here; whatever the OSStatus,
+            // the practical answer is "this file can't be decoded by AVAudioPlayer."
+            return "format not playable (DRM-protected, unsupported codec, or unreadable)"
+        }
+        if ns.domain == NSCocoaErrorDomain && ns.code == NSFileReadNoPermissionError {
+            return "no read permission for this file"
+        }
+        return ns.localizedDescription
     }
 
     private func advance(by delta: Int) {
