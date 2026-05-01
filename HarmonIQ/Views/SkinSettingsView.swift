@@ -9,6 +9,7 @@ struct SkinSettingsView: View {
     var body: some View {
         List {
             Section {
+                NoSkinRow()
                 ForEach(skinManager.skins) { skin in
                     SkinRow(skin: skin)
                 }
@@ -20,7 +21,7 @@ struct SkinSettingsView: View {
             } header: {
                 Text("Skins")
             } footer: {
-                Text("Tap a skin to apply it. Drop any classic Winamp 2.x skin (.wsz) in via the importer — same files that work in desktop Winamp.")
+                Text("Tap a skin to apply it, or pick \"None\" to use the native SwiftUI player. Drop any classic Winamp 2.x skin (.wsz) in via the importer — same files that work in desktop Winamp.")
             }
         }
         .navigationTitle("Skins")
@@ -50,6 +51,38 @@ struct SkinSettingsView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(importError ?? "")
+        }
+    }
+}
+
+private struct NoSkinRow: View {
+    @EnvironmentObject var skinManager: SkinManager
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color.black)
+                Image(systemName: "circle.slash")
+                    .font(.title3)
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .frame(width: 80, height: 34)
+            .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color.white.opacity(0.15)))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("None (SwiftUI player)").font(.body)
+                Text("Use the native HarmonIQ player").font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if skinManager.activeSkin == nil {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.tint)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            skinManager.clearSkin()
         }
     }
 }
