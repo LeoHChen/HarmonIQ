@@ -30,7 +30,31 @@ struct SkinnedMainView: View {
             let canvasH = SkinFormat.mainWindowSize.height * pixel
             VStack(spacing: 0) {
                 HStack {
+                    Menu {
+                        Button {
+                            skinManager.clearSkin()
+                        } label: {
+                            Label("None (SwiftUI player)",
+                                  systemImage: skinManager.activeSkin == nil ? "checkmark" : "circle")
+                        }
+                        Divider()
+                        ForEach(skinManager.skins) { skin in
+                            Button {
+                                skinManager.selectSkin(skin)
+                            } label: {
+                                Label(skin.displayName,
+                                      systemImage: skinManager.activeSkin?.id == skin.id ? "checkmark" : "circle")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "paintpalette.fill")
+                            .font(.title2)
+                            .foregroundStyle(.white.opacity(0.85), .black.opacity(0.6))
+                    }
+                    .accessibilityLabel("Switch skin")
+
                     Spacer()
+
                     Button {
                         dismiss()
                     } label: {
@@ -39,10 +63,10 @@ struct SkinnedMainView: View {
                             .foregroundStyle(.white.opacity(0.85), .black.opacity(0.6))
                     }
                     .accessibilityLabel("Close")
-                    .padding(.horizontal, 12)
-                    .padding(.top, 4)
-                    .padding(.bottom, 6)
                 }
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
+                .padding(.bottom, 6)
                 ZStack(alignment: .topLeading) {
                     background(pixel: pixel, size: CGSize(width: canvasW, height: canvasH))
 
