@@ -31,12 +31,32 @@ struct LibraryRoot: Identifiable, Codable, Hashable {
     var bookmark: Data
     var lastIndexed: Date?
     var trackCount: Int
+    /// True when the picked folder doesn't grant write access (e.g. iOS system
+    /// "Music" folder, certain iCloud locations). Index + playlists for a
+    /// read-only root live in the app sandbox via SandboxRootStore instead of
+    /// in the on-drive HarmonIQ/ folder.
+    var isReadOnly: Bool
 
-    init(id: UUID = UUID(), displayName: String, bookmark: Data, lastIndexed: Date? = nil, trackCount: Int = 0) {
+    init(id: UUID = UUID(), displayName: String, bookmark: Data, lastIndexed: Date? = nil, trackCount: Int = 0, isReadOnly: Bool = false) {
         self.id = id
         self.displayName = displayName
         self.bookmark = bookmark
         self.lastIndexed = lastIndexed
         self.trackCount = trackCount
+        self.isReadOnly = isReadOnly
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, displayName, bookmark, lastIndexed, trackCount, isReadOnly
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decode(UUID.self, forKey: .id)
+        self.displayName = try c.decode(String.self, forKey: .displayName)
+        self.bookmark = try c.decode(Data.self, forKey: .bookmark)
+        self.lastIndexed = try c.decodeIfPresent(Date.self, forKey: .lastIndexed)
+        self.trackCount = try c.decodeIfPresent(Int.self, forKey: .trackCount) ?? 0
+        self.isReadOnly = try c.decodeIfPresent(Bool.self, forKey: .isReadOnly) ?? false
     }
 }

@@ -103,10 +103,25 @@ final class LibraryStore: ObservableObject {
         }
     }
 
-    /// Loads tracks + playlists from the drive's HarmonIQ folder into the in-memory
-    /// state and mirrors artwork into the local cache. No-op if the drive is offline
-    /// or has no HarmonIQ folder yet.
+    /// Loads tracks + playlists for a root into in-memory state. Read-write roots
+    /// pull from the on-drive HarmonIQ/ folder; read-only roots pull from the
+    /// per-root sandbox shadow store (SandboxRootStore).
     private func loadDriveData(for root: LibraryRoot) {
+        if root.isReadOnly {
+            // Drive can't be written, so the index lives in the app sandbox.
+            // We still open scope on the drive to mirror artwork (it's sometimes
+            // readable even when the picker location is write-restricted).
+            if let lib = SandboxRootStore.loadLibrary(rootID: root.id) {
+                let mapped = lib.tracks.map { DriveLibraryStore.toTrack($0, rootBookmarkID: root.id) }
+                mergeTracks(forRoot: root.id, with: mapped)
+            }
+            if let pls = SandboxRootStore.loadPlaylists(rootID: root.id) {
+                let mapped = pls.playlists.map { DriveLibraryStore.toPlaylist($0, rootBookmarkID: root.id) }
+                mergePlaylists(forRoot: root.id, with: mapped)
+            }
+            return
+        }
+
         let cacheDir = artworkDirectory
         let result = withDriveAccess(root) { driveURL -> (DriveLibraryStore.DriveLibraryFile?, DriveLibraryStore.DrivePlaylistsFile?) in
             let lib = DriveLibraryStore.loadLibrary(driveRoot: driveURL)
@@ -130,6 +145,10 @@ final class LibraryStore: ObservableObject {
         guard let root = roots.first(where: { $0.id == rootID }) else { return }
         let owned = playlists.filter { $0.rootBookmarkID == rootID }
         let file = DriveLibraryStore.DrivePlaylistsFile(version: 1, playlists: owned.map { DriveLibraryStore.fromPlaylist($0) })
+        if root.isReadOnly {
+            try? SandboxRootStore.writePlaylists(file, rootID: root.id)
+            return
+        }
         withDriveAccess(root) { driveURL in
             try DriveLibraryStore.writePlaylists(file, driveRoot: driveURL)
         }
@@ -156,16 +175,21 @@ final class LibraryStore: ObservableObject {
     func removeRoot(_ root: LibraryRoot) {
         roots.removeAll { $0.id == root.id }
         // Drop in-memory tracks/playlists belonging to this drive. The on-drive files
-        // stay; re-adding the same drive will pick them up again.
+        // stay; re-adding the same drive will pick them up again. Sandbox-stored
+        // index for read-only roots gets cleaned up since it's keyed by rootID.
         tracks.removeAll { $0.rootBookmarkID == root.id }
         playlists.removeAll { $0.rootBookmarkID == root.id }
+        if root.isReadOnly {
+            SandboxRootStore.deleteAll(rootID: root.id)
+        }
         saveRoots()
     }
 
     // MARK: - Tracks
 
-    /// Replace tracks for a root in memory AND write them to the drive's library.json.
-    /// Called by the indexer after a fresh scan.
+    /// Replace tracks for a root in memory AND persist them. For read-write roots
+    /// the index is written to the drive's HarmonIQ/library.json; for read-only
+    /// roots it's written to the sandbox shadow store.
     func replaceTracks(forRoot rootID: UUID, with newTracks: [Track]) {
         mergeTracks(forRoot: rootID, with: newTracks)
         if let idx = roots.firstIndex(where: { $0.id == rootID }) {
@@ -175,6 +199,10 @@ final class LibraryStore: ObservableObject {
         }
         guard let root = roots.first(where: { $0.id == rootID }) else { return }
         let file = DriveLibraryStore.DriveLibraryFile(version: 1, tracks: newTracks.map { DriveLibraryStore.fromTrack($0) })
+        if root.isReadOnly {
+            try? SandboxRootStore.writeLibrary(file, rootID: root.id)
+            return
+        }
         withDriveAccess(root) { driveURL in
             try DriveLibraryStore.writeLibrary(file, driveRoot: driveURL)
         }
