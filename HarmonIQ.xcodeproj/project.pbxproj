@@ -1,0 +1,470 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		01E3439E649010D829D7AB8A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF43538DAF9F07E1F7428FE1 /* SettingsView.swift */; };
+		0323B3047D47591B359097DF /* AlbumsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D685B9A89C2B6EDCCCB4AB /* AlbumsView.swift */; };
+		0875DAB5569B83DC801CA7B8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4D55B677D3210BEAEDFEA0C5 /* Assets.xcassets */; };
+		16F8F24D50C9EB96562011DC /* SmartPlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A31A65F1BCE09BD374018CC4 /* SmartPlay.swift */; };
+		3A5F09869BC9EA7F4DC88B35 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D6EA2A86E18C3306B3A4BFC /* ContentView.swift */; };
+		3EE13B1011444446AF4C9346 /* MusicIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D861E89EB0B0713F92113EE /* MusicIndexer.swift */; };
+		409179BD52B576D6D435FD06 /* NowPlayingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B633D01EE0A630588055E78D /* NowPlayingManager.swift */; };
+		4F0642BBF49AF0AD060D3949 /* Playlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = D210ACF5D89E9E21A1496719 /* Playlist.swift */; };
+		5CCAA8466F69FB84BF8B02A6 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347E6294D599CCE0B3003D2E /* SharedComponents.swift */; };
+		5DB383E665EE8EAE33D78E9C /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F130079612D4D04F3BDAF75 /* LibraryStore.swift */; };
+		75DC9743887154D3D3823A75 /* Track.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC1E5260F8BCC82F22321CD /* Track.swift */; };
+		77B3E1181A2A2CBFAD277C5E /* SmartPlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE503899DE0AC71DEE6E6B7 /* SmartPlayView.swift */; };
+		7F8EEECCAE52592D4BBAF6D1 /* BookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BA0C5DAF97A47E057019501 /* BookmarkStore.swift */; };
+		8E0DD1135723468147BBB31D /* PlaylistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4DEE2EB2331B3F5BB20CB2 /* PlaylistsView.swift */; };
+		9546DB969B9FE4BEBDBF9F76 /* FoldersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E35D430429E1AB1C5D29D971 /* FoldersView.swift */; };
+		A10BD1CC54DC77E7DF551BA6 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CA5D219A5FF2CBA19A0E003 /* LibraryView.swift */; };
+		C7F097C03E3F811A8FFD64F6 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F01297D60CC5B6C050170B45 /* Preview Assets.xcassets */; };
+		CE1BF955311C8DB60D692FE8 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38FE23F9FF831246E93D46D0 /* NowPlayingView.swift */; };
+		D14CC8746BAA04AFF959DFB5 /* MetadataExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F53B7620084258E7F659C7D7 /* MetadataExtractor.swift */; };
+		DA3451E853523F3F3794A302 /* ArtistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21D6E4A738A357E6A860D0E0 /* ArtistsView.swift */; };
+		DAC622E13BE984A57D2E9C86 /* HarmonIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA4029B61958E1D8F6162CCA /* HarmonIQApp.swift */; };
+		DCF4418A459E115EF770E6D9 /* AudioPlayerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */; };
+		E1D2A557F273963F3ABFCFC5 /* AllTracksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0243B50E58BF70DF26D99D0 /* AllTracksView.swift */; };
+		F01E667FD20EFB46CB5AF202 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32550B9D7779BCA0DDA5827D /* SearchView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		21D6E4A738A357E6A860D0E0 /* ArtistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtistsView.swift; sourceTree = "<group>"; };
+		32550B9D7779BCA0DDA5827D /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
+		347E6294D599CCE0B3003D2E /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
+		38FE23F9FF831246E93D46D0 /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
+		3B4DEE2EB2331B3F5BB20CB2 /* PlaylistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistsView.swift; sourceTree = "<group>"; };
+		3D6EA2A86E18C3306B3A4BFC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		4D55B677D3210BEAEDFEA0C5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		6E48BCF53895F042489D6F8B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		8CA5D219A5FF2CBA19A0E003 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerManager.swift; sourceTree = "<group>"; };
+		9BA0C5DAF97A47E057019501 /* BookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkStore.swift; sourceTree = "<group>"; };
+		9D861E89EB0B0713F92113EE /* MusicIndexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicIndexer.swift; sourceTree = "<group>"; };
+		9F130079612D4D04F3BDAF75 /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
+		A31A65F1BCE09BD374018CC4 /* SmartPlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlay.swift; sourceTree = "<group>"; };
+		AA4029B61958E1D8F6162CCA /* HarmonIQApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonIQApp.swift; sourceTree = "<group>"; };
+		AF43538DAF9F07E1F7428FE1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B633D01EE0A630588055E78D /* NowPlayingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingManager.swift; sourceTree = "<group>"; };
+		BAE503899DE0AC71DEE6E6B7 /* SmartPlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlayView.swift; sourceTree = "<group>"; };
+		C20AD805166CAC672F2833BC /* HarmonIQ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HarmonIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C4D685B9A89C2B6EDCCCB4AB /* AlbumsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumsView.swift; sourceTree = "<group>"; };
+		D0243B50E58BF70DF26D99D0 /* AllTracksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllTracksView.swift; sourceTree = "<group>"; };
+		D210ACF5D89E9E21A1496719 /* Playlist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playlist.swift; sourceTree = "<group>"; };
+		DCC1E5260F8BCC82F22321CD /* Track.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Track.swift; sourceTree = "<group>"; };
+		E35D430429E1AB1C5D29D971 /* FoldersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldersView.swift; sourceTree = "<group>"; };
+		F01297D60CC5B6C050170B45 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		F53B7620084258E7F659C7D7 /* MetadataExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataExtractor.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		45559C604578B47631409FD8 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				D210ACF5D89E9E21A1496719 /* Playlist.swift */,
+				DCC1E5260F8BCC82F22321CD /* Track.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		562B9DDB1FC012BBB793F975 /* Indexer */ = {
+			isa = PBXGroup;
+			children = (
+				F53B7620084258E7F659C7D7 /* MetadataExtractor.swift */,
+				9D861E89EB0B0713F92113EE /* MusicIndexer.swift */,
+			);
+			path = Indexer;
+			sourceTree = "<group>";
+		};
+		619F06FDDA0CD190BCFD40C0 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				7656DA2359AD617623ABE7E7 /* Preview Content */,
+				4D55B677D3210BEAEDFEA0C5 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		677A0BB1CDB8BB423F8BA7E6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C20AD805166CAC672F2833BC /* HarmonIQ.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7656DA2359AD617623ABE7E7 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				F01297D60CC5B6C050170B45 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		78C0FBC76EAEEFBCCF68B6C8 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C4D685B9A89C2B6EDCCCB4AB /* AlbumsView.swift */,
+				D0243B50E58BF70DF26D99D0 /* AllTracksView.swift */,
+				21D6E4A738A357E6A860D0E0 /* ArtistsView.swift */,
+				3D6EA2A86E18C3306B3A4BFC /* ContentView.swift */,
+				E35D430429E1AB1C5D29D971 /* FoldersView.swift */,
+				8CA5D219A5FF2CBA19A0E003 /* LibraryView.swift */,
+				38FE23F9FF831246E93D46D0 /* NowPlayingView.swift */,
+				3B4DEE2EB2331B3F5BB20CB2 /* PlaylistsView.swift */,
+				32550B9D7779BCA0DDA5827D /* SearchView.swift */,
+				AF43538DAF9F07E1F7428FE1 /* SettingsView.swift */,
+				347E6294D599CCE0B3003D2E /* SharedComponents.swift */,
+				BAE503899DE0AC71DEE6E6B7 /* SmartPlayView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7AAB7C6ECEE9D613FC0984C2 /* HarmonIQ */ = {
+			isa = PBXGroup;
+			children = (
+				562B9DDB1FC012BBB793F975 /* Indexer */,
+				45559C604578B47631409FD8 /* Models */,
+				D28E41CA4EC4610E249F46F4 /* Persistence */,
+				8B9672760105FAA96F2576E3 /* Player */,
+				619F06FDDA0CD190BCFD40C0 /* Resources */,
+				78C0FBC76EAEEFBCCF68B6C8 /* Views */,
+				AA4029B61958E1D8F6162CCA /* HarmonIQApp.swift */,
+				6E48BCF53895F042489D6F8B /* Info.plist */,
+			);
+			path = HarmonIQ;
+			sourceTree = "<group>";
+		};
+		8B9672760105FAA96F2576E3 /* Player */ = {
+			isa = PBXGroup;
+			children = (
+				978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */,
+				B633D01EE0A630588055E78D /* NowPlayingManager.swift */,
+				A31A65F1BCE09BD374018CC4 /* SmartPlay.swift */,
+			);
+			path = Player;
+			sourceTree = "<group>";
+		};
+		D28E41CA4EC4610E249F46F4 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				9BA0C5DAF97A47E057019501 /* BookmarkStore.swift */,
+				9F130079612D4D04F3BDAF75 /* LibraryStore.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		F5EC0A912B27BB293C13F285 = {
+			isa = PBXGroup;
+			children = (
+				7AAB7C6ECEE9D613FC0984C2 /* HarmonIQ */,
+				677A0BB1CDB8BB423F8BA7E6 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		997BB83076AD67261C4AB37C /* HarmonIQ */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 935DC4696FF0A19FAC1304A8 /* Build configuration list for PBXNativeTarget "HarmonIQ" */;
+			buildPhases = (
+				B086249171BDEA708B022895 /* Sources */,
+				1BD17726AF9A8E1BBBA5EFA5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HarmonIQ;
+			packageProductDependencies = (
+			);
+			productName = HarmonIQ;
+			productReference = C20AD805166CAC672F2833BC /* HarmonIQ.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		27EC6F01F1FD7FF01CCCB4F0 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2640;
+				TargetAttributes = {
+					997BB83076AD67261C4AB37C = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 21D68879D6F1C19017187B3A /* Build configuration list for PBXProject "HarmonIQ" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = F5EC0A912B27BB293C13F285;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 677A0BB1CDB8BB423F8BA7E6 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				997BB83076AD67261C4AB37C /* HarmonIQ */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1BD17726AF9A8E1BBBA5EFA5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0875DAB5569B83DC801CA7B8 /* Assets.xcassets in Resources */,
+				C7F097C03E3F811A8FFD64F6 /* Preview Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B086249171BDEA708B022895 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0323B3047D47591B359097DF /* AlbumsView.swift in Sources */,
+				E1D2A557F273963F3ABFCFC5 /* AllTracksView.swift in Sources */,
+				DA3451E853523F3F3794A302 /* ArtistsView.swift in Sources */,
+				DCF4418A459E115EF770E6D9 /* AudioPlayerManager.swift in Sources */,
+				7F8EEECCAE52592D4BBAF6D1 /* BookmarkStore.swift in Sources */,
+				3A5F09869BC9EA7F4DC88B35 /* ContentView.swift in Sources */,
+				9546DB969B9FE4BEBDBF9F76 /* FoldersView.swift in Sources */,
+				DAC622E13BE984A57D2E9C86 /* HarmonIQApp.swift in Sources */,
+				5DB383E665EE8EAE33D78E9C /* LibraryStore.swift in Sources */,
+				A10BD1CC54DC77E7DF551BA6 /* LibraryView.swift in Sources */,
+				D14CC8746BAA04AFF959DFB5 /* MetadataExtractor.swift in Sources */,
+				3EE13B1011444446AF4C9346 /* MusicIndexer.swift in Sources */,
+				409179BD52B576D6D435FD06 /* NowPlayingManager.swift in Sources */,
+				CE1BF955311C8DB60D692FE8 /* NowPlayingView.swift in Sources */,
+				4F0642BBF49AF0AD060D3949 /* Playlist.swift in Sources */,
+				8E0DD1135723468147BBB31D /* PlaylistsView.swift in Sources */,
+				F01E667FD20EFB46CB5AF202 /* SearchView.swift in Sources */,
+				01E3439E649010D829D7AB8A /* SettingsView.swift in Sources */,
+				5CCAA8466F69FB84BF8B02A6 /* SharedComponents.swift in Sources */,
+				16F8F24D50C9EB96562011DC /* SmartPlay.swift in Sources */,
+				77B3E1181A2A2CBFAD277C5E /* SmartPlayView.swift in Sources */,
+				75DC9743887154D3D3823A75 /* Track.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		4133B8F7D14E21FD38A869E1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_LANGUAGE = en;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		78A614C0CE6B1D3738CB4F1C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_ASSET_PATHS = "\"HarmonIQ/Resources/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = HarmonIQ/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HarmonID;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = net.leochen.harmoniq;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B00670969DC866A62C1F301D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_ASSET_PATHS = "\"HarmonIQ/Resources/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = HarmonIQ/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HarmonID;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = net.leochen.harmoniq;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C0BBF36798C086BFA8D4C344 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_LANGUAGE = en;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		21D68879D6F1C19017187B3A /* Build configuration list for PBXProject "HarmonIQ" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4133B8F7D14E21FD38A869E1 /* Debug */,
+				C0BBF36798C086BFA8D4C344 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		935DC4696FF0A19FAC1304A8 /* Build configuration list for PBXNativeTarget "HarmonIQ" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				78A614C0CE6B1D3738CB4F1C /* Debug */,
+				B00670969DC866A62C1F301D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 27EC6F01F1FD7FF01CCCB4F0 /* Project object */;
+}
