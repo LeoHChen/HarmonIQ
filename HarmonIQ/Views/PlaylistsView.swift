@@ -4,12 +4,15 @@ struct PlaylistsView: View {
     @EnvironmentObject var library: LibraryStore
     @State private var showCreate = false
     @State private var newName = ""
+    @State private var showNoDriveAlert = false
 
     var body: some View {
         Group {
             if library.playlists.isEmpty {
                 EmptyStateView(title: "No playlists",
-                               message: "Tap + to create your first playlist.",
+                               message: library.roots.isEmpty
+                                ? "Add a music drive in Settings — playlists are stored on the drive."
+                                : "Tap + to create your first playlist.",
                                systemImage: "music.note.list")
             } else {
                 List {
@@ -50,11 +53,18 @@ struct PlaylistsView: View {
             Button("Create") {
                 let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return }
-                _ = library.createPlaylist(name: trimmed)
+                if library.createPlaylist(name: trimmed) == nil {
+                    showNoDriveAlert = true
+                }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Give your playlist a name.")
+            Text("Saved on the drive that owns the tracks.")
+        }
+        .alert("No Drive Connected", isPresented: $showNoDriveAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Playlists live on the drive. Add a music drive in Settings first.")
         }
     }
 

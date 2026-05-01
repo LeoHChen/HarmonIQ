@@ -31,15 +31,15 @@ final class MusicIndexer: ObservableObject {
 
         let bookmark = root.bookmark
         let rootID = root.id
-        let artworkDir = LibraryStore.shared.artworkDirectory
+        let localCacheDir = LibraryStore.shared.artworkDirectory
 
         indexingTask = Task.detached(priority: .userInitiated) {
-            await Self.runIndex(rootID: rootID, bookmark: bookmark, artworkDir: artworkDir)
+            await Self.runIndex(rootID: rootID, bookmark: bookmark, localCacheDir: localCacheDir)
         }
     }
 
     /// Heavy lifting runs off the main actor. UI updates hop back via MainActor.run.
-    private static func runIndex(rootID: UUID, bookmark: Data, artworkDir: URL) async {
+    private static func runIndex(rootID: UUID, bookmark: Data, localCacheDir: URL) async {
         await MainActor.run {
             MusicIndexer.shared.statusMessage = "Resolving access to drive…"
         }
@@ -59,6 +59,18 @@ final class MusicIndexer: ObservableObject {
         let started = resolvedURL.startAccessingSecurityScopedResource()
         defer { if started { resolvedURL.stopAccessingSecurityScopedResource() } }
 
+        // Make sure the on-drive HarmonIQ/ folder exists before we write into it.
+        do {
+            try DriveLibraryStore.ensureFolders(in: resolvedURL)
+        } catch {
+            await MainActor.run {
+                MusicIndexer.shared.isIndexing = false
+                MusicIndexer.shared.statusMessage = "Couldn't create HarmonIQ folder on drive: \(error.localizedDescription)"
+            }
+            return
+        }
+        let driveArtworkDir = DriveLibraryStore.artworkFolder(in: resolvedURL)
+
         await MainActor.run { MusicIndexer.shared.statusMessage = "Scanning folders…" }
         let urls = scanForAudioFiles(under: resolvedURL)
 
@@ -72,13 +84,12 @@ final class MusicIndexer: ObservableObject {
                 MusicIndexer.shared.isIndexing = false
                 MusicIndexer.shared.progress = 1
                 MusicIndexer.shared.statusMessage = "No audio files found on this drive."
-                if var root = LibraryStore.shared.roots.first(where: { $0.id == rootID }) {
-                    root.lastIndexed = Date()
-                    root.trackCount = 0
-                    if stale, let newBookmark = try? resolvedURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
+                LibraryStore.shared.replaceTracks(forRoot: rootID, with: [])
+                if stale, var root = LibraryStore.shared.roots.first(where: { $0.id == rootID }) {
+                    if let newBookmark = try? resolvedURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
                         root.bookmark = newBookmark
+                        LibraryStore.shared.updateRoot(root)
                     }
-                    LibraryStore.shared.updateRoot(root)
                 }
             }
             return
@@ -93,7 +104,7 @@ final class MusicIndexer: ObservableObject {
             if Task.isCancelled { break }
 
             let relComponents = relativePathComponents(of: url, fromRoot: rootPathComponents)
-            let stableID = stableIdentifier(for: relComponents, rootID: rootID)
+            let stableID = stableIdentifier(for: relComponents)
             let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
             let fileSize = (attrs?[.size] as? NSNumber)?.int64Value ?? 0
             let fileFormat = url.pathExtension.lowercased()
@@ -104,13 +115,22 @@ final class MusicIndexer: ObservableObject {
             if let data = metadata.artworkData {
                 let albumKey = "\(metadata.albumArtist ?? metadata.artist ?? "Unknown")|\(metadata.album ?? "Unknown")"
                 let hash = sha1Hex(albumKey)
-                let target = artworkDir.appendingPathComponent("\(hash).jpg")
-                if seenArtworkKeys.contains(hash) || FileManager.default.fileExists(atPath: target.path) {
+                let driveTarget = driveArtworkDir.appendingPathComponent("\(hash).jpg")
+                let localTarget = localCacheDir.appendingPathComponent("\(hash).jpg")
+                if seenArtworkKeys.contains(hash) || FileManager.default.fileExists(atPath: driveTarget.path) {
                     artworkPath = "\(hash).jpg"
                     seenArtworkKeys.insert(hash)
-                } else {
-                    artworkPath = await MetadataExtractor.saveArtworkAsync(data, named: hash, to: artworkDir)
-                    if artworkPath != nil { seenArtworkKeys.insert(hash) }
+                    // Best-effort mirror to local cache if it doesn't already exist there.
+                    if !FileManager.default.fileExists(atPath: localTarget.path) {
+                        try? FileManager.default.copyItem(at: driveTarget, to: localTarget)
+                    }
+                } else if let saved = await MetadataExtractor.saveArtworkAsync(data, named: hash, to: driveArtworkDir) {
+                    artworkPath = saved
+                    seenArtworkKeys.insert(hash)
+                    // Mirror the freshly written jpeg into the local cache.
+                    if !FileManager.default.fileExists(atPath: localTarget.path) {
+                        try? FileManager.default.copyItem(at: driveTarget, to: localTarget)
+                    }
                 }
             }
 
@@ -150,6 +170,7 @@ final class MusicIndexer: ObservableObject {
 
         let collected = tracks
         await MainActor.run {
+            // replaceTracks writes the on-drive library.json itself.
             LibraryStore.shared.replaceTracks(forRoot: rootID, with: collected)
             if stale, var root = LibraryStore.shared.roots.first(where: { $0.id == rootID }) {
                 if let newBookmark = try? resolvedURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
@@ -174,6 +195,8 @@ final class MusicIndexer: ObservableObject {
         }
         for case let url as URL in enumerator {
             if Task.isCancelled { break }
+            // Ignore HarmonIQ's own folder so re-indexes don't pick up artwork as audio.
+            if url.pathComponents.contains(DriveLibraryStore.folderName) { continue }
             let values = try? url.resourceValues(forKeys: Set(keys))
             if values?.isRegularFile == true, MetadataExtractor.isSupported(url) {
                 results.append(url)
@@ -191,9 +214,10 @@ final class MusicIndexer: ObservableObject {
         return [url.lastPathComponent]
     }
 
-    private static func stableIdentifier(for relComponents: [String], rootID: UUID) -> String {
-        let raw = "\(rootID.uuidString)/\(relComponents.joined(separator: "/"))"
-        return sha1Hex(raw)
+    /// Drive-relative track identity. Same drive on a different iPhone produces the
+    /// same stableID — a prerequisite for the on-drive index to be portable.
+    private static func stableIdentifier(for relComponents: [String]) -> String {
+        sha1Hex(relComponents.joined(separator: "/"))
     }
 
     private static func sha1Hex(_ s: String) -> String {

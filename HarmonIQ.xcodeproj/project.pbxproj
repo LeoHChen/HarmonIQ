@@ -29,6 +29,7 @@
 		D2EA2CFCD49E1790A8904149 /* WinampTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A34D43E2D09B36F9A92DF67 /* WinampTheme.swift */; };
 		DA3451E853523F3F3794A302 /* ArtistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21D6E4A738A357E6A860D0E0 /* ArtistsView.swift */; };
 		DAC622E13BE984A57D2E9C86 /* HarmonIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA4029B61958E1D8F6162CCA /* HarmonIQApp.swift */; };
+		DC9F3F437F7B059AD8D253B5 /* DriveLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEFB4D3197C2EC465A4B964C /* DriveLibraryStore.swift */; };
 		DCF4418A459E115EF770E6D9 /* AudioPlayerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */; };
 		E1D2A557F273963F3ABFCFC5 /* AllTracksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0243B50E58BF70DF26D99D0 /* AllTracksView.swift */; };
 		EC778E91CBFC41C1A6A09A2A /* Visualizers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A922A09FC20BC24E0180727 /* Visualizers.swift */; };
@@ -56,7 +57,8 @@
 		AF43538DAF9F07E1F7428FE1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B633D01EE0A630588055E78D /* NowPlayingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingManager.swift; sourceTree = "<group>"; };
 		BAE503899DE0AC71DEE6E6B7 /* SmartPlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlayView.swift; sourceTree = "<group>"; };
-		C20AD805166CAC672F2833BC /* HarmonIQ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HarmonIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BEFB4D3197C2EC465A4B964C /* DriveLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriveLibraryStore.swift; sourceTree = "<group>"; };
+		C20AD805166CAC672F2833BC /* HarmonIQ.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HarmonIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4D685B9A89C2B6EDCCCB4AB /* AlbumsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumsView.swift; sourceTree = "<group>"; };
 		D0243B50E58BF70DF26D99D0 /* AllTracksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllTracksView.swift; sourceTree = "<group>"; };
 		D210ACF5D89E9E21A1496719 /* Playlist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playlist.swift; sourceTree = "<group>"; };
@@ -160,6 +162,7 @@
 			isa = PBXGroup;
 			children = (
 				9BA0C5DAF97A47E057019501 /* BookmarkStore.swift */,
+				BEFB4D3197C2EC465A4B964C /* DriveLibraryStore.swift */,
 				9F130079612D4D04F3BDAF75 /* LibraryStore.swift */,
 			);
 			path = Persistence;
@@ -250,6 +253,7 @@
 				DCF4418A459E115EF770E6D9 /* AudioPlayerManager.swift in Sources */,
 				7F8EEECCAE52592D4BBAF6D1 /* BookmarkStore.swift in Sources */,
 				3A5F09869BC9EA7F4DC88B35 /* ContentView.swift in Sources */,
+				DC9F3F437F7B059AD8D253B5 /* DriveLibraryStore.swift in Sources */,
 				9546DB969B9FE4BEBDBF9F76 /* FoldersView.swift in Sources */,
 				DAC622E13BE984A57D2E9C86 /* HarmonIQApp.swift in Sources */,
 				5DB383E665EE8EAE33D78E9C /* LibraryStore.swift in Sources */,
@@ -348,7 +352,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_ASSET_PATHS = "\"HarmonIQ/Resources/Preview Content\"";
-				DEVELOPMENT_TEAM = 79DDZ6D8WT;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = HarmonIQ/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -370,7 +373,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_ASSET_PATHS = "\"HarmonIQ/Resources/Preview Content\"";
-				DEVELOPMENT_TEAM = 79DDZ6D8WT;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = HarmonIQ/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;

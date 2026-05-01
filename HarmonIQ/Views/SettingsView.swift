@@ -63,7 +63,12 @@ struct SettingsView: View {
             let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
             let root = LibraryRoot(displayName: url.lastPathComponent, bookmark: bookmark)
             library.addRoot(root)
-            indexer.index(root: root)
+            // Only run a fresh scan if the drive doesn't already have an index. A drive
+            // previously indexed (here or on another iPhone) just gets adopted.
+            let alreadyIndexed = library.tracks.contains { $0.rootBookmarkID == root.id }
+            if !alreadyIndexed {
+                indexer.index(root: root)
+            }
         } catch {
             print("[HarmonIQ] Bookmark failed: \(error)")
         }

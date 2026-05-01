@@ -12,14 +12,10 @@ final class LibraryStore: ObservableObject {
 
     private let queue = DispatchQueue(label: "net.leochen.harmoniq.librarystore", qos: .utility)
 
-    private var libraryFileURL: URL {
-        let dir = appSupportDirectory()
-        return dir.appendingPathComponent("library.json")
-    }
+    // MARK: - Local-only persistence (device-specific bookmarks)
 
-    private var playlistsFileURL: URL {
-        let dir = appSupportDirectory()
-        return dir.appendingPathComponent("playlists.json")
+    private var rootsFileURL: URL {
+        appSupportDirectory().appendingPathComponent("roots.json")
     }
 
     private func appSupportDirectory() -> URL {
@@ -32,6 +28,9 @@ final class LibraryStore: ObservableObject {
         return dir
     }
 
+    /// Local mirror of artwork so views and MPNowPlayingInfo can load images without
+    /// holding security-scoped access on the drive. Drive remains the source of truth;
+    /// this directory is rebuilt from the drive on load.
     var artworkDirectory: URL {
         let dir = appSupportDirectory().appendingPathComponent("Artwork", isDirectory: true)
         if !FileManager.default.fileExists(atPath: dir.path) {
@@ -40,42 +39,32 @@ final class LibraryStore: ObservableObject {
         return dir
     }
 
-    // MARK: - Persistence
-
-    private struct LibraryFile: Codable {
-        var roots: [LibraryRoot]
-        var tracks: [Track]
-    }
+    // MARK: - Load / save
 
     func loadFromDisk() async {
-        let libURL = libraryFileURL
-        let plURL = playlistsFileURL
-        let (loadedRoots, loadedTracks, loadedPlaylists): ([LibraryRoot], [Track], [Playlist]) = await withCheckedContinuation { cont in
+        let url = rootsFileURL
+        let loadedRoots: [LibraryRoot] = await withCheckedContinuation { cont in
             queue.async {
                 let decoder = JSONDecoder()
-                var roots: [LibraryRoot] = []
-                var tracks: [Track] = []
-                var playlists: [Playlist] = []
-                if let data = try? Data(contentsOf: libURL),
-                   let lib = try? decoder.decode(LibraryFile.self, from: data) {
-                    roots = lib.roots
-                    tracks = lib.tracks
+                if let data = try? Data(contentsOf: url),
+                   let roots = try? decoder.decode([LibraryRoot].self, from: data) {
+                    cont.resume(returning: roots)
+                } else {
+                    cont.resume(returning: [])
                 }
-                if let data = try? Data(contentsOf: plURL),
-                   let pls = try? decoder.decode([Playlist].self, from: data) {
-                    playlists = pls
-                }
-                cont.resume(returning: (roots, tracks, playlists))
             }
         }
         self.roots = loadedRoots
-        self.tracks = loadedTracks
-        self.playlists = loadedPlaylists
+
+        // For each root, load its on-drive library + playlists.
+        for root in loadedRoots {
+            loadDriveData(for: root)
+        }
     }
 
-    func saveLibrary() {
-        let snapshot = LibraryFile(roots: roots, tracks: tracks)
-        let url = libraryFileURL
+    private func saveRoots() {
+        let snapshot = roots
+        let url = rootsFileURL
         queue.async {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -85,15 +74,64 @@ final class LibraryStore: ObservableObject {
         }
     }
 
-    func savePlaylists() {
-        let snapshot = playlists
-        let url = playlistsFileURL
-        queue.async {
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            if let data = try? encoder.encode(snapshot) {
-                try? data.write(to: url, options: .atomic)
+    // MARK: - Drive IO
+
+    /// Resolves a root's bookmark, opens scope, and runs `body` with the URL. Stale
+    /// bookmarks are refreshed and persisted before returning.
+    @discardableResult
+    private func withDriveAccess<T>(_ root: LibraryRoot, _ body: (URL) throws -> T) -> T? {
+        var stale = false
+        guard let url = try? URL(resolvingBookmarkData: root.bookmark, options: [], relativeTo: nil, bookmarkDataIsStale: &stale) else {
+            print("[HarmonIQ] Drive offline or bookmark resolve failed: \(root.displayName)")
+            return nil
+        }
+        let started = url.startAccessingSecurityScopedResource()
+        defer { if started { url.stopAccessingSecurityScopedResource() } }
+
+        if stale, let refreshed = try? url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
+            if let idx = roots.firstIndex(where: { $0.id == root.id }) {
+                roots[idx].bookmark = refreshed
+                saveRoots()
             }
+        }
+
+        do {
+            return try body(url)
+        } catch {
+            print("[HarmonIQ] Drive IO failed for \(root.displayName): \(error)")
+            return nil
+        }
+    }
+
+    /// Loads tracks + playlists from the drive's HarmonIQ folder into the in-memory
+    /// state and mirrors artwork into the local cache. No-op if the drive is offline
+    /// or has no HarmonIQ folder yet.
+    private func loadDriveData(for root: LibraryRoot) {
+        let cacheDir = artworkDirectory
+        let result = withDriveAccess(root) { driveURL -> (DriveLibraryStore.DriveLibraryFile?, DriveLibraryStore.DrivePlaylistsFile?) in
+            let lib = DriveLibraryStore.loadLibrary(driveRoot: driveURL)
+            let pls = DriveLibraryStore.loadPlaylists(driveRoot: driveURL)
+            DriveLibraryStore.mirrorArtworkToLocalCache(driveRoot: driveURL, localCache: cacheDir)
+            return (lib, pls)
+        }
+        guard let (lib, pls) = result else { return }
+
+        if let lib = lib {
+            let mapped = lib.tracks.map { DriveLibraryStore.toTrack($0, rootBookmarkID: root.id) }
+            mergeTracks(forRoot: root.id, with: mapped)
+        }
+        if let pls = pls {
+            let mapped = pls.playlists.map { DriveLibraryStore.toPlaylist($0, rootBookmarkID: root.id) }
+            mergePlaylists(forRoot: root.id, with: mapped)
+        }
+    }
+
+    private func writePlaylistsToDrive(rootID: UUID) {
+        guard let root = roots.first(where: { $0.id == rootID }) else { return }
+        let owned = playlists.filter { $0.rootBookmarkID == rootID }
+        let file = DriveLibraryStore.DrivePlaylistsFile(version: 1, playlists: owned.map { DriveLibraryStore.fromPlaylist($0) })
+        withDriveAccess(root) { driveURL in
+            try DriveLibraryStore.writePlaylists(file, driveRoot: driveURL)
         }
     }
 
@@ -105,36 +143,56 @@ final class LibraryStore: ObservableObject {
         } else {
             roots.append(root)
         }
-        saveLibrary()
+        saveRoots()
+        loadDriveData(for: root)
     }
 
     func updateRoot(_ root: LibraryRoot) {
         guard let idx = roots.firstIndex(where: { $0.id == root.id }) else { return }
         roots[idx] = root
-        saveLibrary()
+        saveRoots()
     }
 
     func removeRoot(_ root: LibraryRoot) {
         roots.removeAll { $0.id == root.id }
+        // Drop in-memory tracks/playlists belonging to this drive. The on-drive files
+        // stay; re-adding the same drive will pick them up again.
         tracks.removeAll { $0.rootBookmarkID == root.id }
-        saveLibrary()
+        playlists.removeAll { $0.rootBookmarkID == root.id }
+        saveRoots()
     }
 
     // MARK: - Tracks
 
+    /// Replace tracks for a root in memory AND write them to the drive's library.json.
+    /// Called by the indexer after a fresh scan.
     func replaceTracks(forRoot rootID: UUID, with newTracks: [Track]) {
-        var preserved = tracks.filter { $0.rootBookmarkID != rootID }
-        preserved.append(contentsOf: newTracks)
-        preserved.sort { lhs, rhs in
-            let l = lhs.relativePath.joined(separator: "/").localizedStandardCompare(rhs.relativePath.joined(separator: "/"))
-            return l == .orderedAscending
-        }
-        self.tracks = preserved
+        mergeTracks(forRoot: rootID, with: newTracks)
         if let idx = roots.firstIndex(where: { $0.id == rootID }) {
             roots[idx].lastIndexed = Date()
             roots[idx].trackCount = newTracks.count
+            saveRoots()
         }
-        saveLibrary()
+        guard let root = roots.first(where: { $0.id == rootID }) else { return }
+        let file = DriveLibraryStore.DriveLibraryFile(version: 1, tracks: newTracks.map { DriveLibraryStore.fromTrack($0) })
+        withDriveAccess(root) { driveURL in
+            try DriveLibraryStore.writeLibrary(file, driveRoot: driveURL)
+        }
+    }
+
+    private func mergeTracks(forRoot rootID: UUID, with newTracks: [Track]) {
+        var preserved = tracks.filter { $0.rootBookmarkID != rootID }
+        preserved.append(contentsOf: newTracks)
+        preserved.sort { lhs, rhs in
+            lhs.relativePath.joined(separator: "/").localizedStandardCompare(rhs.relativePath.joined(separator: "/")) == .orderedAscending
+        }
+        self.tracks = preserved
+    }
+
+    private func mergePlaylists(forRoot rootID: UUID, with newPlaylists: [Playlist]) {
+        var preserved = playlists.filter { $0.rootBookmarkID != rootID }
+        preserved.append(contentsOf: newPlaylists)
+        self.playlists = preserved
     }
 
     func track(withID id: String) -> Track? {
@@ -143,10 +201,25 @@ final class LibraryStore: ObservableObject {
 
     // MARK: - Playlists
 
-    func createPlaylist(name: String) -> Playlist {
-        let p = Playlist(name: name)
+    enum PlaylistError: Error {
+        case noDrives
+    }
+
+    /// Creates a playlist owned by the given drive (or the first drive if unspecified).
+    /// Returns nil if there are no drives — playlists are stored on a drive.
+    @discardableResult
+    func createPlaylist(name: String, on rootID: UUID? = nil) -> Playlist? {
+        let target: UUID
+        if let rootID = rootID, roots.contains(where: { $0.id == rootID }) {
+            target = rootID
+        } else if let first = roots.first?.id {
+            target = first
+        } else {
+            return nil
+        }
+        let p = Playlist(name: name, rootBookmarkID: target)
         playlists.append(p)
-        savePlaylists()
+        writePlaylistsToDrive(rootID: target)
         return p
     }
 
@@ -154,12 +227,13 @@ final class LibraryStore: ObservableObject {
         guard let idx = playlists.firstIndex(where: { $0.id == playlist.id }) else { return }
         playlists[idx].name = name
         playlists[idx].updatedAt = Date()
-        savePlaylists()
+        writePlaylistsToDrive(rootID: playlists[idx].rootBookmarkID)
     }
 
     func deletePlaylist(_ playlist: Playlist) {
+        guard let owner = playlists.first(where: { $0.id == playlist.id })?.rootBookmarkID else { return }
         playlists.removeAll { $0.id == playlist.id }
-        savePlaylists()
+        writePlaylistsToDrive(rootID: owner)
     }
 
     func addTracks(_ trackIDs: [String], to playlist: Playlist) {
@@ -168,21 +242,21 @@ final class LibraryStore: ObservableObject {
             playlists[idx].trackIDs.append(tid)
         }
         playlists[idx].updatedAt = Date()
-        savePlaylists()
+        writePlaylistsToDrive(rootID: playlists[idx].rootBookmarkID)
     }
 
     func removeTrack(_ trackID: String, from playlist: Playlist) {
         guard let idx = playlists.firstIndex(where: { $0.id == playlist.id }) else { return }
         playlists[idx].trackIDs.removeAll { $0 == trackID }
         playlists[idx].updatedAt = Date()
-        savePlaylists()
+        writePlaylistsToDrive(rootID: playlists[idx].rootBookmarkID)
     }
 
     func reorderTracks(in playlist: Playlist, from source: IndexSet, to destination: Int) {
         guard let idx = playlists.firstIndex(where: { $0.id == playlist.id }) else { return }
         playlists[idx].trackIDs.move(fromOffsets: source, toOffset: destination)
         playlists[idx].updatedAt = Date()
-        savePlaylists()
+        writePlaylistsToDrive(rootID: playlists[idx].rootBookmarkID)
     }
 
     func tracks(for playlist: Playlist) -> [Track] {
