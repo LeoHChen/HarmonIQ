@@ -186,6 +186,8 @@ struct NowPlayingView: View {
             SkinPickerSheet()
                 .environmentObject(skinManager)
         }
+        .onAppear  { player.setVisualizerActive(true)  }
+        .onDisappear { player.setVisualizerActive(false) }
     }
 
     private var repeatIconName: String {

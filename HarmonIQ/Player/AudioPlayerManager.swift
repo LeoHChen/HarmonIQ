@@ -2,6 +2,7 @@ import Foundation
 import AVFoundation
 import Combine
 import SwiftUI
+import UIKit
 
 enum RepeatMode: String, Codable, CaseIterable {
     case off
@@ -62,9 +63,28 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     private var playOrder: [Int] = [] // indexes into queue
     private var orderPosition: Int = 0
 
+    // Whether the now-playing sheet is open and the visualizer is visible.
+    // When false the display link runs at 2 Hz (time-only) and metering is skipped.
+    private var visualizerActive = false
+    // Timestamp of last @Published currentTime write — throttled to ~2 Hz.
+    private var lastPublishedTime: CFTimeInterval = 0
+    private var bgObserver: NSObjectProtocol?
+    private var fgObserver: NSObjectProtocol?
+
     override init() {
         super.init()
         setupRemoteCommands()
+        bgObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil, queue: .main) { [weak self] _ in
+                self?.stopDisplayLink()
+        }
+        fgObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil, queue: .main) { [weak self] _ in
+                guard let self, self.isPlaying else { return }
+                self.startDisplayLink()
+        }
     }
 
     // MARK: - Public API
@@ -198,6 +218,14 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         sleepTimer = nil
         sleepTimerEndsAt = nil
         sleepStopAtTrackEnd = false
+    }
+
+    /// Called by the now-playing sheet (skinned or SwiftUI) on appear/disappear.
+    /// Active → 30 Hz display link + metering. Inactive → 2 Hz time-only updates.
+    func setVisualizerActive(_ active: Bool) {
+        visualizerActive = active
+        displayLink?.preferredFramesPerSecond = active ? 30 : 2
+        if !active { levels = .zero }
     }
 
     // MARK: - Internals
@@ -345,8 +373,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     private func startDisplayLink() {
         stopDisplayLink()
         let link = CADisplayLink(target: self, selector: #selector(tick))
-        // 30Hz so the visualizer feels alive without burning the GPU on every refresh.
-        link.preferredFramesPerSecond = 30
+        link.preferredFramesPerSecond = visualizerActive ? 30 : 2
         link.add(to: .main, forMode: .common)
         displayLink = link
     }
@@ -358,11 +385,19 @@ final class AudioPlayerManager: NSObject, ObservableObject {
 
     @objc private func tick() {
         guard let player = player else { return }
-        currentTime = player.currentTime
+        let raw = player.currentTime
 
-        if player.isMeteringEnabled {
+        // Throttle @Published currentTime to ~2 Hz to avoid 30 Hz SwiftUI re-renders
+        // across every label, scrubber, and time display in the hierarchy.
+        let now = CACurrentMediaTime()
+        if now - lastPublishedTime >= 0.45 {
+            currentTime = raw
+            lastPublishedTime = now
+        }
+
+        // Metering is only needed when the visualizer is on screen.
+        if visualizerActive && player.isMeteringEnabled {
             player.updateMeters()
-            // Average across channels, convert dB to 0...1.
             var avg: Float = 0
             var peak: Float = 0
             let channels = max(1, player.numberOfChannels)
@@ -374,7 +409,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             levels = SIMD2<Float>(avg / n, peak / n)
         }
 
-        NowPlayingManager.shared.updateElapsed(currentTime, isPlaying: player.isPlaying)
+        NowPlayingManager.shared.updateElapsed(raw, isPlaying: player.isPlaying)
     }
 
     /// AVAudioPlayer reports power in dB (–160 silent, 0 max). Map to 0...1 with a soft floor.
