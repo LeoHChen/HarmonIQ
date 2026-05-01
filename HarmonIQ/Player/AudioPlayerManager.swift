@@ -20,6 +20,9 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     @Published var currentTime: TimeInterval = 0
     @Published private(set) var duration: TimeInterval = 0
 
+    /// Live audio levels in 0...1 (linear). [0]=avg, [1]=peak. Updated ~30Hz while playing.
+    @Published private(set) var levels: SIMD2<Float> = .zero
+
     @Published var isShuffleEnabled: Bool = false {
         didSet { rebuildPlayOrderIfNeeded() }
     }
@@ -185,6 +188,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
 
             let avPlayer = try AVAudioPlayer(contentsOf: fileURL)
             avPlayer.delegate = self
+            avPlayer.isMeteringEnabled = true
             avPlayer.prepareToPlay()
             self.player = avPlayer
             self.duration = avPlayer.duration > 0 ? avPlayer.duration : track.duration
@@ -248,7 +252,8 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     private func startDisplayLink() {
         stopDisplayLink()
         let link = CADisplayLink(target: self, selector: #selector(tick))
-        link.preferredFramesPerSecond = 4
+        // 30Hz so the visualizer feels alive without burning the GPU on every refresh.
+        link.preferredFramesPerSecond = 30
         link.add(to: .main, forMode: .common)
         displayLink = link
     }
@@ -261,7 +266,30 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     @objc private func tick() {
         guard let player = player else { return }
         currentTime = player.currentTime
+
+        if player.isMeteringEnabled {
+            player.updateMeters()
+            // Average across channels, convert dB to 0...1.
+            var avg: Float = 0
+            var peak: Float = 0
+            let channels = max(1, player.numberOfChannels)
+            for ch in 0..<channels {
+                avg += dbToUnit(player.averagePower(forChannel: ch))
+                peak += dbToUnit(player.peakPower(forChannel: ch))
+            }
+            let n = Float(channels)
+            levels = SIMD2<Float>(avg / n, peak / n)
+        }
+
         NowPlayingManager.shared.updateElapsed(currentTime, isPlaying: player.isPlaying)
+    }
+
+    /// AVAudioPlayer reports power in dB (–160 silent, 0 max). Map to 0...1 with a soft floor.
+    private func dbToUnit(_ db: Float) -> Float {
+        let floor: Float = -55
+        if db < floor { return 0 }
+        if db >= 0 { return 1 }
+        return (db - floor) / -floor
     }
 
     // MARK: - Remote commands

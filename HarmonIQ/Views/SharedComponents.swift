@@ -14,11 +14,11 @@ struct ArtworkView: View {
                     .aspectRatio(contentMode: .fill)
             } else {
                 ZStack {
-                    LinearGradient(colors: [.purple.opacity(0.6), .blue.opacity(0.6)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                    WinampTheme.panelGradient
                     Image(systemName: "music.note")
                         .font(.system(size: size * 0.45, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.85))
+                        .foregroundStyle(WinampTheme.lcdGlow.opacity(0.7))
+                        .shadow(color: WinampTheme.lcdGlow.opacity(0.4), radius: 2)
                 }
             }
         }
@@ -42,28 +42,38 @@ struct TrackRow: View {
     var body: some View {
         HStack(spacing: 12) {
             if showArtwork {
-                ArtworkView(track: track, size: 44, cornerRadius: 6)
+                ArtworkView(track: track, size: 40, cornerRadius: 3)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 3)
+                            .strokeBorder(WinampTheme.bevelLight.opacity(0.35), lineWidth: 1)
+                    )
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(track.displayTitle)
-                    .font(.body)
-                    .foregroundStyle(isCurrent ? Color.accentColor : Color.primary)
+                Text(track.displayTitle.uppercased())
+                    .font(WinampTheme.lcdFont(size: 13))
+                    .foregroundStyle(isCurrent ? WinampTheme.lcdGlow : Color(red: 0.85, green: 0.92, blue: 0.85))
                     .lineLimit(1)
                 HStack(spacing: 4) {
                     if showAlbum {
-                        Text(track.displayAlbum).lineLimit(1)
+                        Text(track.displayAlbum.uppercased()).lineLimit(1)
                         Text("·")
                     }
-                    Text(track.displayArtist).lineLimit(1)
+                    Text(track.displayArtist.uppercased()).lineLimit(1)
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(WinampTheme.lcdFont(size: 10))
+                .foregroundStyle(WinampTheme.lcdDim)
             }
             Spacer()
             Text(formatDuration(track.duration))
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .font(WinampTheme.lcdFont(size: 11))
+                .foregroundStyle(isCurrent ? WinampTheme.lcdGlow : WinampTheme.lcdDim)
         }
+        .padding(.vertical, 2)
+        .listRowBackground(
+            isCurrent
+                ? WinampTheme.lcdGlow.opacity(0.08)
+                : Color.white.opacity(0.02)
+        )
         .contentShape(Rectangle())
     }
 
@@ -92,16 +102,19 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: systemImage)
-                .font(.system(size: 56, weight: .light))
-                .foregroundStyle(.secondary)
-            Text(title)
-                .font(.title3.weight(.semibold))
+                .font(.system(size: 48, weight: .regular))
+                .foregroundStyle(WinampTheme.lcdGlow.opacity(0.7))
+                .shadow(color: WinampTheme.lcdGlow.opacity(0.4), radius: 3)
+            Text(title.uppercased())
+                .font(WinampTheme.lcdFont(size: 14))
+                .foregroundStyle(WinampTheme.lcdGlow)
             Text(message)
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(WinampTheme.lcdFont(size: 11))
+                .foregroundStyle(WinampTheme.lcdDim)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
         }
+        .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

@@ -6,90 +6,141 @@ struct NowPlayingView: View {
     @State private var seekingValue: Double?
 
     var body: some View {
-        VStack(spacing: 24) {
-            Capsule()
-                .fill(Color.secondary.opacity(0.3))
-                .frame(width: 40, height: 5)
-                .padding(.top, 8)
+        ZStack {
+            WinampTheme.appBackground.ignoresSafeArea()
 
-            ArtworkView(track: player.currentTrack, size: 280, cornerRadius: 18)
-                .shadow(color: .black.opacity(0.25), radius: 20, x: 0, y: 12)
-                .padding(.top, 8)
+            VStack(spacing: 18) {
+                Capsule()
+                    .fill(WinampTheme.bevelLight.opacity(0.25))
+                    .frame(width: 40, height: 5)
+                    .padding(.top, 8)
 
-            VStack(spacing: 6) {
-                Text(player.currentTrack?.displayTitle ?? "—")
-                    .font(.title2.weight(.bold))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                Text(player.currentTrack?.displayArtist ?? "")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                if let album = player.currentTrack?.displayAlbum {
-                    Text(album).font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal)
-
-            VStack(spacing: 4) {
-                Slider(
-                    value: Binding(
-                        get: { seekingValue ?? player.currentTime },
-                        set: { seekingValue = $0 }
-                    ),
-                    in: 0...max(player.duration, 0.01),
-                    onEditingChanged: { editing in
-                        if !editing, let v = seekingValue {
-                            player.seek(to: v)
-                            seekingValue = nil
-                        }
+                // LCD readout strip — title scroll + bitrate-style stats
+                VStack(spacing: 4) {
+                    Text(player.currentTrack?.displayTitle.uppercased() ?? "NO SIGNAL")
+                        .font(WinampTheme.lcdFont(size: 18))
+                        .lineLimit(1)
+                    Text(player.currentTrack?.displayArtist.uppercased() ?? "—")
+                        .font(WinampTheme.lcdFont(size: 12))
+                        .foregroundStyle(WinampTheme.lcdDim)
+                        .lineLimit(1)
+                    HStack {
+                        Text(formatDuration(seekingValue ?? player.currentTime))
+                            .font(WinampTheme.lcdFont(size: 12))
+                        Spacer()
+                        Text("\(formatBitrate(player.currentTrack))  \(formatRate(player.currentTrack))")
+                            .font(WinampTheme.lcdFont(size: 11))
+                            .foregroundStyle(WinampTheme.lcdDim)
+                        Spacer()
+                        Text("-" + formatDuration(max(player.duration - (seekingValue ?? player.currentTime), 0)))
+                            .font(WinampTheme.lcdFont(size: 12))
                     }
-                )
-                .tint(.accentColor)
+                    .padding(.horizontal, 4)
+                    .padding(.top, 2)
+                }
+                .frame(maxWidth: .infinity)
+                .lcdReadout()
+                .padding(.horizontal, 16)
 
-                HStack {
-                    Text(formatDuration(seekingValue ?? player.currentTime))
-                        .font(.caption.monospacedDigit())
+                // Artwork + small now-playing chip
+                HStack(spacing: 12) {
+                    ArtworkView(track: player.currentTrack, size: 96, cornerRadius: 4)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .strokeBorder(WinampTheme.bevelLight.opacity(0.4), lineWidth: 1)
+                        )
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text((player.currentTrack?.displayAlbum ?? "—").uppercased())
+                            .font(WinampTheme.lcdFont(size: 11))
+                            .foregroundStyle(WinampTheme.lcdDim)
+                            .lineLimit(2)
+                        if let year = player.currentTrack?.year {
+                            Text("\(String(year))")
+                                .font(WinampTheme.lcdFont(size: 11))
+                                .foregroundStyle(WinampTheme.lcdDim)
+                        }
+                        Spacer()
+                        Text("CH \(player.queue.isEmpty ? 0 : player.currentIndex + 1)/\(player.queue.count)")
+                            .font(WinampTheme.lcdFont(size: 11))
+                            .foregroundStyle(WinampTheme.lcdGlow)
+                    }
                     Spacer()
-                    Text("-" + formatDuration(max(player.duration - (seekingValue ?? player.currentTime), 0)))
-                        .font(.caption.monospacedDigit())
                 }
-                .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 24)
+                .bevelPanel()
+                .padding(.horizontal, 16)
 
-            HStack(spacing: 36) {
-                Button { player.toggleShuffle() } label: {
-                    Image(systemName: "shuffle")
-                        .font(.title3)
-                        .foregroundStyle(player.isShuffleEnabled ? Color.accentColor : Color.secondary)
+                // Visualizer panel — fills the rest of the vertical space
+                VisualizerView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(minHeight: 220)
+                    .padding(.horizontal, 16)
+
+                // Seek bar
+                VStack(spacing: 4) {
+                    Slider(
+                        value: Binding(
+                            get: { seekingValue ?? player.currentTime },
+                            set: { seekingValue = $0 }
+                        ),
+                        in: 0...max(player.duration, 0.01),
+                        onEditingChanged: { editing in
+                            if !editing, let v = seekingValue {
+                                player.seek(to: v)
+                                seekingValue = nil
+                            }
+                        }
+                    )
+                    .tint(WinampTheme.lcdGlow)
                 }
-                Button { player.previous() } label: {
-                    Image(systemName: "backward.fill").font(.title)
+                .padding(10)
+                .bevelPanel()
+                .padding(.horizontal, 16)
+
+                // Transport controls
+                HStack(spacing: 14) {
+                    Button { player.toggleShuffle() } label: {
+                        Image(systemName: "shuffle")
+                            .font(.title3)
+                    }
+                    .chromeButton(pressed: player.isShuffleEnabled)
+
+                    Button { player.previous() } label: {
+                        Image(systemName: "backward.fill").font(.title3)
+                    }
+                    .chromeButton()
+
+                    Button { player.togglePlayPause() } label: {
+                        Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.title)
+                            .frame(width: 44, height: 30)
+                    }
+                    .chromeButton()
+
+                    Button { player.next() } label: {
+                        Image(systemName: "forward.fill").font(.title3)
+                    }
+                    .chromeButton()
+
+                    Button { player.cycleRepeatMode() } label: {
+                        Image(systemName: repeatIconName)
+                            .font(.title3)
+                    }
+                    .chromeButton(pressed: player.repeatMode != .off)
                 }
-                Button { player.togglePlayPause() } label: {
-                    Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 72))
-                }
-                Button { player.next() } label: {
-                    Image(systemName: "forward.fill").font(.title)
-                }
-                Button { player.cycleRepeatMode() } label: {
-                    Image(systemName: repeatIconName)
-                        .font(.title3)
-                        .foregroundStyle(player.repeatMode == .off ? Color.secondary : Color.accentColor)
+                .padding(.top, 4)
+
+                if let mode = player.activeSmartMode {
+                    HStack(spacing: 6) {
+                        Image(systemName: mode.systemImage).font(.caption)
+                        Text("SMART PLAY · \(mode.title.uppercased())")
+                            .font(WinampTheme.lcdFont(size: 11))
+                    }
+                    .lcdReadout(corner: 3)
+                    .padding(.bottom, 8)
                 }
             }
-            .foregroundStyle(.primary)
-            .padding(.top, 8)
-
-            Spacer()
+            .padding(.bottom, 24)
         }
-        .padding(.horizontal)
-        .background(
-            LinearGradient(colors: [Color(.systemBackground), Color.accentColor.opacity(0.08)],
-                           startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
-        )
     }
 
     private var repeatIconName: String {
@@ -99,29 +150,64 @@ struct NowPlayingView: View {
         case .one: return "repeat.1"
         }
     }
+
+    private func formatBitrate(_ track: Track?) -> String {
+        guard let track = track, track.fileSize > 0, track.duration > 0 else { return "---kbps" }
+        let kbps = Int((Double(track.fileSize) * 8 / 1000) / track.duration)
+        return "\(kbps)kbps"
+    }
+
+    private func formatRate(_ track: Track?) -> String {
+        guard let format = track?.fileFormat else { return "" }
+        return format.uppercased()
+    }
 }
 
 struct MiniPlayerView: View {
     @EnvironmentObject var player: AudioPlayerManager
 
     var body: some View {
-        HStack(spacing: 12) {
-            ArtworkView(track: player.currentTrack, size: 44, cornerRadius: 6)
+        HStack(spacing: 10) {
+            ArtworkView(track: player.currentTrack, size: 38, cornerRadius: 3)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 3)
+                        .strokeBorder(WinampTheme.bevelLight.opacity(0.4), lineWidth: 1)
+                )
+
             VStack(alignment: .leading, spacing: 2) {
-                Text(player.currentTrack?.displayTitle ?? "—").font(.subheadline.weight(.semibold)).lineLimit(1)
-                Text(player.currentTrack?.displayArtist ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text(player.currentTrack?.displayTitle.uppercased() ?? "—")
+                    .font(WinampTheme.lcdFont(size: 12))
+                    .foregroundStyle(WinampTheme.lcdGlow)
+                    .lineLimit(1)
+                Text(player.currentTrack?.displayArtist.uppercased() ?? "")
+                    .font(WinampTheme.lcdFont(size: 10))
+                    .foregroundStyle(WinampTheme.lcdDim)
+                    .lineLimit(1)
             }
-            Spacer()
+
+            Spacer(minLength: 6)
+
+            EQVisualizer(isAnimating: player.isPlaying)
+                .frame(width: 44, height: 22)
+
             Button { player.togglePlayPause() } label: {
-                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill").font(.title3)
+                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.body)
             }
+            .chromeButton()
+
             Button { player.next() } label: {
-                Image(systemName: "forward.fill").font(.title3)
+                Image(systemName: "forward.fill")
+                    .font(.body)
             }
+            .chromeButton()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.ultraThinMaterial)
-        .overlay(Rectangle().frame(height: 0.5).foregroundStyle(Color.secondary.opacity(0.3)), alignment: .top)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(WinampTheme.panelGradient)
+        .overlay(Rectangle().frame(height: 1).foregroundStyle(WinampTheme.bevelLight.opacity(0.5)),
+                 alignment: .top)
+        .overlay(Rectangle().frame(height: 1).foregroundStyle(WinampTheme.bevelDark),
+                 alignment: .bottom)
     }
 }

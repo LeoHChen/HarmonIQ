@@ -7,6 +7,8 @@ struct ContentView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            WinampTheme.appBackground
+                .ignoresSafeArea()
             TabView {
                 NavigationStack { LibraryView() }
                     .tabItem { Label("Library", systemImage: "music.note.list") }
@@ -20,6 +22,7 @@ struct ContentView: View {
                 NavigationStack { SettingsView() }
                     .tabItem { Label("Settings", systemImage: "gearshape") }
             }
+            .scrollContentBackground(.hidden)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if player.currentTrack != nil {
                     MiniPlayerView()

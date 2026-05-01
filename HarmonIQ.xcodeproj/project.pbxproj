@@ -26,10 +26,12 @@
 		C7F097C03E3F811A8FFD64F6 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F01297D60CC5B6C050170B45 /* Preview Assets.xcassets */; };
 		CE1BF955311C8DB60D692FE8 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38FE23F9FF831246E93D46D0 /* NowPlayingView.swift */; };
 		D14CC8746BAA04AFF959DFB5 /* MetadataExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F53B7620084258E7F659C7D7 /* MetadataExtractor.swift */; };
+		D2EA2CFCD49E1790A8904149 /* WinampTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A34D43E2D09B36F9A92DF67 /* WinampTheme.swift */; };
 		DA3451E853523F3F3794A302 /* ArtistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21D6E4A738A357E6A860D0E0 /* ArtistsView.swift */; };
 		DAC622E13BE984A57D2E9C86 /* HarmonIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA4029B61958E1D8F6162CCA /* HarmonIQApp.swift */; };
 		DCF4418A459E115EF770E6D9 /* AudioPlayerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */; };
 		E1D2A557F273963F3ABFCFC5 /* AllTracksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0243B50E58BF70DF26D99D0 /* AllTracksView.swift */; };
+		EC778E91CBFC41C1A6A09A2A /* Visualizers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A922A09FC20BC24E0180727 /* Visualizers.swift */; };
 		F01E667FD20EFB46CB5AF202 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32550B9D7779BCA0DDA5827D /* SearchView.swift */; };
 /* End PBXBuildFile section */
 
@@ -40,7 +42,9 @@
 		38FE23F9FF831246E93D46D0 /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
 		3B4DEE2EB2331B3F5BB20CB2 /* PlaylistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistsView.swift; sourceTree = "<group>"; };
 		3D6EA2A86E18C3306B3A4BFC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		4A34D43E2D09B36F9A92DF67 /* WinampTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinampTheme.swift; sourceTree = "<group>"; };
 		4D55B677D3210BEAEDFEA0C5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		6A922A09FC20BC24E0180727 /* Visualizers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Visualizers.swift; sourceTree = "<group>"; };
 		6E48BCF53895F042489D6F8B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8CA5D219A5FF2CBA19A0E003 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerManager.swift; sourceTree = "<group>"; };
@@ -121,6 +125,8 @@
 				AF43538DAF9F07E1F7428FE1 /* SettingsView.swift */,
 				347E6294D599CCE0B3003D2E /* SharedComponents.swift */,
 				BAE503899DE0AC71DEE6E6B7 /* SmartPlayView.swift */,
+				6A922A09FC20BC24E0180727 /* Visualizers.swift */,
+				4A34D43E2D09B36F9A92DF67 /* WinampTheme.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -195,7 +201,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					997BB83076AD67261C4AB37C = {
 						ProvisioningStyle = Automatic;
@@ -260,6 +266,8 @@
 				16F8F24D50C9EB96562011DC /* SmartPlay.swift in Sources */,
 				77B3E1181A2A2CBFAD277C5E /* SmartPlayView.swift in Sources */,
 				75DC9743887154D3D3823A75 /* Track.swift in Sources */,
+				EC778E91CBFC41C1A6A09A2A /* Visualizers.swift in Sources */,
+				D2EA2CFCD49E1790A8904149 /* WinampTheme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -327,7 +335,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.9;
@@ -341,16 +348,14 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_ASSET_PATHS = "\"HarmonIQ/Resources/Preview Content\"";
+				DEVELOPMENT_TEAM = 79DDZ6D8WT;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = HarmonIQ/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = HarmonID;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = net.leochen.harmoniq;
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -365,16 +370,14 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_ASSET_PATHS = "\"HarmonIQ/Resources/Preview Content\"";
+				DEVELOPMENT_TEAM = 79DDZ6D8WT;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = HarmonIQ/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = HarmonID;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = net.leochen.harmoniq;
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -436,7 +439,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.9;
