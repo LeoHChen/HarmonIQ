@@ -1,37 +1,38 @@
 import SwiftUI
 
-/// Clock icon that opens the sleep-timer menu. Works in both the skinned player
+/// Clock icon that opens the sleep-timer picker. Works in both the skinned player
 /// top bar and the SwiftUI NowPlayingView transport row.
+///
+/// Uses confirmationDialog instead of Menu to avoid the _UIReparentingView crash
+/// that SwiftUI's Menu triggers when it is hosted inside a sheet.
 struct SleepTimerButton: View {
     @EnvironmentObject var player: AudioPlayerManager
+    @State private var showDialog = false
 
     var body: some View {
-        Menu {
-            Button("15 minutes") { player.setSleepTimer(minutes: 15) }
-            Button("30 minutes") { player.setSleepTimer(minutes: 30) }
-            Button("45 minutes") { player.setSleepTimer(minutes: 45) }
-            Button("60 minutes") { player.setSleepTimer(minutes: 60) }
-            Divider()
-            Button("End of current track") { player.setSleepTimerEndOfTrack() }
-            if player.sleepTimerEndsAt != nil || player.sleepStopAtTrackEnd {
-                Divider()
-                Button("Cancel timer", role: .destructive) { player.cancelSleepTimer() }
-            }
+        Button {
+            showDialog = true
         } label: {
-            Image(systemName: timerIconName)
+            Image(systemName: "timer")
                 .font(.title2)
                 .foregroundStyle(isActive ? Color.accentColor : .white.opacity(0.85),
                                  .black.opacity(0.6))
         }
         .accessibilityLabel(isActive ? "Sleep timer active" : "Set sleep timer")
+        .confirmationDialog("Sleep Timer", isPresented: $showDialog, titleVisibility: .visible) {
+            Button("15 minutes") { player.setSleepTimer(minutes: 15) }
+            Button("30 minutes") { player.setSleepTimer(minutes: 30) }
+            Button("45 minutes") { player.setSleepTimer(minutes: 45) }
+            Button("60 minutes") { player.setSleepTimer(minutes: 60) }
+            Button("End of current track") { player.setSleepTimerEndOfTrack() }
+            if isActive {
+                Button("Cancel timer", role: .destructive) { player.cancelSleepTimer() }
+            }
+        }
     }
 
     private var isActive: Bool {
         player.sleepTimerEndsAt != nil || player.sleepStopAtTrackEnd
-    }
-
-    private var timerIconName: String {
-        isActive ? "timer" : "timer"
     }
 }
 
