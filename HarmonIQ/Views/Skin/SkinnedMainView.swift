@@ -121,6 +121,8 @@ struct SkinnedMainView: View {
             SkinPickerSheet()
                 .environmentObject(skinManager)
         }
+        .onAppear  { player.setVisualizerActive(true)  }
+        .onDisappear { player.setVisualizerActive(false) }
     }
 
     // MARK: - Background

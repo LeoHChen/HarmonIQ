@@ -93,14 +93,17 @@ final class VisualizerEngine: ObservableObject {
     /// regions of the band space at different times — gives a believable spectrum from a single value.
     private(set) var bands: [Float] = Array(repeating: 0, count: 24)
     private(set) var bandPeaks: [Float] = Array(repeating: 0, count: 24)
-    /// 128-sample oscilloscope buffer.
-    private(set) var oscilloscope: [Float] = Array(repeating: 0, count: 128)
+    /// 64-sample oscilloscope buffer (halved from 128 — more than enough for the rendered width).
+    private(set) var oscilloscope: [Float] = Array(repeating: 0, count: 64)
     /// Drives the plasma's animated phase.
     private(set) var phase: Double = 0
 
     private var lastDate: Date = .distantPast
     private var frameCount: UInt64 = 0
     private var rng = SystemRandomNumberGenerator()
+
+    // Precomputed t-values for the 24 bands so we don't divide in the hot loop.
+    private static let bandT: [Float] = (0..<24).map { Float($0) / Float(23) }
 
     func advance(date: Date, level: SIMD2<Float>, isPlaying: Bool) {
         let dt = max(0, min(0.1, date.timeIntervalSince(lastDate)))
@@ -111,21 +114,30 @@ final class VisualizerEngine: ObservableObject {
         let peak = level.y
         let energy = max(avg, peak * 0.7)
 
-        // --- Spectrum: imagine 24 bands. Bass leans on avg, treble leans on peak transients.
+        // Early-return on silence: decay existing state cheaply without doing trig.
+        if energy < 0.001 {
+            for i in 0..<bands.count {
+                bands[i] *= 0.88
+                bandPeaks[i] = max(0, bandPeaks[i] - Float(dt) * 0.6)
+            }
+            phase += dt * 0.4
+            return
+        }
+
+        // One scatter draw per frame instead of one per band (24× fewer RNG calls).
+        let scatter = Float.random(in: 0.85...1.15, using: &rng)
+        let phaseShift = Float(frameCount) * 0.02
+
+        // --- Spectrum
         for i in 0..<bands.count {
-            let t = Float(i) / Float(bands.count - 1)
-            // shape of band response — bell curves moving over time
-            let phaseShift = Float(frameCount) * 0.02
+            let t = Self.bandT[i]
             let bell1 = expf(-powf((t - 0.2 + sinf(phaseShift) * 0.05) * 4.5, 2))
             let bell2 = expf(-powf((t - 0.55 + sinf(phaseShift * 1.7) * 0.07) * 4.5, 2))
             let bell3 = expf(-powf((t - 0.85 + cosf(phaseShift * 0.9) * 0.04) * 5.0, 2))
-            let bandEnergy = energy * (1.05 - t * 0.3)        // gentle slope down
-            let scatter = Float.random(in: 0.85...1.15, using: &rng)
+            let bandEnergy = energy * (1.05 - t * 0.3)
             let target = min(1.0, bandEnergy * (bell1 * 1.0 + bell2 * 0.8 + bell3 * 0.6) * scatter)
-            // smooth toward target
             let smoothing: Float = isPlaying ? 0.55 : 0.2
             bands[i] = bands[i] * (1 - smoothing) + target * smoothing
-            // peak markers fall slowly
             if bands[i] > bandPeaks[i] {
                 bandPeaks[i] = bands[i]
             } else {
@@ -133,19 +145,19 @@ final class VisualizerEngine: ObservableObject {
             }
         }
 
-        // --- Oscilloscope: synthesize a wave whose amplitude tracks the level, with noise.
+        // --- Oscilloscope (64 samples)
         let ampl = isPlaying ? max(0.05, energy) : 0.0
         let baseFreq: Float = 6.0 + energy * 18.0
+        let phaseF = Float(frameCount) * 0.18
         for i in 0..<oscilloscope.count {
-            let x = Float(i) / Float(oscilloscope.count) * 2 * .pi
-            let phaseF = Float(frameCount) * 0.18
+            let x = Float(i) / Float(oscilloscope.count - 1) * 2 * .pi
             let wave = sinf(x * baseFreq + phaseF) * 0.65
-                    + sinf(x * baseFreq * 0.5 + phaseF * 0.7) * 0.25
-                    + Float.random(in: -0.08...0.08, using: &rng)
+                     + sinf(x * baseFreq * 0.5 + phaseF * 0.7) * 0.25
+                     + Float.random(in: -0.08...0.08, using: &rng)
             oscilloscope[i] = wave * ampl
         }
 
-        // --- Plasma: just advance time, faster when audio is loud.
+        // --- Plasma: advance time, faster when loud.
         phase += dt * (0.4 + Double(energy) * 2.6)
     }
 }
@@ -183,6 +195,7 @@ private func drawSpectrum(context: GraphicsContext, size: CGSize, engine: Visual
 
     for i in 0..<count {
         let h = CGFloat(bands[i]) * size.height
+        guard h >= 1 else { continue }          // skip sub-pixel bars
         let x = CGFloat(i) * (barW + gap)
         // segmented LED look — break the bar into rows
         let segH: CGFloat = 4
