@@ -2,6 +2,12 @@
 
 A SwiftUI music player for iPhone and iPad, styled after the classic Winamp era. Plays audio files straight off any folder you can mount in Files — including USB drives — and ships its index alongside the music so the same drive works on any device without re-scanning.
 
+## Screenshots
+
+| Sun-Bleached Grooves launch | Winamp-flavored Library |
+|---|---|
+| <img src="docs/screenshots/launch.png" width="270" alt="Launch screen: vinyl disc on sunset gradient"> | <img src="docs/screenshots/library.png" width="270" alt="Library tab: Smart Play, browse, add a music drive"> |
+
 ## Features
 
 - **Drive-portable library.** Tracks, playlists, and artwork live in a `HarmonIQ/` folder on the drive itself. Plug the same drive into another iPhone and your library shows up unchanged.
@@ -93,6 +99,16 @@ See [GitHub Releases](https://github.com/LeoHChen/HarmonIQ/releases) for the ful
 
 ### v0.1
 - Initial release.
+
+## Feedback & feature requests
+
+HarmonIQ is built in the open. **Have an idea, hit a bug, or just miss a feature from your favorite player?** Open an issue — that's the most direct way to land it on the roadmap:
+
+- [🚀 Request a feature](https://github.com/LeoHChen/HarmonIQ/issues/new?labels=enhancement&title=Feature%20request%3A%20)
+- [🐛 Report a bug](https://github.com/LeoHChen/HarmonIQ/issues/new?labels=bug&title=Bug%3A%20)
+- [💬 Browse open issues / vote with 👍](https://github.com/LeoHChen/HarmonIQ/issues)
+
+PRs are welcome too. The project's small, the architecture is documented in [`CLAUDE.md`](CLAUDE.md), and there's a smoke checklist in [`TESTING.md`](TESTING.md) to verify changes before merging.
 
 ## Acknowledgements
 
