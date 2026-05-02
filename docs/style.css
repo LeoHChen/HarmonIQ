@@ -270,6 +270,18 @@ code {
 .muted { font-size: 14px; color: rgba(24,16,24,0.6); }
 .muted a { color: var(--grad-2); }
 
+/* PHILOSOPHY ------------------------------------------------------------- */
+.philosophy strong {
+  color: var(--grad-2);
+  font-family: "Menlo", monospace;
+  font-size: 0.95em;
+  letter-spacing: 0.02em;
+}
+.philosophy em {
+  color: var(--grad-1);
+  font-style: italic;
+}
+
 /* HACK LIST -------------------------------------------------------------- */
 .hack-list {
   list-style: none;
