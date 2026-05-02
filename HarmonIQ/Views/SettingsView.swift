@@ -48,6 +48,11 @@ struct SettingsView: View {
                 } label: {
                     Label("Skins", systemImage: "paintpalette")
                 }
+                NavigationLink {
+                    VisualizerSettingsView()
+                } label: {
+                    Label("Visualizer", systemImage: "waveform")
+                }
             } header: {
                 Text("Appearance")
             }
