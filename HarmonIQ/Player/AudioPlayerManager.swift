@@ -77,13 +77,15 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         bgObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.didEnterBackgroundNotification,
             object: nil, queue: .main) { [weak self] _ in
-                self?.stopDisplayLink()
+                Task { @MainActor [weak self] in self?.stopDisplayLink() }
         }
         fgObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.willEnterForegroundNotification,
             object: nil, queue: .main) { [weak self] _ in
-                guard let self, self.isPlaying else { return }
-                self.startDisplayLink()
+                Task { @MainActor [weak self] in
+                    guard let self, self.isPlaying else { return }
+                    self.startDisplayLink()
+                }
         }
     }
 
