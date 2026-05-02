@@ -8,6 +8,10 @@ A SwiftUI music player for iPhone and iPad, styled after the classic Winamp era.
 |---|---|
 | <img src="docs/screenshots/launch.png" width="270" alt="Launch screen: vinyl disc on sunset gradient"> | <img src="docs/screenshots/library.png" width="270" alt="Library tab: Smart Play, browse, add a music drive"> |
 
+| Smart Play curators | Skinned (Winamp) player |
+|---|---|
+| <img src="docs/screenshots/smartplay.png" width="270" alt="Smart Play screen: Pure Random, Artist Roulette, Genre Journey, Album Walk, Decade Shuffle, Freshly Added"> | <img src="docs/screenshots/skinned-player.png" width="270" alt="Skinned player: Base-2.91 skin with spectrum visualizer, equalizer, and playlist editor"> |
+
 ## Features
 
 - **Drive-portable library.** Tracks, playlists, and artwork live in a `HarmonIQ/` folder on the drive itself. Plug the same drive into another iPhone and your library shows up unchanged.
