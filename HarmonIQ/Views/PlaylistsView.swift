@@ -6,6 +6,12 @@ struct PlaylistsView: View {
     @State private var newName = ""
     @State private var showNoDriveAlert = false
 
+    private var favorites: [Playlist] { library.favoritesPlaylists }
+    private var userPlaylists: [Playlist] { library.playlists.filter { !$0.isFavorites } }
+    private var driveName: [UUID: String] {
+        Dictionary(uniqueKeysWithValues: library.roots.map { ($0.id, $0.displayName) })
+    }
+
     var body: some View {
         Group {
             if library.playlists.isEmpty {
@@ -16,24 +22,56 @@ struct PlaylistsView: View {
                                systemImage: "music.note.list")
             } else {
                 List {
-                    ForEach(library.playlists) { playlist in
-                        NavigationLink {
-                            PlaylistDetailView(playlist: playlist)
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: "music.note.list")
-                                    .font(.title3)
-                                    .foregroundStyle(.tint)
-                                    .frame(width: 36, height: 36)
-                                    .background(.tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(playlist.name)
-                                    Text("\(playlist.trackIDs.count) tracks").font(.caption).foregroundStyle(.secondary)
+                    if !favorites.isEmpty {
+                        Section {
+                            ForEach(favorites) { playlist in
+                                NavigationLink {
+                                    PlaylistDetailView(playlist: playlist)
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "heart.fill")
+                                            .font(.title3)
+                                            .foregroundStyle(.pink)
+                                            .frame(width: 36, height: 36)
+                                            .background(Color.pink.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            // Show drive name only when there's more than one drive,
+                                            // so single-drive setups stay clean.
+                                            if library.roots.count > 1 {
+                                                Text("Favorites · \(driveName[playlist.rootBookmarkID] ?? "")")
+                                            } else {
+                                                Text("Favorites")
+                                            }
+                                            Text("\(playlist.trackIDs.count) tracks").font(.caption).foregroundStyle(.secondary)
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                    .onDelete(perform: delete)
+
+                    if !userPlaylists.isEmpty {
+                        Section {
+                            ForEach(userPlaylists) { playlist in
+                                NavigationLink {
+                                    PlaylistDetailView(playlist: playlist)
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "music.note.list")
+                                            .font(.title3)
+                                            .foregroundStyle(.tint)
+                                            .frame(width: 36, height: 36)
+                                            .background(.tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(playlist.name)
+                                            Text("\(playlist.trackIDs.count) tracks").font(.caption).foregroundStyle(.secondary)
+                                        }
+                                    }
+                                }
+                            }
+                            .onDelete(perform: deleteUserPlaylist)
+                        }
+                    }
                 }
             }
         }
@@ -68,10 +106,10 @@ struct PlaylistsView: View {
         }
     }
 
-    private func delete(at offsets: IndexSet) {
-        for idx in offsets {
-            let playlist = library.playlists[idx]
-            library.deletePlaylist(playlist)
+    private func deleteUserPlaylist(at offsets: IndexSet) {
+        let snapshot = userPlaylists
+        for idx in offsets where snapshot.indices.contains(idx) {
+            library.deletePlaylist(snapshot[idx])
         }
     }
 }
@@ -132,21 +170,25 @@ struct PlaylistDetailView: View {
         .navigationTitle(playlist.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button {
-                        newName = playlist.name
-                        renameSheet = true
+            // Favorites is auto-managed via the heart button on the player —
+            // hide the rename/delete menu to avoid orphaning state.
+            if !playlist.isFavorites {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button {
+                            newName = playlist.name
+                            renameSheet = true
+                        } label: {
+                            Label("Rename", systemImage: "pencil")
+                        }
+                        Button(role: .destructive) {
+                            library.deletePlaylist(playlist)
+                        } label: {
+                            Label("Delete Playlist", systemImage: "trash")
+                        }
                     } label: {
-                        Label("Rename", systemImage: "pencil")
+                        Image(systemName: "ellipsis.circle")
                     }
-                    Button(role: .destructive) {
-                        library.deletePlaylist(playlist)
-                    } label: {
-                        Label("Delete Playlist", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
                 }
             }
         }

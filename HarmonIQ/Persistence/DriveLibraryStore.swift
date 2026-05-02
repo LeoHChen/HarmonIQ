@@ -53,6 +53,10 @@ enum DriveLibraryStore {
         var trackIDs: [String]
         var createdAt: Date
         var updatedAt: Date
+        /// Optional kind tag. `"favorites"` marks the drive's system Favorites
+        /// playlist; nil/missing means a normal user playlist. Optional so
+        /// existing playlists.json files (no `kind` field) decode unchanged.
+        var kind: String?
     }
 
     // MARK: - Paths
@@ -162,6 +166,8 @@ enum DriveLibraryStore {
         )
     }
 
+    static let favoritesKind = "favorites"
+
     static func toPlaylist(_ dp: DrivePlaylist, rootBookmarkID: UUID) -> Playlist {
         Playlist(
             id: dp.id,
@@ -169,7 +175,8 @@ enum DriveLibraryStore {
             trackIDs: dp.trackIDs,
             createdAt: dp.createdAt,
             updatedAt: dp.updatedAt,
-            rootBookmarkID: rootBookmarkID
+            rootBookmarkID: rootBookmarkID,
+            isFavorites: dp.kind == favoritesKind
         )
     }
 
@@ -179,7 +186,8 @@ enum DriveLibraryStore {
             name: p.name,
             trackIDs: p.trackIDs,
             createdAt: p.createdAt,
-            updatedAt: p.updatedAt
+            updatedAt: p.updatedAt,
+            kind: p.isFavorites ? favoritesKind : nil
         )
     }
 

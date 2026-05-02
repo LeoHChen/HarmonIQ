@@ -292,6 +292,49 @@ final class LibraryStore: ObservableObject {
         return playlist.trackIDs.compactMap { map[$0] }
     }
 
+    // MARK: - Favorites
+
+    /// Per-drive system Favorites playlist, if one exists for the given drive.
+    func favoritesPlaylist(forRoot rootID: UUID) -> Playlist? {
+        playlists.first { $0.rootBookmarkID == rootID && $0.isFavorites }
+    }
+
+    /// All Favorites playlists across mounted drives, sorted by drive display name.
+    var favoritesPlaylists: [Playlist] {
+        let favs = playlists.filter { $0.isFavorites }
+        let nameByRoot: [UUID: String] = Dictionary(uniqueKeysWithValues: roots.map { ($0.id, $0.displayName) })
+        return favs.sorted { (nameByRoot[$0.rootBookmarkID] ?? "") .localizedStandardCompare(nameByRoot[$1.rootBookmarkID] ?? "") == .orderedAscending }
+    }
+
+    /// True if `track` belongs to its drive's Favorites playlist.
+    func isFavorite(_ track: Track) -> Bool {
+        guard let fav = favoritesPlaylist(forRoot: track.rootBookmarkID) else { return false }
+        return fav.trackIDs.contains(track.stableID)
+    }
+
+    /// Toggles favorite state for a track. Auto-creates the drive's Favorites
+    /// playlist on first toggle. Returns the new state (true = now favorited).
+    /// No-op (returns false) if the track's drive isn't currently mounted.
+    @discardableResult
+    func toggleFavorite(_ track: Track) -> Bool {
+        let rootID = track.rootBookmarkID
+        guard roots.contains(where: { $0.id == rootID }) else { return false }
+        if let fav = favoritesPlaylist(forRoot: rootID) {
+            if fav.trackIDs.contains(track.stableID) {
+                removeTrack(track.stableID, from: fav)
+                return false
+            } else {
+                addTracks([track.stableID], to: fav)
+                return true
+            }
+        } else {
+            let new = Playlist(name: "Favorites", trackIDs: [track.stableID], rootBookmarkID: rootID, isFavorites: true)
+            playlists.append(new)
+            writePlaylistsToDrive(rootID: rootID)
+            return true
+        }
+    }
+
     // MARK: - Aggregations
 
     var allArtists: [String] {

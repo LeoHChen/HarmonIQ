@@ -7,6 +7,7 @@ import UIKit
 struct SkinnedMainView: View {
     @EnvironmentObject var skinManager: SkinManager
     @EnvironmentObject var player: AudioPlayerManager
+    @EnvironmentObject var library: LibraryStore
     @StateObject private var visEngine = VisualizerEngine()
     @Environment(\.dismiss) private var dismiss
 
@@ -56,6 +57,10 @@ struct SkinnedMainView: View {
                     )
 
                     Spacer()
+
+                    SkinnedFavoriteButton()
+                        .environmentObject(player)
+                        .environmentObject(library)
 
                     SleepTimerButton()
                         .environmentObject(player)
@@ -458,5 +463,29 @@ struct SkinPickerSheet: View {
                 }
             }
         }
+    }
+}
+
+/// Favorite toggle styled to match the skinned player's chrome bar — sits next
+/// to the sleep timer / close button. Mirrors `FavoriteButton` semantics but
+/// uses the chrome bar's white-on-black palette instead of LCD green.
+struct SkinnedFavoriteButton: View {
+    @EnvironmentObject var player: AudioPlayerManager
+    @EnvironmentObject var library: LibraryStore
+
+    var body: some View {
+        let track = player.currentTrack
+        let isFav = track.map { library.isFavorite($0) } ?? false
+        Button {
+            guard let t = track else { return }
+            _ = library.toggleFavorite(t)
+        } label: {
+            Image(systemName: isFav ? "heart.fill" : "heart")
+                .font(.title2)
+                .foregroundStyle(isFav ? Color.pink.opacity(0.95) : .white.opacity(0.85),
+                                 .black.opacity(0.6))
+        }
+        .disabled(track == nil)
+        .accessibilityLabel(isFav ? "Unfavorite track" : "Favorite track")
     }
 }

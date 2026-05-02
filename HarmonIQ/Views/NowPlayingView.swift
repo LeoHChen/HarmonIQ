@@ -3,6 +3,7 @@ import SwiftUI
 struct NowPlayingView: View {
     @EnvironmentObject var player: AudioPlayerManager
     @EnvironmentObject var skinManager: SkinManager
+    @EnvironmentObject var library: LibraryStore
     @Environment(\.dismiss) private var dismiss
     @State private var seekingValue: Double?
     @State private var showSkinPicker = false
@@ -99,6 +100,9 @@ struct NowPlayingView: View {
                             .foregroundStyle(WinampTheme.lcdGlow)
                     }
                     Spacer()
+                    FavoriteButton()
+                        .environmentObject(player)
+                        .environmentObject(library)
                 }
                 .bevelPanel()
                 .padding(.horizontal, 16)
@@ -207,6 +211,30 @@ struct NowPlayingView: View {
     private func formatRate(_ track: Track?) -> String {
         guard let format = track?.fileFormat else { return "" }
         return format.uppercased()
+    }
+}
+
+/// Heart toggle for the currently playing track. Reflects favorite state via
+/// `library.isFavorite(_:)` and writes through `library.toggleFavorite(_:)`,
+/// which auto-creates the drive's Favorites playlist on first toggle.
+struct FavoriteButton: View {
+    @EnvironmentObject var player: AudioPlayerManager
+    @EnvironmentObject var library: LibraryStore
+
+    var body: some View {
+        let track = player.currentTrack
+        let isFav = track.map { library.isFavorite($0) } ?? false
+        Button {
+            guard let t = track else { return }
+            _ = library.toggleFavorite(t)
+        } label: {
+            Image(systemName: isFav ? "heart.fill" : "heart")
+                .font(.title2)
+                .foregroundStyle(isFav ? WinampTheme.lcdGlow : WinampTheme.lcdDim)
+        }
+        .chromeButton(pressed: isFav)
+        .disabled(track == nil)
+        .accessibilityLabel(isFav ? "Unfavorite track" : "Favorite track")
     }
 }
 

@@ -9,19 +9,24 @@ struct Playlist: Identifiable, Hashable {
     /// Which drive owns this playlist. In-memory only — bound when the playlist
     /// is loaded from the drive (or when it is created), never serialized to disk.
     var rootBookmarkID: UUID
+    /// True when this is the drive's system "Favorites" playlist. Each drive has
+    /// at most one. Persisted to the drive (so all devices see the same set).
+    var isFavorites: Bool
 
     init(id: UUID = UUID(),
          name: String,
          trackIDs: [String] = [],
          createdAt: Date = Date(),
          updatedAt: Date = Date(),
-         rootBookmarkID: UUID) {
+         rootBookmarkID: UUID,
+         isFavorites: Bool = false) {
         self.id = id
         self.name = name
         self.trackIDs = trackIDs
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.rootBookmarkID = rootBookmarkID
+        self.isFavorites = isFavorites
     }
 }
 
