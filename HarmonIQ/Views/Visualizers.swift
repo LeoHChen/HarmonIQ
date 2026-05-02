@@ -9,30 +9,57 @@ enum VisualizerStyle: String, CaseIterable, Identifiable {
     case particles
     case fire
     case starfield
+    // Oscilloscope variants (issue #27). The plain `.oscilloscope` above is
+    // the classic single-trace baseline; these are richer takes on the same
+    // 64-sample waveform buffer.
+    case oscGlow
+    case oscMultiLayer
+    case oscMirror
+    case oscFill
+    case oscRadial
+    case oscWaterfall
+    case oscLissajous
+    case oscBeat
 
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .spectrum:     return "SPECTRUM"
-        case .oscilloscope: return "OSCILLOSCOPE"
-        case .plasma:       return "PLASMA"
-        case .mirror:       return "MIRROR"
-        case .circle:       return "RADIAL PULSE"
-        case .particles:    return "PARTICLES"
-        case .fire:         return "FIRE"
-        case .starfield:    return "STARFIELD"
+        case .spectrum:      return "SPECTRUM"
+        case .oscilloscope:  return "OSCILLOSCOPE"
+        case .plasma:        return "PLASMA"
+        case .mirror:        return "MIRROR"
+        case .circle:        return "RADIAL PULSE"
+        case .particles:     return "PARTICLES"
+        case .fire:          return "FIRE"
+        case .starfield:     return "STARFIELD"
+        case .oscGlow:       return "OSC · NEON GLOW"
+        case .oscMultiLayer: return "OSC · HARMONIC LAYERS"
+        case .oscMirror:     return "OSC · MIRROR WAVE"
+        case .oscFill:       return "OSC · FILLED WAVE"
+        case .oscRadial:     return "OSC · RADIAL WAVE"
+        case .oscWaterfall:  return "OSC · WATERFALL"
+        case .oscLissajous:  return "OSC · LISSAJOUS"
+        case .oscBeat:       return "OSC · BEAT FLASH"
         }
     }
     var icon: String {
         switch self {
-        case .spectrum:     return "chart.bar.fill"
-        case .oscilloscope: return "waveform.path"
-        case .plasma:       return "flame.fill"
-        case .mirror:       return "rectangle.split.1x2.fill"
-        case .circle:       return "circle.dotted"
-        case .particles:    return "sparkles"
-        case .fire:         return "flame.fill"
-        case .starfield:    return "sparkle"
+        case .spectrum:      return "chart.bar.fill"
+        case .oscilloscope:  return "waveform.path"
+        case .plasma:        return "flame.fill"
+        case .mirror:        return "rectangle.split.1x2.fill"
+        case .circle:        return "circle.dotted"
+        case .particles:     return "sparkles"
+        case .fire:          return "flame.fill"
+        case .starfield:     return "sparkle"
+        case .oscGlow:       return "waveform.path.ecg"
+        case .oscMultiLayer: return "waveform"
+        case .oscMirror:     return "waveform.path.ecg.rectangle"
+        case .oscFill:       return "waveform.path.badge.plus"
+        case .oscRadial:     return "circle.hexagongrid"
+        case .oscWaterfall:  return "rectangle.stack"
+        case .oscLissajous:  return "infinity"
+        case .oscBeat:       return "bolt.heart.fill"
         }
     }
 }
@@ -113,14 +140,22 @@ struct VisualizerView: View {
                     engine.advance(date: timeline.date, level: player.levels, isPlaying: player.isPlaying)
                     drawScanlines(context: context, size: size)
                     switch settings.style {
-                    case .spectrum:     drawSpectrum(context: context, size: size, engine: engine)
-                    case .oscilloscope: drawOscilloscope(context: context, size: size, engine: engine)
-                    case .plasma:       drawPlasma(context: context, size: size, engine: engine)
-                    case .mirror:       drawMirror(context: context, size: size, engine: engine)
-                    case .circle:       drawCircle(context: context, size: size, engine: engine)
-                    case .particles:    drawParticles(context: context, size: size, engine: engine)
-                    case .fire:         drawFire(context: context, size: size, engine: engine)
-                    case .starfield:    drawStarfield(context: context, size: size, engine: engine)
+                    case .spectrum:      drawSpectrum(context: context, size: size, engine: engine)
+                    case .oscilloscope:  drawOscilloscope(context: context, size: size, engine: engine)
+                    case .plasma:        drawPlasma(context: context, size: size, engine: engine)
+                    case .mirror:        drawMirror(context: context, size: size, engine: engine)
+                    case .circle:        drawCircle(context: context, size: size, engine: engine)
+                    case .particles:     drawParticles(context: context, size: size, engine: engine)
+                    case .fire:          drawFire(context: context, size: size, engine: engine)
+                    case .starfield:     drawStarfield(context: context, size: size, engine: engine)
+                    case .oscGlow:       drawOscGlow(context: context, size: size, engine: engine)
+                    case .oscMultiLayer: drawOscMultiLayer(context: context, size: size, engine: engine)
+                    case .oscMirror:     drawOscMirror(context: context, size: size, engine: engine)
+                    case .oscFill:       drawOscFill(context: context, size: size, engine: engine)
+                    case .oscRadial:     drawOscRadial(context: context, size: size, engine: engine)
+                    case .oscWaterfall:  drawOscWaterfall(context: context, size: size, engine: engine)
+                    case .oscLissajous:  drawOscLissajous(context: context, size: size, engine: engine)
+                    case .oscBeat:       drawOscBeat(context: context, size: size, engine: engine)
                     }
                     drawCRTBezel(context: context, size: size)
                 }
@@ -172,6 +207,11 @@ final class VisualizerEngine: ObservableObject {
     private(set) var bandPeaks: [Float] = Array(repeating: 0, count: 24)
     /// 64-sample oscilloscope buffer (halved from 128 — more than enough for the rendered width).
     private(set) var oscilloscope: [Float] = Array(repeating: 0, count: 64)
+    /// Rolling history of recent oscilloscope frames (newest at index 0).
+    /// Used by the waterfall variant. 32 frames × 64 samples = 8 KB total.
+    static let oscHistoryFrames = 32
+    private(set) var oscHistory: [[Float]] = Array(repeating: Array(repeating: 0, count: 64),
+                                                    count: 32)
     /// Drives the plasma's animated phase.
     private(set) var phase: Double = 0
 
@@ -269,6 +309,13 @@ final class VisualizerEngine: ObservableObject {
                      + sinf(x * baseFreq * 0.5 + phaseF * 0.7) * 0.25
                      + Float.random(in: -0.08...0.08, using: &rng)
             oscilloscope[i] = wave * ampl
+        }
+        // Push the latest frame into the history ring (newest at index 0).
+        // Cheap: rotate by reusing the tail buffer to avoid allocations.
+        if !oscHistory.isEmpty {
+            let tail = oscHistory.removeLast()
+            oscHistory.insert(oscilloscope, at: 0)
+            _ = tail
         }
 
         // --- Plasma: advance time, faster when loud.
@@ -607,4 +654,193 @@ private func drawStarfield(context: GraphicsContext, size: CGSize, engine: Visua
         let rect = CGRect(x: sx - radius, y: sy - radius, width: radius * 2, height: radius * 2)
         context.fill(Path(ellipseIn: rect), with: .color(WinampTheme.lcdGlow.opacity(alpha)))
     }
+}
+
+// MARK: - Oscilloscope variants (issue #27)
+
+/// Helper that builds the canonical waveform Path for a sample buffer.
+@MainActor
+private func waveformPath(samples: [Float], size: CGSize, amplitude: CGFloat = 0.45) -> Path {
+    var path = Path()
+    guard samples.count > 1 else { return path }
+    let mid = size.height / 2
+    for i in 0..<samples.count {
+        let x = CGFloat(i) / CGFloat(samples.count - 1) * size.width
+        let y = mid + CGFloat(samples[i]) * (size.height * amplitude)
+        if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+        else      { path.addLine(to: CGPoint(x: x, y: y)) }
+    }
+    return path
+}
+
+/// Neon-glow trace: same path drawn 3× with decreasing opacity and increasing
+/// blur radius — phosphor-tube CRT feel.
+@MainActor
+private func drawOscGlow(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let path = waveformPath(samples: engine.oscilloscope, size: size)
+    // Outer halo (widest, most blurred, lowest alpha)
+    var halo = context
+    halo.addFilter(.blur(radius: 8))
+    halo.stroke(path, with: .color(WinampTheme.lcdGlow.opacity(0.35)), lineWidth: 6)
+    // Mid glow
+    var mid = context
+    mid.addFilter(.blur(radius: 3))
+    mid.stroke(path, with: .color(WinampTheme.lcdGlow.opacity(0.7)), lineWidth: 3)
+    // Crisp core
+    context.stroke(path, with: .color(.white), lineWidth: 1.4)
+}
+
+/// Three overlaid traces at ½× and 2× amplitude with hue shifts.
+@MainActor
+private func drawOscMultiLayer(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let samples = engine.oscilloscope
+    // Layer 1: ½× amplitude, cyan-shifted, blurred
+    let half = waveformPath(samples: samples, size: size, amplitude: 0.22)
+    var c = context
+    c.addFilter(.blur(radius: 2))
+    c.stroke(half, with: .color(Color(red: 0.4, green: 1.0, blue: 0.95).opacity(0.7)), lineWidth: 2)
+    // Layer 2: 1× amplitude, lime (canonical glow color)
+    let mid = waveformPath(samples: samples, size: size, amplitude: 0.45)
+    context.stroke(mid, with: .color(WinampTheme.lcdGlow), lineWidth: 1.6)
+    // Layer 3: 2× amplitude (clipped), warm yellow, thinner
+    var clipped = samples
+    for i in 0..<clipped.count { clipped[i] = max(-1, min(1, clipped[i] * 2)) }
+    let big = waveformPath(samples: clipped, size: size, amplitude: 0.45)
+    context.stroke(big, with: .color(Color(red: 1.0, green: 0.95, blue: 0.4).opacity(0.55)), lineWidth: 1.0)
+}
+
+/// Trace reflected top/bottom from the horizontal centerline.
+@MainActor
+private func drawOscMirror(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let samples = engine.oscilloscope
+    guard samples.count > 1 else { return }
+    let mid = size.height / 2
+    // Reference centerline.
+    context.fill(Path(CGRect(x: 0, y: mid - 0.5, width: size.width, height: 1)),
+                 with: .color(WinampTheme.lcdGlow.opacity(0.18)))
+    var top = Path()
+    var bot = Path()
+    for i in 0..<samples.count {
+        let x = CGFloat(i) / CGFloat(samples.count - 1) * size.width
+        let amp = abs(CGFloat(samples[i])) * (size.height * 0.42)
+        let yT = mid - amp
+        let yB = mid + amp
+        if i == 0 { top.move(to: CGPoint(x: x, y: yT)); bot.move(to: CGPoint(x: x, y: yB)) }
+        else      { top.addLine(to: CGPoint(x: x, y: yT)); bot.addLine(to: CGPoint(x: x, y: yB)) }
+    }
+    context.stroke(top, with: .color(WinampTheme.lcdGlow), lineWidth: 1.6)
+    context.stroke(bot, with: .color(WinampTheme.lcdGlow.opacity(0.7)), lineWidth: 1.6)
+}
+
+/// Filled area between the trace and the centerline, vertical gradient.
+@MainActor
+private func drawOscFill(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let samples = engine.oscilloscope
+    guard samples.count > 1 else { return }
+    let mid = size.height / 2
+    var fill = Path()
+    fill.move(to: CGPoint(x: 0, y: mid))
+    for i in 0..<samples.count {
+        let x = CGFloat(i) / CGFloat(samples.count - 1) * size.width
+        let y = mid + CGFloat(samples[i]) * (size.height * 0.45)
+        fill.addLine(to: CGPoint(x: x, y: y))
+    }
+    fill.addLine(to: CGPoint(x: size.width, y: mid))
+    fill.closeSubpath()
+    let gradient = Gradient(colors: [WinampTheme.lcdGlow.opacity(0.7), WinampTheme.lcdGlow.opacity(0.0)])
+    context.fill(fill, with: .linearGradient(
+        gradient,
+        startPoint: CGPoint(x: 0, y: 0),
+        endPoint: CGPoint(x: 0, y: size.height)))
+    // Outline on top for crispness.
+    let line = waveformPath(samples: samples, size: size)
+    context.stroke(line, with: .color(WinampTheme.lcdGlow), lineWidth: 1.4)
+}
+
+/// Samples mapped onto a circle — amplitude modulates the radius.
+@MainActor
+private func drawOscRadial(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let samples = engine.oscilloscope
+    guard samples.count > 1 else { return }
+    let center = CGPoint(x: size.width / 2, y: size.height / 2)
+    let baseR = min(size.width, size.height) * 0.28
+    let span = min(size.width, size.height) * 0.18
+    var path = Path()
+    for i in 0..<samples.count {
+        let theta = Double(i) / Double(samples.count) * 2 * .pi
+        let r = baseR + CGFloat(samples[i]) * span
+        let p = CGPoint(x: center.x + r * CGFloat(cos(theta)),
+                        y: center.y + r * CGFloat(sin(theta)))
+        if i == 0 { path.move(to: p) } else { path.addLine(to: p) }
+    }
+    path.closeSubpath()
+    var glow = context
+    glow.addFilter(.blur(radius: 4))
+    glow.stroke(path, with: .color(WinampTheme.lcdGlow.opacity(0.55)), lineWidth: 4)
+    context.stroke(path, with: .color(WinampTheme.lcdGlow), lineWidth: 1.6)
+}
+
+/// Rolling history of N frames stacked as fading lines scrolling upward.
+@MainActor
+private func drawOscWaterfall(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let history = engine.oscHistory
+    guard !history.isEmpty else { return }
+    let frames = history.count
+    // Newest at top, oldest at bottom — gives a "scrolling upward" illusion.
+    for f in 0..<frames {
+        let samples = history[f]
+        guard samples.count > 1 else { continue }
+        let yOffset = (CGFloat(f) / CGFloat(frames)) * size.height
+        let rowAmp = (size.height / CGFloat(frames)) * 0.6
+        let alpha = 1.0 - Double(f) / Double(frames)
+        var path = Path()
+        for i in 0..<samples.count {
+            let x = CGFloat(i) / CGFloat(samples.count - 1) * size.width
+            let y = yOffset + CGFloat(samples[i]) * rowAmp + rowAmp / 2
+            if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+            else      { path.addLine(to: CGPoint(x: x, y: y)) }
+        }
+        context.stroke(path, with: .color(WinampTheme.lcdGlow.opacity(alpha * 0.85)), lineWidth: 1)
+    }
+}
+
+/// Lissajous: synthesize R from L by phase-shifting the buffer ~90°.
+/// A perfectly sinusoidal signal traces an ellipse; richer signals produce
+/// the classic figure-8s and rosettes.
+@MainActor
+private func drawOscLissajous(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let samples = engine.oscilloscope
+    let count = samples.count
+    guard count > 4 else { return }
+    let cx = size.width / 2
+    let cy = size.height / 2
+    let r = min(size.width, size.height) * 0.42
+    // 90° shift = quarter of the buffer — produces an ellipse on a pure tone.
+    let shift = count / 4
+    var path = Path()
+    for i in 0..<count {
+        let l = samples[i]
+        let rSample = samples[(i + shift) % count]
+        let x = cx + CGFloat(l) * r
+        let y = cy + CGFloat(rSample) * r
+        if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+        else      { path.addLine(to: CGPoint(x: x, y: y)) }
+    }
+    var glow = context
+    glow.addFilter(.blur(radius: 3))
+    glow.stroke(path, with: .color(WinampTheme.lcdGlow.opacity(0.6)), lineWidth: 3)
+    context.stroke(path, with: .color(WinampTheme.lcdGlow), lineWidth: 1.4)
+}
+
+/// Classic trace that briefly flashes white + thickens on detected beat transients.
+@MainActor
+private func drawOscBeat(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let path = waveformPath(samples: engine.oscilloscope, size: size)
+    let beat = engine.beatDetected
+    let lineColor: Color = beat ? .white : WinampTheme.lcdGlow
+    let lineWidth: CGFloat = beat ? 3.5 : 1.6
+    var glow = context
+    glow.addFilter(.blur(radius: beat ? 6 : 3))
+    glow.stroke(path, with: .color(WinampTheme.lcdGlow.opacity(beat ? 0.9 : 0.55)), lineWidth: beat ? 6 : 3)
+    context.stroke(path, with: .color(lineColor), lineWidth: lineWidth)
 }

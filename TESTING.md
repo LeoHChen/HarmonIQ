@@ -113,7 +113,7 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 
 ## I. Visualizer styles (SwiftUI player)
 
-- [ ] Settings → Visualizer lists 8 styles (Spectrum, Oscilloscope, Plasma, Mirror, Radial Pulse, Particles, Fire, Starfield), each with a live preview thumbnail that animates.
+- [ ] Settings → Visualizer lists 16 styles (Spectrum, Oscilloscope, Plasma, Mirror, Radial Pulse, Particles, Fire, Starfield, OSC · Neon Glow, OSC · Harmonic Layers, OSC · Mirror Wave, OSC · Filled Wave, OSC · Radial Wave, OSC · Waterfall, OSC · Lissajous, OSC · Beat Flash), each with a live preview thumbnail that animates.
 - [ ] Tapping a row updates the checkmark and the now-playing visualizer matches on next open.
 - [ ] In Now Playing, the visualizer header shows `VIS · <STYLE NAME>` and a `NEXT` cycle button.
 - [ ] Tapping `NEXT` advances to the next style and shows a 1-second toast with the style name.
@@ -121,6 +121,9 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] Quit and relaunch → the chosen style persists.
 - [ ] With audio paused (silence), every style renders gracefully (Particles still drifts, Starfield slowly drifts, Spectrum decays — no frozen artifacts or crashes).
 - [ ] Each style sustains roughly 30 fps with a percussive track playing (no obvious frame drops).
+- [ ] **OSC · Beat Flash** flashes white + thickens on percussive transients (drum hits) and returns to lime baseline between beats.
+- [ ] **OSC · Waterfall** rolls upward without flicker; new frame appears at the top each tick.
+- [ ] **OSC · Lissajous** traces an ellipse on a sustained sine-like signal and figure-8s on richer signals.
 
 ---
 

@@ -49,14 +49,22 @@ private struct StyleRow: View {
                                        level: SIMD2<Float>(max(0, pulse), max(0, peak)),
                                        isPlaying: true)
                         switch style {
-                        case .spectrum:     previewSpectrum(context: context, size: size, engine: engine)
-                        case .oscilloscope: previewOscilloscope(context: context, size: size, engine: engine)
-                        case .plasma:       previewPlasma(context: context, size: size, engine: engine)
-                        case .mirror:       previewMirror(context: context, size: size, engine: engine)
-                        case .circle:       previewCircle(context: context, size: size, engine: engine)
+                        case .spectrum:      previewSpectrum(context: context, size: size, engine: engine)
+                        case .oscilloscope:  previewOscilloscope(context: context, size: size, engine: engine)
+                        case .plasma:        previewPlasma(context: context, size: size, engine: engine)
+                        case .mirror:        previewMirror(context: context, size: size, engine: engine)
+                        case .circle:        previewCircle(context: context, size: size, engine: engine)
                         case .particles:    previewParticles(context: context, size: size, engine: engine)
-                        case .fire:         previewFire(context: context, size: size, engine: engine)
-                        case .starfield:    previewStarfield(context: context, size: size, engine: engine)
+                        case .fire:          previewFire(context: context, size: size, engine: engine)
+                        case .starfield:     previewStarfield(context: context, size: size, engine: engine)
+                        case .oscGlow:       previewOscGlow(context: context, size: size, engine: engine)
+                        case .oscMultiLayer: previewOscMultiLayer(context: context, size: size, engine: engine)
+                        case .oscMirror:     previewOscMirror(context: context, size: size, engine: engine)
+                        case .oscFill:       previewOscFill(context: context, size: size, engine: engine)
+                        case .oscRadial:     previewOscRadial(context: context, size: size, engine: engine)
+                        case .oscWaterfall:  previewOscWaterfall(context: context, size: size, engine: engine)
+                        case .oscLissajous:  previewOscLissajous(context: context, size: size, engine: engine)
+                        case .oscBeat:       previewOscBeat(context: context, size: size, engine: engine)
                         }
                     }
                 }
@@ -78,14 +86,22 @@ private struct StyleRow: View {
 
     private func blurb(for s: VisualizerStyle) -> String {
         switch s {
-        case .spectrum:     return "Classic 24-band LED bars."
-        case .oscilloscope: return "Glowing waveform trace."
-        case .plasma:       return "Animated phosphor wash."
-        case .mirror:       return "Spectrum reflected from the centerline."
-        case .circle:       return "Bars radiate outward; ring pulses on beat."
-        case .particles:    return "Phosphor sparks rise on transients."
-        case .fire:         return "Heat-map columns rising from the bottom."
-        case .starfield:    return "Stars accelerate toward the viewer."
+        case .spectrum:      return "Classic 24-band LED bars."
+        case .oscilloscope:  return "Glowing waveform trace."
+        case .plasma:        return "Animated phosphor wash."
+        case .mirror:        return "Spectrum reflected from the centerline."
+        case .circle:        return "Bars radiate outward; ring pulses on beat."
+        case .particles:     return "Phosphor sparks rise on transients."
+        case .fire:          return "Heat-map columns rising from the bottom."
+        case .starfield:     return "Stars accelerate toward the viewer."
+        case .oscGlow:       return "Oscilloscope with a phosphor-tube halo."
+        case .oscMultiLayer: return "Three hue-shifted traces overlaid."
+        case .oscMirror:     return "Wave reflected top-and-bottom from center."
+        case .oscFill:       return "Filled gradient between trace and centerline."
+        case .oscRadial:     return "Wave wrapped onto a pulsing ring."
+        case .oscWaterfall:  return "Recent frames stacked, scrolling upward."
+        case .oscLissajous:  return "Phase-shifted X/Y plot — figures + ellipses."
+        case .oscBeat:       return "Trace flashes white and thickens on beats."
         }
     }
 }
@@ -246,4 +262,146 @@ private func previewStarfield(context: GraphicsContext, size: CGSize, engine: Vi
                                             width: radius * 2, height: radius * 2)),
                      with: .color(WinampTheme.lcdGlow.opacity(alpha)))
     }
+}
+
+// MARK: - Oscilloscope variant previews (issue #27)
+//
+// Thumbnail-scale renderers — same look as the production helpers but
+// without the heavier blur stacks (thumbnails don't need the full halo
+// to communicate the style).
+
+@MainActor
+private func previewWaveformPath(samples: [Float], size: CGSize, amplitude: CGFloat = 0.42) -> Path {
+    var path = Path()
+    guard samples.count > 1 else { return path }
+    let mid = size.height / 2
+    for i in 0..<samples.count {
+        let x = CGFloat(i) / CGFloat(samples.count - 1) * size.width
+        let y = mid + CGFloat(samples[i]) * (size.height * amplitude)
+        if i == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
+    }
+    return path
+}
+
+@MainActor
+private func previewOscGlow(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let path = previewWaveformPath(samples: engine.oscilloscope, size: size)
+    var glow = context
+    glow.addFilter(.blur(radius: 3))
+    glow.stroke(path, with: .color(WinampTheme.lcdGlow.opacity(0.7)), lineWidth: 3)
+    context.stroke(path, with: .color(.white), lineWidth: 1.2)
+}
+
+@MainActor
+private func previewOscMultiLayer(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let s = engine.oscilloscope
+    context.stroke(previewWaveformPath(samples: s, size: size, amplitude: 0.20),
+                   with: .color(Color(red: 0.4, green: 1.0, blue: 0.95).opacity(0.7)), lineWidth: 1.5)
+    context.stroke(previewWaveformPath(samples: s, size: size, amplitude: 0.42),
+                   with: .color(WinampTheme.lcdGlow), lineWidth: 1.2)
+}
+
+@MainActor
+private func previewOscMirror(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let samples = engine.oscilloscope
+    guard samples.count > 1 else { return }
+    let mid = size.height / 2
+    var top = Path(); var bot = Path()
+    for i in 0..<samples.count {
+        let x = CGFloat(i) / CGFloat(samples.count - 1) * size.width
+        let amp = abs(CGFloat(samples[i])) * (size.height * 0.4)
+        if i == 0 { top.move(to: CGPoint(x: x, y: mid - amp)); bot.move(to: CGPoint(x: x, y: mid + amp)) }
+        else      { top.addLine(to: CGPoint(x: x, y: mid - amp)); bot.addLine(to: CGPoint(x: x, y: mid + amp)) }
+    }
+    context.stroke(top, with: .color(WinampTheme.lcdGlow), lineWidth: 1.2)
+    context.stroke(bot, with: .color(WinampTheme.lcdGlow.opacity(0.7)), lineWidth: 1.2)
+}
+
+@MainActor
+private func previewOscFill(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let samples = engine.oscilloscope
+    guard samples.count > 1 else { return }
+    let mid = size.height / 2
+    var fill = Path()
+    fill.move(to: CGPoint(x: 0, y: mid))
+    for i in 0..<samples.count {
+        let x = CGFloat(i) / CGFloat(samples.count - 1) * size.width
+        let y = mid + CGFloat(samples[i]) * (size.height * 0.42)
+        fill.addLine(to: CGPoint(x: x, y: y))
+    }
+    fill.addLine(to: CGPoint(x: size.width, y: mid))
+    fill.closeSubpath()
+    context.fill(fill, with: .linearGradient(
+        Gradient(colors: [WinampTheme.lcdGlow.opacity(0.7), WinampTheme.lcdGlow.opacity(0.0)]),
+        startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
+}
+
+@MainActor
+private func previewOscRadial(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let samples = engine.oscilloscope
+    guard samples.count > 1 else { return }
+    let center = CGPoint(x: size.width / 2, y: size.height / 2)
+    let baseR = min(size.width, size.height) * 0.30
+    let span = min(size.width, size.height) * 0.16
+    var path = Path()
+    for i in 0..<samples.count {
+        let theta = Double(i) / Double(samples.count) * 2 * .pi
+        let r = baseR + CGFloat(samples[i]) * span
+        let p = CGPoint(x: center.x + r * CGFloat(cos(theta)),
+                        y: center.y + r * CGFloat(sin(theta)))
+        if i == 0 { path.move(to: p) } else { path.addLine(to: p) }
+    }
+    path.closeSubpath()
+    context.stroke(path, with: .color(WinampTheme.lcdGlow), lineWidth: 1.2)
+}
+
+@MainActor
+private func previewOscWaterfall(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let history = engine.oscHistory
+    guard !history.isEmpty else { return }
+    let frames = min(history.count, 12) // thumbnail: fewer rows
+    for f in 0..<frames {
+        let samples = history[f]
+        guard samples.count > 1 else { continue }
+        let yOffset = (CGFloat(f) / CGFloat(frames)) * size.height
+        let rowAmp = (size.height / CGFloat(frames)) * 0.6
+        let alpha = 1.0 - Double(f) / Double(frames)
+        var path = Path()
+        for i in 0..<samples.count {
+            let x = CGFloat(i) / CGFloat(samples.count - 1) * size.width
+            let y = yOffset + CGFloat(samples[i]) * rowAmp + rowAmp / 2
+            if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+            else      { path.addLine(to: CGPoint(x: x, y: y)) }
+        }
+        context.stroke(path, with: .color(WinampTheme.lcdGlow.opacity(alpha * 0.85)), lineWidth: 0.8)
+    }
+}
+
+@MainActor
+private func previewOscLissajous(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let samples = engine.oscilloscope
+    let count = samples.count
+    guard count > 4 else { return }
+    let cx = size.width / 2
+    let cy = size.height / 2
+    let r = min(size.width, size.height) * 0.42
+    let shift = count / 4
+    var path = Path()
+    for i in 0..<count {
+        let l = samples[i]
+        let rs = samples[(i + shift) % count]
+        let x = cx + CGFloat(l) * r
+        let y = cy + CGFloat(rs) * r
+        if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+        else      { path.addLine(to: CGPoint(x: x, y: y)) }
+    }
+    context.stroke(path, with: .color(WinampTheme.lcdGlow), lineWidth: 1.2)
+}
+
+@MainActor
+private func previewOscBeat(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
+    let path = previewWaveformPath(samples: engine.oscilloscope, size: size)
+    let beat = engine.beatDetected
+    context.stroke(path, with: .color(beat ? .white : WinampTheme.lcdGlow),
+                   lineWidth: beat ? 2.4 : 1.2)
 }
