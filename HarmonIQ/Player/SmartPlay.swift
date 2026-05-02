@@ -13,6 +13,8 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
     case moodArc
     case deepCut
     case onePerArtist
+    case genreTunnel
+    case eraWalk
 
     var id: String { rawValue }
 
@@ -30,6 +32,8 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
         case .moodArc:        return "Mood Arc"
         case .deepCut:        return "Deep Cut"
         case .onePerArtist:   return "One Per Artist"
+        case .genreTunnel:    return "Genre Tunnel"
+        case .eraWalk:        return "Era Walk"
         }
     }
 
@@ -47,6 +51,8 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
         case .moodArc:        return "Starts loud — winds down. High-energy tracks first, ambient/quiet last."
         case .deepCut:        return "Skip the openers and the greatest-hits comps — only the album cuts."
         case .onePerArtist:   return "Exactly one track per artist. Maximum breadth in one sitting."
+        case .genreTunnel:    return "Stays inside one genre — seeded by what's playing, or the biggest in the library."
+        case .eraWalk:        return "Chronological tour — earliest year first, walking forward through the decades."
         }
     }
 
@@ -64,14 +70,20 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
         case .moodArc:        return "waveform.path.ecg"
         case .deepCut:        return "music.note.house"
         case .onePerArtist:   return "person.3"
+        case .genreTunnel:    return "tunnel"
+        case .eraWalk:        return "clock.arrow.circlepath"
         }
     }
 }
 
 enum SmartPlayBuilder {
     /// Build a queue ordered according to `mode` from the given pool.
-    /// `recentlyPlayed` is a Set of stableIDs known to have played in the current session — used by `discoveryMix`.
-    static func buildQueue(mode: SmartPlayMode, from pool: [Track], recentlyPlayed: Set<String> = []) -> [Track] {
+    /// `recentlyPlayed` is a Set of stableIDs known to have played in the current
+    /// session — used by `discoveryMix`. `seed` is the currently-playing track
+    /// when invoked from a player context — used by `genreTunnel` to pick which
+    /// genre to stay in. When `seed` is nil, modes that rely on it fall back to
+    /// the most-represented value in the pool.
+    static func buildQueue(mode: SmartPlayMode, from pool: [Track], recentlyPlayed: Set<String> = [], seed: Track? = nil) -> [Track] {
         guard !pool.isEmpty else { return [] }
 
         switch mode {
@@ -175,7 +187,41 @@ enum SmartPlayBuilder {
             return grouped.values
                 .compactMap { $0.randomElement() }
                 .shuffled()
+
+        case .genreTunnel:
+            // Pick a target genre: seed track's genre when present, otherwise
+            // the most-represented non-empty genre in the pool. Then play only
+            // tracks in that genre, shuffled. Falls back to a Pure Random
+            // shuffle if no usable genre tags exist.
+            let target = tunnelGenre(seed: seed, pool: pool)
+            guard let target = target else { return pool.shuffled() }
+            let cuts = pool.filter { ($0.genre?.nilIfBlank ?? "Unknown").caseInsensitiveCompare(target) == .orderedSame }
+            return (cuts.isEmpty ? pool : cuts).shuffled()
+
+        case .eraWalk:
+            // Chronological tour — sort by year ascending, then by trackNumber
+            // within the same year. Tracks without a year go to the end so the
+            // walk through history isn't broken by unknown-era entries.
+            let withYear = pool.filter { ($0.year ?? 0) > 0 }
+            let withoutYear = pool.filter { ($0.year ?? 0) == 0 }
+            let sortedKnown = withYear.sorted { lhs, rhs in
+                let ly = lhs.year ?? 0, ry = rhs.year ?? 0
+                if ly != ry { return ly < ry }
+                if let l = lhs.trackNumber, let r = rhs.trackNumber, l != r { return l < r }
+                return lhs.displayTitle.localizedStandardCompare(rhs.displayTitle) == .orderedAscending
+            }
+            return sortedKnown + withoutYear.shuffled()
         }
+    }
+
+    /// Picks the genre for `genreTunnel`. Uses the seed track's genre when
+    /// available; otherwise the most-frequent non-empty genre in the pool.
+    private static func tunnelGenre(seed: Track?, pool: [Track]) -> String? {
+        if let g = seed?.genre?.nilIfBlank { return g }
+        let counts = pool.reduce(into: [String: Int]()) { acc, track in
+            if let g = track.genre?.nilIfBlank { acc[g, default: 0] += 1 }
+        }
+        return counts.max(by: { $0.value < $1.value })?.key
     }
 
     // MARK: - Heuristics
