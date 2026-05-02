@@ -10,6 +10,9 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
     case quickHits
     case longPlayer
     case discoveryMix
+    case moodArc
+    case deepCut
+    case onePerArtist
 
     var id: String { rawValue }
 
@@ -24,6 +27,9 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
         case .quickHits:      return "Quick Hits"
         case .longPlayer:     return "Long Player"
         case .discoveryMix:   return "Discovery Mix"
+        case .moodArc:        return "Mood Arc"
+        case .deepCut:        return "Deep Cut"
+        case .onePerArtist:   return "One Per Artist"
         }
     }
 
@@ -38,6 +44,9 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
         case .quickHits:      return "Only tracks under 3 minutes, shuffled."
         case .longPlayer:     return "Tracks 6 minutes and longer, shuffled."
         case .discoveryMix:   return "Weighted toward tracks you haven't heard recently in this session."
+        case .moodArc:        return "Starts loud — winds down. High-energy tracks first, ambient/quiet last."
+        case .deepCut:        return "Skip the openers and the greatest-hits comps — only the album cuts."
+        case .onePerArtist:   return "Exactly one track per artist. Maximum breadth in one sitting."
         }
     }
 
@@ -52,6 +61,9 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
         case .quickHits:      return "bolt.fill"
         case .longPlayer:     return "infinity"
         case .discoveryMix:   return "wand.and.stars"
+        case .moodArc:        return "waveform.path.ecg"
+        case .deepCut:        return "music.note.house"
+        case .onePerArtist:   return "person.3"
         }
     }
 }
@@ -139,6 +151,73 @@ enum SmartPlayBuilder {
             let unheard = pool.filter { !recentlyPlayed.contains($0.stableID) }.shuffled()
             let heard = pool.filter { recentlyPlayed.contains($0.stableID) }.shuffled()
             return unheard + heard
+
+        case .moodArc:
+            // Sort by an estimated energy score (high → low). Estimate uses genre +
+            // title keywords + duration; tracks with no signal land in the middle.
+            return pool
+                .map { ($0, energyScore(for: $0)) }
+                .sorted { lhs, rhs in
+                    if lhs.1 != rhs.1 { return lhs.1 > rhs.1 }
+                    return lhs.0.displayTitle.localizedStandardCompare(rhs.0.displayTitle) == .orderedAscending
+                }
+                .map { $0.0 }
+
+        case .deepCut:
+            // Filter out openers + tracks from "Greatest Hits" / "Best Of" / compilation albums,
+            // then shuffle. If the filter empties the pool, fall back to a Pure Random shuffle.
+            let cuts = pool.filter { isDeepCut($0) }
+            return (cuts.isEmpty ? pool : cuts).shuffled()
+
+        case .onePerArtist:
+            // Exactly one track per displayArtist. Random track per artist, artists in random order.
+            let grouped = Dictionary(grouping: pool, by: { $0.displayArtist })
+            return grouped.values
+                .compactMap { $0.randomElement() }
+                .shuffled()
         }
+    }
+
+    // MARK: - Heuristics
+
+    /// Estimates a track's "energy" in the [0, 1] range. Higher = louder/faster.
+    /// Pure heuristic from genre + title keywords + duration — no audio analysis.
+    static func energyScore(for track: Track) -> Double {
+        var score = 0.5
+        let lowerGenre = (track.genre ?? "").lowercased()
+        let lowerTitle = track.displayTitle.lowercased()
+
+        // Genre cues — additive, can stack.
+        let highEnergyGenres = ["rock", "metal", "punk", "dance", "techno", "electronic",
+                                "house", "drum and bass", "hardcore", "industrial", "rap", "hip hop"]
+        let lowEnergyGenres = ["ambient", "classical", "jazz", "folk", "acoustic", "lo-fi",
+                               "downtempo", "new age", "soundtrack", "spoken word"]
+        for g in highEnergyGenres where lowerGenre.contains(g) { score += 0.18; break }
+        for g in lowEnergyGenres where lowerGenre.contains(g) { score -= 0.18; break }
+
+        // Title cues.
+        let lowEnergyTitleHints = ["intro", "interlude", "outro", "prelude", "lullaby", "reprise"]
+        if lowEnergyTitleHints.contains(where: { lowerTitle.contains($0) }) { score -= 0.15 }
+        let highEnergyTitleHints = ["live", "remix", "anthem", "rage", "burn", "fire"]
+        if highEnergyTitleHints.contains(where: { lowerTitle.contains($0) }) { score += 0.10 }
+
+        // Duration: very long tracks skew slow; very short ones skew fast/punchy.
+        if track.duration >= 420 { score -= 0.10 }       // 7+ minutes
+        else if track.duration > 0 && track.duration < 150 { score += 0.05 } // < 2.5 minutes
+
+        return max(0, min(1, score))
+    }
+
+    /// True if the track looks like an album deep cut: not the opening track and
+    /// not on a compilation/greatest-hits album.
+    static func isDeepCut(_ track: Track) -> Bool {
+        // Skip openers — track #1 (or unknown track number, which on a real album
+        // is rare but on a single-file release is common; allow those through).
+        if let n = track.trackNumber, n == 1 { return false }
+        let comp = ["greatest hits", "best of", "the very best", "essential", "anthology",
+                    "collection", "compilation", "hits", "singles"]
+        let lowerAlbum = track.displayAlbum.lowercased()
+        for marker in comp where lowerAlbum.contains(marker) { return false }
+        return true
     }
 }

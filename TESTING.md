@@ -93,8 +93,12 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 
 ## H. Smart Play
 
-- [ ] Library → Smart Play → **Pure Random** plays a randomized queue.
-- [ ] At least one other mode (Album Walk, Artist Roulette, Discovery Mix) builds a sensible queue and plays.
+- [ ] Library → Smart Play lists all 12 modes (Pure Random, Artist Roulette, Genre Journey, Album Walk, Decade Shuffle, Freshly Added, Quick Hits, Long Player, Discovery Mix, Mood Arc, Deep Cut, One Per Artist).
+- [ ] **Pure Random** plays a randomized queue.
+- [ ] **Mood Arc**: queue starts with high-energy genres/titles (rock, dance, "anthem", short tracks) and ends with low-energy ones (ambient, classical, "intro", long tracks).
+- [ ] **Deep Cut**: no track #1s and no tracks from albums whose name contains "Greatest Hits" / "Best Of" / "Compilation" / "Hits".
+- [ ] **One Per Artist**: queue length equals the number of distinct artists in the library; each artist appears exactly once.
+- [ ] At least one of (Album Walk, Artist Roulette, Discovery Mix) still builds a sensible queue and plays — regression check.
 
 ---
 
