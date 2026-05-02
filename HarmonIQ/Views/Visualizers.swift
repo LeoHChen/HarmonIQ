@@ -63,6 +63,39 @@ final class VisualizerSettings: ObservableObject {
     }
 }
 
+/// Classic Winamp visualizer modes for the skinned player. Tapping the
+/// 76×16 visualizer rect cycles through these in order.
+enum SkinnedVisualizerMode: String, CaseIterable {
+    case spectrum
+    case oscilloscope
+    case off
+}
+
+/// Persisted skinned-player visualizer mode. Lives separately from
+/// `VisualizerSettings` because the skinned player follows the authentic
+/// Winamp 3-mode cycle, while the SwiftUI player has the richer 8-style set.
+@MainActor
+final class SkinnedVisualizerSettings: ObservableObject {
+    static let shared = SkinnedVisualizerSettings()
+
+    private let key = "harmoniq.skinnedVisualizerMode"
+
+    @Published var mode: SkinnedVisualizerMode {
+        didSet { UserDefaults.standard.set(mode.rawValue, forKey: key) }
+    }
+
+    init() {
+        let raw = UserDefaults.standard.string(forKey: key) ?? ""
+        self.mode = SkinnedVisualizerMode(rawValue: raw) ?? .spectrum
+    }
+
+    func cycle() {
+        let all = SkinnedVisualizerMode.allCases
+        let i = all.firstIndex(of: mode) ?? 0
+        mode = all[(i + 1) % all.count]
+    }
+}
+
 /// Container that sits in NowPlayingView. Uses a TimelineView so we redraw at ~30Hz
 /// regardless of @Published throttling, and reads the latest level from the player.
 struct VisualizerView: View {
