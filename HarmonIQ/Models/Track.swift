@@ -25,6 +25,11 @@ struct Track: Identifiable, Codable, Hashable {
     var fileSize: Int64
     var fileFormat: String
     var artworkPath: String?
+    /// File's last-modified date at the time of the most recent scan.
+    /// `nil` means the field hasn't been backfilled yet (i.e. the row was
+    /// indexed by a build before issue #55). The next reindex treats nil
+    /// as "unknown — re-extract once" so the field gets populated.
+    var fileModified: Date?
 
     var displayTitle: String { title.isEmpty ? filename : title }
     var displayArtist: String { (artist?.nilIfBlank) ?? (albumArtist?.nilIfBlank) ?? "Unknown Artist" }

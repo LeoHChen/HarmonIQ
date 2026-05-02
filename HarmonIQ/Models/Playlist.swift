@@ -44,6 +44,15 @@ struct Playlist: Identifiable, Hashable {
     }
 }
 
+/// Cheap-check baseline used by the incremental indexer (issue #55). When
+/// the drive root's mtime + immediate-child count match the stored
+/// fingerprint, a Reindex is a near-instant no-op. Optional / Codable so
+/// existing `roots.json` files migrate transparently.
+struct ScanFingerprint: Codable, Hashable {
+    var rootMtime: Date
+    var childCount: Int
+}
+
 struct LibraryRoot: Identifiable, Codable, Hashable {
     let id: UUID
     var displayName: String
@@ -55,18 +64,30 @@ struct LibraryRoot: Identifiable, Codable, Hashable {
     /// read-only root live in the app sandbox via SandboxRootStore instead of
     /// in the on-drive HarmonIQ/ folder.
     var isReadOnly: Bool
+    /// Snapshot of the root's mtime + immediate-child count at the end of
+    /// the last scan. Used by the cheap-check to skip walking when the
+    /// drive's top-level layout is unchanged. nil → cheap check is
+    /// skipped (next scan walks unconditionally and populates).
+    var lastScanFingerprint: ScanFingerprint?
 
-    init(id: UUID = UUID(), displayName: String, bookmark: Data, lastIndexed: Date? = nil, trackCount: Int = 0, isReadOnly: Bool = false) {
+    init(id: UUID = UUID(),
+         displayName: String,
+         bookmark: Data,
+         lastIndexed: Date? = nil,
+         trackCount: Int = 0,
+         isReadOnly: Bool = false,
+         lastScanFingerprint: ScanFingerprint? = nil) {
         self.id = id
         self.displayName = displayName
         self.bookmark = bookmark
         self.lastIndexed = lastIndexed
         self.trackCount = trackCount
         self.isReadOnly = isReadOnly
+        self.lastScanFingerprint = lastScanFingerprint
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, displayName, bookmark, lastIndexed, trackCount, isReadOnly
+        case id, displayName, bookmark, lastIndexed, trackCount, isReadOnly, lastScanFingerprint
     }
 
     init(from decoder: Decoder) throws {
@@ -77,5 +98,6 @@ struct LibraryRoot: Identifiable, Codable, Hashable {
         self.lastIndexed = try c.decodeIfPresent(Date.self, forKey: .lastIndexed)
         self.trackCount = try c.decodeIfPresent(Int.self, forKey: .trackCount) ?? 0
         self.isReadOnly = try c.decodeIfPresent(Bool.self, forKey: .isReadOnly) ?? false
+        self.lastScanFingerprint = try c.decodeIfPresent(ScanFingerprint.self, forKey: .lastScanFingerprint)
     }
 }
