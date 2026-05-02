@@ -2,7 +2,22 @@
 
 **Website:** [www.leochen.net/HarmonIQ](https://www.leochen.net/HarmonIQ/) — landing site lives in [`docs/`](docs/).
 
-A SwiftUI music player for iPhone and iPad, styled after the classic Winamp era. Plays audio files straight off any folder you can mount in Files — including USB drives — and ships its index alongside the music so the same drive works on any device without re-scanning.
+> **Music for your own collections, ported to your iPhone.**
+
+HarmonIQ is a SwiftUI music player for iPhone and iPad, built for the people who never threw out their MP3 folders — the CD ripper with three external drives full of FLACs, the Napster-era curator with a meticulous "Best Of 2003" directory, the audio-archivist who treats a hard drive like a library and not a cache.
+
+It plays the music **you already own**, straight off your drive, with a player that looks like it was beamed in from 1999 and a 2026 brain bolted on top.
+
+## Why it exists
+
+**Data sovereignty for music.**
+
+- **You own your files.** Not a streaming service that can pull a license tomorrow. The MP3s, ALAC rips, and FLACs on your drive — the ones you ripped, paid for, downloaded, traded — those are yours, and HarmonIQ treats them that way. The on-drive index lives next to the music in a `HarmonIQ/` folder; move the drive, the library moves with it.
+- **You own your playlist algorithm.** Smart Play's rule-based modes are pure functions in [`SmartPlay.swift`](HarmonIQ/Player/SmartPlay.swift) — read them, fork them, replace them. The AI modes (Vibe Match, Storyteller, Sonic Contrast) prefer Apple Intelligence's on-device foundation model when available; *your library never leaves your phone.*
+- **You own your taste.** No engagement metrics, no recommendation graph, no listening history shipped off for ad targeting.
+- **Works offline. Always.** No network at index time, playback time, or AI curation time (with on-device AI on). Plug a USB-C SSD with a few thousand albums into your iPhone on the plane, in the subway, in the woods. It plays.
+
+The vibe is "bring your old MP3 collection forward" — your CD rips and 2003-era downloads deserve a modern player that respects what they are: yours.
 
 ## Screenshots
 
@@ -16,12 +31,14 @@ A SwiftUI music player for iPhone and iPad, styled after the classic Winamp era.
 
 ## Features
 
-- **Drive-portable library.** Tracks, playlists, and artwork live in a `HarmonIQ/` folder on the drive itself. Plug the same drive into another iPhone and your library shows up unchanged.
-- **External-drive friendly.** Pick any folder Files can see (USB-C drives, SMB shares, iCloud Drive, on-device storage). Read-only locations are supported via a sandbox shadow store.
-- **Background playback** with full lock-screen / Control Center / CarPlay-style controls via `MPNowPlayingInfoCenter`.
-- **Winamp skins.** Drop classic `.wsz` files in via the importer; bundled skins ship with the app. Skinned main window, equalizer, and playlist all render from the original sprites.
-- **SmartPlay queues.** Twelve curators including Pure Random, Artist Roulette, Album Walk, Decade Shuffle, Discovery Mix, Mood Arc, Deep Cut, and One Per Artist — built on top of your library.
-- **Live visualizer.** Eight selectable styles (spectrum, oscilloscope, plasma, mirror, radial pulse, particles, fire, starfield) on the SwiftUI player; the skinned player honors the same choice within Winamp's pixel-grid + palette constraints. Long-press or double-tap to cycle.
+- **Drive-portable library.** Tracks, playlists, and artwork live in a `HarmonIQ/` folder on the drive itself. Plug the same drive into another iPhone and your library shows up unchanged — no reindex, no account.
+- **External-drive friendly.** Pick any folder Files can see (USB-C SSD, SMB share, iCloud Drive, on-device storage). Read-only locations are supported via a sandbox shadow store.
+- **Real 10-band EQ.** AVAudioEngine + AVAudioUnitEQ — the sliders move the actual signal. Built-in presets (Flat, Rock, Pop, Jazz, Classical, Bass Boost, Vocal Boost) plus persisted custom curves.
+- **Smart Play, 14 rule-based + 3 AI modes.** Pure Random, Artist Roulette, Genre Journey, Album Walk, Decade Shuffle, Freshly Added, Quick Hits, Long Player, Discovery Mix, Mood Arc, Deep Cut, One Per Artist, Genre Tunnel, Era Walk — plus **Vibe Match**, **Storyteller**, and **Sonic Contrast**. AI modes save as regular playlists.
+- **On-device AI by default.** AI Smart Play prefers Apple Intelligence's foundation model (iOS 26+, iPhone 15 Pro+) — no API key, no upload, no network. Falls back to Anthropic when an API key is configured.
+- **Background playback** with full lock-screen / Control Center / Live Activity / Dynamic Island controls.
+- **Winamp skins.** Drop classic `.wsz` files in via the importer; 9 bundled. Skinned main window, equalizer, and playlist all render from the original sprites.
+- **16 visualizer styles.** Spectrum, oscilloscope, plasma, mirror, radial pulse, particles, fire, starfield — plus 8 fancy oscilloscope variants (neon glow, harmonic layers, mirror wave, filled wave, radial wave, waterfall, Lissajous, beat flash). Tap the visualizer to cycle.
 - **Sleep timer.** Auto-stop after a fixed duration (15/30/45/60 min) or at the end of the current track, with a live LCD countdown.
 
 ## Requirements

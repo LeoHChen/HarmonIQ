@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HarmonIQ — Music for the love of vinyl, ported to your iPhone</title>
-  <meta name="description" content="A retro, hackable iOS music player with Winamp skins, Smart Play, on-device AI curation, and a real 10-band EQ. Open source.">
-  <meta property="og:title" content="HarmonIQ">
-  <meta property="og:description" content="Retro Winamp-flavored iOS music player. Drive-portable library, 10-band EQ, AI Smart Play, classic skins, 16 visualizer styles. Open source.">
+  <title>HarmonIQ — Music for your own collections, ported to your iPhone</title>
+  <meta name="description" content="An iPhone music player built for collectors. Plays the MP3s and ripped CDs you already own, straight off your drive — no streaming, no algorithm, no account. AI curation runs on-device. Open source.">
+  <meta property="og:title" content="HarmonIQ — Music for your own collections">
+  <meta property="og:description" content="Bring your old MP3 folders and ripped-CD archives to a modern iPhone player. Drive-portable library, on-device AI playlists, real 10-band EQ. Works offline.">
   <meta property="og:type" content="website">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -23,7 +23,7 @@
       </div>
     </div>
     <h1 class="lcd">HARMONIQ</h1>
-    <p class="tagline">Music for the love of vinyl,<br>ported to your iPhone.</p>
+    <p class="tagline">Music for your own collections,<br>ported to your iPhone.</p>
     <div class="cta">
       <a class="btn primary" href="https://github.com/LeoHChen/HarmonIQ#testflight">TestFlight</a>
       <a class="btn" href="https://github.com/LeoHChen/HarmonIQ">GitHub</a>
@@ -34,8 +34,30 @@
   <section class="band">
     <div class="container">
       <p class="kicker">// what it is</p>
-      <h2>A retro music player for your own files.</h2>
-      <p class="lede">No ads. No algorithm. No cloud. Just your music — playing from a folder on your phone, your USB-C drive, or your iCloud Drive — through a player that looks like it was beamed in from 1999.</p>
+      <h2>A modern player for the music you already own.</h2>
+      <p class="lede">Built for the people who never threw out their MP3 folders. The CD ripper who filled three external drives in 2005. The Napster-era curator with a meticulous "Best Of 2003" directory. The audio-archivist who treats a hard drive like a library, not a cache.</p>
+      <p class="lede">HarmonIQ plays those files — straight off your drive, on your iPhone — through a player that looks like it was beamed in from 1999, with a 2026 brain bolted on top.</p>
+    </div>
+  </section>
+
+  <!-- PHILOSOPHY: data sovereignty -->
+  <section class="band alt philosophy">
+    <div class="container">
+      <p class="kicker">// philosophy</p>
+      <h2>Data sovereignty for your music library.</h2>
+      <p class="lede"><strong>You own your music.</strong> Not a streaming service that can pull a license tomorrow. Not a cloud locker that needs an account and a subscription. The files on your drive — the ones you ripped, downloaded, traded, paid for — those are <em>yours</em>, and HarmonIQ treats them that way.</p>
+      <p class="lede"><strong>You own your playlist algorithm.</strong> Smart Play's rule-based modes are pure functions in <a href="https://github.com/LeoHChen/HarmonIQ/blob/main/HarmonIQ/Player/SmartPlay.swift"><code>SmartPlay.swift</code></a> — read them, fork them, replace them. The AI modes (Vibe Match, Storyteller, Sonic Contrast) prefer Apple Intelligence's on-device foundation model when available: <em>your library never leaves your phone.</em></p>
+      <p class="lede"><strong>You own your taste.</strong> No engagement metrics, no recommendation graph, no listening history shipped off for ad targeting. The "algorithm" is a 200-line Swift file you can audit in an afternoon.</p>
+    </div>
+  </section>
+
+  <!-- OFFLINE / PORTABILITY -->
+  <section class="band">
+    <div class="container">
+      <p class="kicker">// portability</p>
+      <h2>Works on the plane. Works in the subway. Works in the woods.</h2>
+      <p class="lede">Plug a USB-C SSD into your iPhone with a few thousand albums on it. Open HarmonIQ. Play. No connection needed — not at index time, not at playback time, not even for AI curation when Apple Intelligence is on.</p>
+      <p class="lede">The drive carries its own index in a <code>HarmonIQ/</code> folder. Move the same drive to your friend's iPhone — the library shows up, the playlists are there, the artwork loads. The collection is portable; the player just borrows the drive for a session.</p>
     </div>
   </section>
 
@@ -43,16 +65,16 @@
   <section class="band alt">
     <div class="container">
       <p class="kicker">// what's inside</p>
-      <h2>Eight things HarmonIQ does that everything else stopped doing.</h2>
+      <h2>Built like the apps used to be — for people who own their files.</h2>
       <ul class="pillars">
-        <li><span class="ico">📁</span><h3>Drive-portable library</h3><p>Index lives on the drive itself. Plug into any iPhone, the library shows up.</p></li>
-        <li><span class="ico">💾</span><h3>External drives</h3><p>Pick any folder visible in Files — including a USB-C SSD — and HarmonIQ indexes it.</p></li>
-        <li><span class="ico">🔒</span><h3>Background playback</h3><p>Lock-screen + Dynamic Island controls. Live Activity for the current track.</p></li>
+        <li><span class="ico">📁</span><h3>Drive-portable library</h3><p>The index lives on the drive itself. Plug into any iPhone, the library shows up.</p></li>
+        <li><span class="ico">💾</span><h3>External drives</h3><p>Pick any folder Files can see — USB-C SSD, on-device, iCloud. 10,000-track libraries are fine.</p></li>
+        <li><span class="ico">✈️</span><h3>Fully offline</h3><p>No network at index time, playback time, or AI curation time (with Apple Intelligence on).</p></li>
+        <li><span class="ico">🧠</span><h3>On-device AI</h3><p>Vibe Match, Storyteller, Sonic Contrast — default to Apple Intelligence. No API key, no upload.</p></li>
         <li><span class="ico">🎛️</span><h3>Real 10-band EQ</h3><p>AVAudioEngine + AVAudioUnitEQ. Sliders move the actual signal.</p></li>
-        <li><span class="ico">🎨</span><h3>Winamp skins</h3><p>Drop a <code>.wsz</code> in. 9 bundled, more by tap.</p></li>
-        <li><span class="ico">✨</span><h3>Smart Play</h3><p>14 rule-based modes plus 3 AI modes — Vibe Match, Storyteller, Sonic Contrast.</p></li>
-        <li><span class="ico">🧠</span><h3>On-device AI</h3><p>Optional Apple Intelligence backend. No API key, no network egress.</p></li>
-        <li><span class="ico">📈</span><h3>16 visualizer styles</h3><p>From the classic spectrum to neon glow, waterfall, Lissajous figures.</p></li>
+        <li><span class="ico">🎨</span><h3>Winamp skins</h3><p>Drop a <code>.wsz</code> in. 9 bundled, more on tap.</p></li>
+        <li><span class="ico">✨</span><h3>Smart Play</h3><p>14 rule-based modes plus 3 AI modes. Save any AI queue as a normal playlist.</p></li>
+        <li><span class="ico">📈</span><h3>16 visualizer styles</h3><p>Classic spectrum, neon glow, waterfall, Lissajous figures, beat flash.</p></li>
       </ul>
     </div>
   </section>
@@ -121,8 +143,8 @@
   <section class="band alt">
     <div class="container center">
       <p class="kicker">// get it</p>
-      <h2>HarmonIQ runs on iOS 16+.</h2>
-      <p class="lede">Source on GitHub. TestFlight invites are managed in the README.</p>
+      <h2>Bring your collection forward.</h2>
+      <p class="lede">Twenty years of accumulated MP3s and ripped CDs deserve a player that respects them. HarmonIQ runs on iOS 16+. Source on GitHub; TestFlight invites in the README.</p>
       <div class="cta">
         <a class="btn primary" href="https://github.com/LeoHChen/HarmonIQ">Source on GitHub</a>
         <a class="btn" href="https://github.com/LeoHChen/HarmonIQ/issues/new?labels=enhancement">Request a feature</a>
