@@ -123,22 +123,50 @@ final class LibraryStore: ObservableObject {
         }
 
         let cacheDir = artworkDirectory
-        let result = withDriveAccess(root) { driveURL -> (DriveLibraryStore.DriveLibraryFile?, DriveLibraryStore.DrivePlaylistsFile?) in
+        struct DriveLoad {
+            var library: DriveLibraryStore.DriveLibraryFile?
+            var playlists: DriveLibraryStore.DrivePlaylistsFile?
+            var currentFingerprint: ScanFingerprint?
+        }
+        let result = withDriveAccess(root) { driveURL -> DriveLoad in
             let lib = DriveLibraryStore.loadLibrary(driveRoot: driveURL)
             let pls = DriveLibraryStore.loadPlaylists(driveRoot: driveURL)
             DriveLibraryStore.mirrorArtworkToLocalCache(driveRoot: driveURL, localCache: cacheDir)
-            return (lib, pls)
+            return DriveLoad(library: lib, playlists: pls, currentFingerprint: Self.computeFingerprint(rootURL: driveURL))
         }
-        guard let (lib, pls) = result else { return }
+        guard let result = result else { return }
 
-        if let lib = lib {
+        if let lib = result.library {
             let mapped = lib.tracks.map { DriveLibraryStore.toTrack($0, rootBookmarkID: root.id) }
             mergeTracks(forRoot: root.id, with: mapped)
         }
-        if let pls = pls {
+        if let pls = result.playlists {
             let mapped = pls.playlists.map { DriveLibraryStore.toPlaylist($0, rootBookmarkID: root.id) }
             mergePlaylists(forRoot: root.id, with: mapped)
         }
+
+        // Auto-incremental: if the drive's top-level mtime + child count
+        // differ from the last scan, kick off the indexer so newly-added
+        // files appear without the user having to tap Reindex (issue
+        // #58 / #55 follow-up). The indexer's own cheap-check will
+        // bail near-instantly when nothing changed.
+        if let current = result.currentFingerprint,
+           current != root.lastScanFingerprint,
+           !MusicIndexer.shared.isIndexing {
+            MusicIndexer.shared.index(root: root)
+        }
+    }
+
+    /// Cheap fingerprint helper. Mirrors `MusicIndexer.computeFingerprint` so
+    /// the load path can decide whether to auto-trigger a scan without
+    /// duplicating the file-walking step.
+    private static func computeFingerprint(rootURL: URL) -> ScanFingerprint? {
+        let fm = FileManager.default
+        let rootValues = try? rootURL.resourceValues(forKeys: [.contentModificationDateKey])
+        guard let mtime = rootValues?.contentModificationDate else { return nil }
+        let children = (try? fm.contentsOfDirectory(at: rootURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []
+        let count = children.filter { $0.lastPathComponent != DriveLibraryStore.folderName }.count
+        return ScanFingerprint(rootMtime: mtime, childCount: count)
     }
 
     private func writePlaylistsToDrive(rootID: UUID) {

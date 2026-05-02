@@ -14,6 +14,11 @@ struct SkinnedMainView: View {
     @State private var scrubbingPosition: Double? = nil
     @State private var showSkinPicker = false
     @State private var showSleepMenu = false
+    // Save AI-curated queue as playlist (issue #58 follow-up).
+    @State private var showSavePrompt = false
+    @State private var savePlaylistName = ""
+    @State private var saveToast: String?
+    @State private var saveToastUntil = Date.distantPast
 
     var body: some View {
         GeometryReader { geo in
@@ -57,6 +62,18 @@ struct SkinnedMainView: View {
                     )
 
                     Spacer()
+
+                    if player.aiAnnotation != nil {
+                        Button {
+                            savePlaylistName = defaultSaveName(annotation: player.aiAnnotation)
+                            showSavePrompt = true
+                        } label: {
+                            Image(systemName: "square.and.arrow.down")
+                                .font(.title2)
+                                .foregroundStyle(.white.opacity(0.85), .black.opacity(0.6))
+                        }
+                        .accessibilityLabel("Save AI playlist")
+                    }
 
                     SkinnedFavoriteButton()
                         .environmentObject(player)
@@ -126,8 +143,71 @@ struct SkinnedMainView: View {
             SkinPickerSheet()
                 .environmentObject(skinManager)
         }
+        .alert("Save Smart Play Queue", isPresented: $showSavePrompt) {
+            TextField("Name", text: $savePlaylistName)
+            Button("Save") {
+                let trimmed = savePlaylistName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return }
+                performSave(name: trimmed)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Saves the current AI-curated queue as a regular playlist on the drive that owns most of the tracks.")
+        }
+        .overlay(alignment: .top) { saveToastView }
         .onAppear  { player.setVisualizerActive(true)  }
         .onDisappear { player.setVisualizerActive(false) }
+    }
+
+    @ViewBuilder
+    private var saveToastView: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 10.0)) { timeline in
+            let remaining = saveToastUntil.timeIntervalSince(timeline.date)
+            if remaining > 0, let msg = saveToast {
+                Text(msg)
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(WinampTheme.lcdGlow)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(WinampTheme.lcdBackground.opacity(0.92))
+                    .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(WinampTheme.lcdGlow.opacity(0.6)))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .padding(.top, 60)
+                    .opacity(min(1.0, remaining / 0.4))
+            }
+        }
+    }
+
+    private func performSave(name: String) {
+        guard let annotation = player.aiAnnotation else { return }
+        let queueIDs = player.queue.map { $0.stableID }
+        let result = library.saveSmartPlaylist(
+            name: name,
+            trackIDs: queueIDs,
+            prompt: annotation.prompt,
+            mode: annotation.mode
+        )
+        if let result = result {
+            saveToast = result.partial
+                ? "Saved \(result.savedCount) of \(result.totalCount) tracks"
+                : "Saved \(result.savedCount) tracks"
+        } else {
+            saveToast = "Couldn't save — no drive holds the queue"
+        }
+        saveToastUntil = Date().addingTimeInterval(2.0)
+    }
+
+    private func defaultSaveName(annotation: AIQueueAnnotation?) -> String {
+        if let prompt = annotation?.prompt?.trimmingCharacters(in: .whitespacesAndNewlines), !prompt.isEmpty {
+            let titled = prompt.prefix(1).uppercased() + prompt.dropFirst()
+            return String(titled.prefix(40))
+        }
+        if let title = annotation?.title, !title.isEmpty {
+            return String(title.prefix(40))
+        }
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        return "Smart Mix — \(df.string(from: Date()))"
     }
 
     // MARK: - Background
