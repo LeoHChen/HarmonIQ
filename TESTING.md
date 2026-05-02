@@ -80,6 +80,10 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] Remove a track via swipe.
 - [ ] Delete a playlist via toolbar menu.
 - [ ] Cross-device persistence: confirm `<DriveRoot>/HarmonIQ/playlists.json` is written for writable drives. (For the simulator-seeded folder, this is `<simulator-app-container>/Documents/FakeDrive/HarmonIQ/playlists.json`.)
+- [ ] Favorite a track in the player (heart turns filled); the Playlists tab shows a pinned **Favorites** entry above the regular playlists. Tap it → favorited track is listed.
+- [ ] Unfavorite from the player → heart unfills, count in Favorites decrements; if it was the last track the Favorites row remains (auto-managed) but shows `0 tracks`.
+- [ ] Quit + relaunch → favorite state survives; the on-drive `playlists.json` includes `"kind": "favorites"` for the system playlist.
+- [ ] With 2+ drives mounted, favorite tracks from each → two Favorites rows appear, each labelled with its drive name.
 
 ---
 
