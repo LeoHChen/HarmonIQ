@@ -42,6 +42,10 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     }
     @Published var repeatMode: RepeatMode = .off
     @Published private(set) var activeSmartMode: SmartPlayMode? = nil
+    /// Non-nil while an AI Smart Play call is in flight. UI shows a spinner.
+    @Published private(set) var aiCurating: SmartPlayMode? = nil
+    /// Title + blurb returned by the most recent AI curation, for UI display.
+    @Published private(set) var aiAnnotation: AIQueueAnnotation? = nil
 
     /// 0...1 master volume. Mapped to the player node's `volume` directly.
     @Published var volume: Float = 0.85 {
@@ -232,7 +236,29 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         guard !queue.isEmpty else { return }
         activeSmartMode = mode
         isShuffleEnabled = false
+        aiAnnotation = nil
         loadQueue(queue, startIndex: 0)
+        playCurrent()
+        presentNowPlayingTick &+= 1
+    }
+
+    /// Build + play an AI-curated queue. `userPrompt` is only meaningful for
+    /// `.vibeMatch`. Throws if the API key is missing or the call fails so
+    /// the UI can present an error to the user.
+    func playSmartAI(mode: SmartPlayMode, from pool: [Track], userPrompt: String = "") async throws {
+        guard mode.requiresAI else { return }
+        guard !pool.isEmpty else { return }
+        aiCurating = mode
+        defer { aiCurating = nil }
+        let curated = try await SmartPlayAI.curate(mode: mode, userPrompt: userPrompt, pool: pool)
+        // Map the returned stableIDs back to in-memory Tracks.
+        let map: [String: Track] = Dictionary(uniqueKeysWithValues: pool.map { ($0.stableID, $0) })
+        let resolved: [Track] = curated.trackIDs.compactMap { map[$0] }
+        guard !resolved.isEmpty else { return }
+        activeSmartMode = mode
+        isShuffleEnabled = false
+        aiAnnotation = AIQueueAnnotation(title: curated.title, blurb: curated.blurb, rationales: curated.rationales)
+        loadQueue(resolved, startIndex: 0)
         playCurrent()
         presentNowPlayingTick &+= 1
     }
@@ -629,6 +655,18 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             onSeek: { [weak self] time in self?.seek(to: time) }
         )
     }
+}
+
+// MARK: - AI Queue annotation
+
+/// Per-queue framing returned by the AI Smart Play modes (issue #25).
+/// Lives on `AudioPlayerManager.aiAnnotation` while the AI-curated queue
+/// is active; cleared when the user starts a non-AI playback.
+struct AIQueueAnnotation: Equatable {
+    let title: String
+    let blurb: String
+    /// One-line rationale per stableID, when the model provided one.
+    let rationales: [String: String]
 }
 
 // MARK: - Meter sink

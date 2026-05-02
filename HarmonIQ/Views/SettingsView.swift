@@ -57,6 +57,18 @@ struct SettingsView: View {
                 Text("Appearance")
             }
 
+            Section {
+                NavigationLink {
+                    AISettingsView()
+                } label: {
+                    Label("AI Smart Play", systemImage: "wand.and.stars")
+                }
+            } header: {
+                Text("AI")
+            } footer: {
+                Text("Optional — adds AI-driven Smart Play modes (Vibe Match, Storyteller, Sonic Contrast). Bring your own Anthropic API key. Calls are billed to your account.")
+            }
+
             Section("About") {
                 LabeledContent("App", value: "HarmonIQ")
                 LabeledContent("Version", value: "1.0")

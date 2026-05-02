@@ -126,6 +126,14 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] **Era Walk**: queue is in non-decreasing year order (earliest first); tracks without a year appear at the end.
 - [ ] At least one of (Album Walk, Artist Roulette, Discovery Mix) still builds a sensible queue and plays — regression check.
 
+### AI Smart Play (issue #25)
+
+- [ ] Without an API key configured: the **AI-CURATED** section's three rows (Vibe Match, Storyteller, Sonic Contrast) are visible but disabled, and a "Add Anthropic API key in Settings" link is shown.
+- [ ] Settings → AI Smart Play: paste a valid `sk-ant-…` key → status flips to "Configured"; the Smart Play AI rows become enabled.
+- [ ] **Vibe Match**: tap the row → an alert prompts for a free-text vibe → enter "rainy afternoon" → a spinner appears in the section footer ("Claude is curating Vibe Match…") → a queue plays and the footer shows the title + blurb returned by the model.
+- [ ] **Storyteller** / **Sonic Contrast**: tap → queue starts without a prompt; footer shows model-generated title + blurb.
+- [ ] Network error (airplane mode mid-call) surfaces as an alert; UI returns to idle.
+
 ---
 
 ## I. Visualizer styles (SwiftUI player)
