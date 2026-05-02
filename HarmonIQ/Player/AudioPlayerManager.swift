@@ -68,25 +68,27 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     private var visualizerActive = false
     // Timestamp of last @Published currentTime write — throttled to ~2 Hz.
     private var lastPublishedTime: CFTimeInterval = 0
-    private var bgObserver: NSObjectProtocol?
-    private var fgObserver: NSObjectProtocol?
 
     override init() {
         super.init()
         setupRemoteCommands()
-        bgObserver = NotificationCenter.default.addObserver(
-            forName: UIApplication.didEnterBackgroundNotification,
-            object: nil, queue: .main) { [weak self] _ in
-                Task { @MainActor [weak self] in self?.stopDisplayLink() }
-        }
-        fgObserver = NotificationCenter.default.addObserver(
-            forName: UIApplication.willEnterForegroundNotification,
-            object: nil, queue: .main) { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    guard let self, self.isPlaying else { return }
-                    self.startDisplayLink()
-                }
-        }
+        // Selector-based registration avoids @Sendable closure issues: UIApplication
+        // lifecycle notifications are always posted on the main thread, so the @objc
+        // methods below run on the main actor without any concurrency bridging.
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification, object: nil)
+    }
+
+    @objc private func appDidEnterBackground() {
+        stopDisplayLink()
+    }
+
+    @objc private func appWillEnterForeground() {
+        if isPlaying { startDisplayLink() }
     }
 
     // MARK: - Public API
