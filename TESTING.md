@@ -38,6 +38,7 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] Folders view shows the on-disk structure.
 - [ ] Quit + relaunch app: drive is still listed, tracks appear without re-indexing.
 - [ ] Settings → Reindex (the arrow.clockwise icon next to a drive): completes without errors.
+- [ ] **Incremental reindex** (issue #55): Reindex on an unchanged drive completes near-instantly with "Up to date — N tracks". Add one new file and Reindex → status reads `Indexed N tracks (1 new)`. Delete a file and Reindex → `Indexed N tracks (1 removed)`. Existing `library.json` files (no `fileModified`) load unchanged; the next Reindex backfills.
 
 ---
 

@@ -31,15 +31,25 @@ final class MusicIndexer: ObservableObject {
 
         let bookmark = root.bookmark
         let rootID = root.id
+        let priorFingerprint = root.lastScanFingerprint
         let localCacheDir = LibraryStore.shared.artworkDirectory
+        let priorTracks = LibraryStore.shared.tracks.filter { $0.rootBookmarkID == rootID }
 
         indexingTask = Task.detached(priority: .userInitiated) {
-            await Self.runIndex(rootID: rootID, bookmark: bookmark, localCacheDir: localCacheDir)
+            await Self.runIndex(rootID: rootID,
+                                bookmark: bookmark,
+                                priorFingerprint: priorFingerprint,
+                                priorTracks: priorTracks,
+                                localCacheDir: localCacheDir)
         }
     }
 
     /// Heavy lifting runs off the main actor. UI updates hop back via MainActor.run.
-    private static func runIndex(rootID: UUID, bookmark: Data, localCacheDir: URL) async {
+    private static func runIndex(rootID: UUID,
+                                 bookmark: Data,
+                                 priorFingerprint: ScanFingerprint?,
+                                 priorTracks: [Track],
+                                 localCacheDir: URL) async {
         await MainActor.run {
             MusicIndexer.shared.statusMessage = "Resolving access to drive…"
         }
@@ -58,6 +68,24 @@ final class MusicIndexer: ObservableObject {
 
         let started = resolvedURL.startAccessingSecurityScopedResource()
         defer { if started { resolvedURL.stopAccessingSecurityScopedResource() } }
+
+        // Cheap top-level fingerprint check. If the drive root's mtime AND
+        // child count both match the last scan, declare "Up to date" and
+        // skip the walk. Caveat: in-place file edits (tag changes without
+        // rename) don't bump folder mtime, so a user who edits tags and
+        // immediately reindexes might see "Up to date" — they can hit
+        // Reindex again later, or add/remove any file at the root to
+        // invalidate the fingerprint. (Issue #55, acceptable tradeoff.)
+        if let fingerprint = priorFingerprint,
+           let current = computeFingerprint(rootURL: resolvedURL),
+           current == fingerprint {
+            await MainActor.run {
+                MusicIndexer.shared.isIndexing = false
+                MusicIndexer.shared.progress = 1
+                MusicIndexer.shared.statusMessage = "Up to date — \(priorTracks.count) tracks."
+            }
+            return
+        }
 
         // Try to create the on-drive HarmonIQ/ folder. If the picker handed us
         // a read-only location (iOS system "Music", certain iCloud paths) the
@@ -98,30 +126,58 @@ final class MusicIndexer: ObservableObject {
                 MusicIndexer.shared.progress = 1
                 MusicIndexer.shared.statusMessage = "No audio files found on this drive."
                 LibraryStore.shared.replaceTracks(forRoot: rootID, with: [])
-                if stale, var root = LibraryStore.shared.roots.first(where: { $0.id == rootID }) {
-                    if let newBookmark = try? resolvedURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
-                        root.bookmark = newBookmark
-                        LibraryStore.shared.updateRoot(root)
-                    }
-                }
+                writebackFingerprint(rootID: rootID, rootURL: resolvedURL, stale: stale)
             }
             return
         }
+
+        // Build the prior-tracks lookup once. Stored Track rows are keyed by
+        // stableID (sha1 of relative path).
+        let priorByID: [String: Track] = Dictionary(uniqueKeysWithValues: priorTracks.map { ($0.stableID, $0) })
 
         var tracks: [Track] = []
         tracks.reserveCapacity(urls.count)
         let rootPathComponents = resolvedURL.pathComponents
         var seenArtworkKeys: Set<String> = []
+        var added = 0
+        var updated = 0
+        var unchanged = 0
 
         for (idx, url) in urls.enumerated() {
             if Task.isCancelled { break }
 
             let relComponents = relativePathComponents(of: url, fromRoot: rootPathComponents)
             let stableID = stableIdentifier(for: relComponents)
-            let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
-            let fileSize = (attrs?[.size] as? NSNumber)?.int64Value ?? 0
+            let resourceValues = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+            let mtime = resourceValues?.contentModificationDate
+            let fileSize = Int64((resourceValues?.fileSize) ?? 0)
             let fileFormat = url.pathExtension.lowercased()
 
+            // Reuse path: existing row whose stored mtime matches the file's
+            // current mtime. Saves the metadata-extraction + artwork-hash
+            // round trip — the most expensive per-file work in this loop.
+            if let existing = priorByID[stableID],
+               let storedMtime = existing.fileModified,
+               let mtime = mtime,
+               abs(storedMtime.timeIntervalSince(mtime)) < 1 {
+                tracks.append(existing)
+                unchanged += 1
+                if let path = existing.artworkPath {
+                    seenArtworkKeys.insert((path as NSString).deletingPathExtension)
+                }
+                let processed = idx + 1
+                if processed % 25 == 0 || processed == urls.count {
+                    await MainActor.run {
+                        MusicIndexer.shared.processed = processed
+                        MusicIndexer.shared.totalToProcess = urls.count
+                        MusicIndexer.shared.progress = Double(processed) / Double(urls.count)
+                        MusicIndexer.shared.statusMessage = "Scanning — \(processed)/\(urls.count)"
+                    }
+                }
+                continue
+            }
+
+            // Either new (no prior row) or mtime changed → re-extract.
             let metadata = await MetadataExtractor.extract(from: url)
 
             var artworkPath: String? = nil
@@ -130,7 +186,6 @@ final class MusicIndexer: ObservableObject {
                 let hash = sha1Hex(albumKey)
                 let localTarget = localCacheDir.appendingPathComponent("\(hash).jpg")
                 if isReadOnly {
-                    // No on-drive Artwork folder — write straight to local cache.
                     if seenArtworkKeys.contains(hash) || FileManager.default.fileExists(atPath: localTarget.path) {
                         artworkPath = "\(hash).jpg"
                         seenArtworkKeys.insert(hash)
@@ -143,14 +198,12 @@ final class MusicIndexer: ObservableObject {
                     if seenArtworkKeys.contains(hash) || FileManager.default.fileExists(atPath: driveTarget.path) {
                         artworkPath = "\(hash).jpg"
                         seenArtworkKeys.insert(hash)
-                        // Best-effort mirror to local cache if it doesn't already exist there.
                         if !FileManager.default.fileExists(atPath: localTarget.path) {
                             try? FileManager.default.copyItem(at: driveTarget, to: localTarget)
                         }
                     } else if let saved = await MetadataExtractor.saveArtworkAsync(data, named: hash, to: driveArtworkDir) {
                         artworkPath = saved
                         seenArtworkKeys.insert(hash)
-                        // Mirror the freshly written jpeg into the local cache.
                         if !FileManager.default.fileExists(atPath: localTarget.path) {
                             try? FileManager.default.copyItem(at: driveTarget, to: localTarget)
                         }
@@ -176,36 +229,71 @@ final class MusicIndexer: ObservableObject {
                 duration: metadata.duration,
                 fileSize: fileSize,
                 fileFormat: fileFormat,
-                artworkPath: artworkPath
+                artworkPath: artworkPath,
+                fileModified: mtime
             )
             tracks.append(track)
+            if priorByID[stableID] == nil { added += 1 } else { updated += 1 }
 
             let processed = idx + 1
-            let total = urls.count
-            if processed % 5 == 0 || processed == total {
+            if processed % 5 == 0 || processed == urls.count {
                 await MainActor.run {
                     MusicIndexer.shared.processed = processed
-                    MusicIndexer.shared.totalToProcess = total
-                    MusicIndexer.shared.progress = total > 0 ? Double(processed) / Double(total) : 1
-                    MusicIndexer.shared.statusMessage = "Indexed \(processed) of \(total)"
+                    MusicIndexer.shared.totalToProcess = urls.count
+                    MusicIndexer.shared.progress = Double(processed) / Double(urls.count)
+                    MusicIndexer.shared.statusMessage = "Indexed \(processed) of \(urls.count)"
                 }
             }
         }
 
+        let removed = max(0, priorTracks.count - unchanged - updated)
         let collected = tracks
+        let summaryAdded = added
+        let summaryUpdated = updated
+        let summaryRemoved = removed
         await MainActor.run {
             // replaceTracks writes the on-drive library.json itself.
             LibraryStore.shared.replaceTracks(forRoot: rootID, with: collected)
-            if stale, var root = LibraryStore.shared.roots.first(where: { $0.id == rootID }) {
-                if let newBookmark = try? resolvedURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
-                    root.bookmark = newBookmark
-                    LibraryStore.shared.updateRoot(root)
-                }
-            }
+            writebackFingerprint(rootID: rootID, rootURL: resolvedURL, stale: stale)
             MusicIndexer.shared.isIndexing = false
             MusicIndexer.shared.progress = 1
-            MusicIndexer.shared.statusMessage = "Indexed \(collected.count) tracks."
+            if summaryAdded == 0 && summaryUpdated == 0 && summaryRemoved == 0 {
+                MusicIndexer.shared.statusMessage = "Up to date — \(collected.count) tracks."
+            } else {
+                var parts: [String] = []
+                if summaryAdded > 0 { parts.append("\(summaryAdded) new") }
+                if summaryUpdated > 0 { parts.append("\(summaryUpdated) updated") }
+                if summaryRemoved > 0 { parts.append("\(summaryRemoved) removed") }
+                MusicIndexer.shared.statusMessage = "Indexed \(collected.count) tracks (\(parts.joined(separator: ", "))).";
+            }
         }
+    }
+
+    /// Persist the new fingerprint + bookmark on the LibraryRoot. Run on
+    /// the main actor (needs LibraryStore).
+    @MainActor
+    private static func writebackFingerprint(rootID: UUID, rootURL: URL, stale: Bool) {
+        guard var root = LibraryStore.shared.roots.first(where: { $0.id == rootID }) else { return }
+        if stale, let newBookmark = try? rootURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
+            root.bookmark = newBookmark
+        }
+        if let fp = computeFingerprint(rootURL: rootURL) {
+            root.lastScanFingerprint = fp
+        }
+        LibraryStore.shared.updateRoot(root)
+    }
+
+    /// Cheap fingerprint: drive root's mtime + immediate-child count.
+    /// Returns nil when the FS metadata can't be read.
+    nonisolated private static func computeFingerprint(rootURL: URL) -> ScanFingerprint? {
+        let fm = FileManager.default
+        let rootValues = try? rootURL.resourceValues(forKeys: [.contentModificationDateKey])
+        guard let mtime = rootValues?.contentModificationDate else { return nil }
+        let children = (try? fm.contentsOfDirectory(at: rootURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []
+        // Exclude HarmonIQ's own folder so writing the artwork cache doesn't
+        // invalidate the fingerprint.
+        let count = children.filter { $0.lastPathComponent != DriveLibraryStore.folderName }.count
+        return ScanFingerprint(rootMtime: mtime, childCount: count)
     }
 
     // MARK: - File walking (nonisolated helpers)

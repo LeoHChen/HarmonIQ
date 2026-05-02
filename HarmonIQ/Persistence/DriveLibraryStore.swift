@@ -40,6 +40,10 @@ enum DriveLibraryStore {
         var fileSize: Int64
         var fileFormat: String
         var artworkPath: String?
+        /// File mtime at last scan. Optional so library.json files written
+        /// by builds before issue #55 still decode; treated as "unknown,
+        /// re-extract once" by the indexer to backfill on next scan.
+        var fileModified: Date?
     }
 
     struct DrivePlaylistsFile: Codable {
@@ -148,7 +152,8 @@ enum DriveLibraryStore {
             duration: dt.duration,
             fileSize: dt.fileSize,
             fileFormat: dt.fileFormat,
-            artworkPath: dt.artworkPath
+            artworkPath: dt.artworkPath,
+            fileModified: dt.fileModified
         )
     }
 
@@ -168,7 +173,8 @@ enum DriveLibraryStore {
             duration: t.duration,
             fileSize: t.fileSize,
             fileFormat: t.fileFormat,
-            artworkPath: t.artworkPath
+            artworkPath: t.artworkPath,
+            fileModified: t.fileModified
         )
     }
 
