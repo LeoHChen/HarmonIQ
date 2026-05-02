@@ -170,7 +170,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     }
 
     func playSmart(mode: SmartPlayMode, from pool: [Track]) {
-        let queue = SmartPlayBuilder.buildQueue(mode: mode, from: pool, recentlyPlayed: sessionPlayedIDs)
+        let queue = SmartPlayBuilder.buildQueue(mode: mode, from: pool, recentlyPlayed: sessionPlayedIDs, seed: currentTrack)
         guard !queue.isEmpty else { return }
         activeSmartMode = mode
         isShuffleEnabled = false
