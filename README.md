@@ -95,6 +95,32 @@ project.yml                  # XcodeGen source
 
 See [GitHub Releases](https://github.com/LeoHChen/HarmonIQ/releases) for the full notes and tag history.
 
+### v1.0 — 2026-05-02
+
+The "your collection deserves a real player" release. Brings the offline-first, drive-portable foundation up to a 1.0 feature set built around **data sovereignty** for collectors with thousands of MP3s and ripped CDs.
+
+**Functional EQ.** AVAudioEngine + AVAudioUnitEQ replaces AVAudioPlayer; the 10-band sliders move the actual signal. Bundled presets (Flat, Rock, Pop, Jazz, Classical, Bass Boost, Vocal Boost) plus persisted custom curves. (#28)
+
+**On-device AI Smart Play.** Three new modes — **Vibe Match** (free-text vibe → curated queue), **Storyteller** (8–12 track narrative arc), **Sonic Contrast** (alternates by style). Default to Apple Intelligence's foundation model on iOS 26 + iPhone 15 Pro+; falls back to an Anthropic API key when configured. Save any AI-curated queue as a normal drive-resident playlist. (#25, #58)
+
+**Smarter rule-based modes.** Genre Tunnel (stay inside the playing track's genre), Era Walk (chronological tour), Mood Arc, Deep Cut, One Per Artist now ship alongside the original suite — 14 rule-based modes + 3 AI modes total.
+
+**Live Activity for background playback.** Lock-screen banner + Dynamic Island compact / expanded / minimal layouts; throttled tick updates respect ActivityKit budgets. (#18)
+
+**Favorites.** Heart toggle on both player skins; saves to a system "Favorites" playlist on the drive (Option A from the issue), so favorites travel between devices. (#33)
+
+**Fancy oscilloscope visualizers.** Eight new osc styles — Neon Glow, Harmonic Layers, Mirror Wave, Filled Wave, Radial Wave, Waterfall, Lissajous, Beat Flash — bringing the SwiftUI visualizer total to 16. The skinned (Winamp) player tap-cycles through all 16 too. (#26, #27, #36)
+
+**Drive UX overhaul.** Incremental reindex (skip work when the drive is unchanged; only re-extract metadata for files whose mtime changed). Auto-detect drive content via foreground refresh + manual **Reload** button per drive. Force-reindex flag so explicit Reindex never silently no-ops. (#55)
+
+**Settings polish.** Real Version / Build / Commit / Tag / Built-at in the About row (build-time `Info.plist` injection). New **Feedback** section with one-tap links to file feature requests, file bugs, browse open issues, star the repo, and copy build info for triage. AI section captures the user's optional Anthropic key. (#52, #59)
+
+**Public landing site.** [www.leochen.net/HarmonIQ](https://www.leochen.net/HarmonIQ/) — sun-bleached gradient hero, all 9 bundled skins as native previews, 16-style visualizer grid, "Make it yours" contribution invitations. Plain HTML/CSS, no analytics, no tracking. (#57)
+
+**Diagnostics.** `os.Logger` instrumentation in the playback path (subsystem `net.leochen.harmoniq`, category `playback`) — track-finish success flags, decode errors, audio-session interruptions, route changes, security-scope releases. Filter in Console.app to triage mid-track aborts.
+
+**UI consistency.** Skinned-player chrome bar redesigned — five buttons (skin / save-AI / favorite / sleep / close), all 36×36, all hierarchical-white SF Symbols. Search and Playlists tabs gain proper inline titles. Save-AI uses `bookmark.fill` instead of the share-arrow.
+
 ### v0.4 — 2026-05-02
 - **Sleep timer**: stop after 15/30/45/60 min or at the end of the current track; live LCD countdown sits in the player transport.
 - **Visualizer overhaul**: 8 selectable styles (spectrum, oscilloscope, plasma, mirror, radial pulse, particles, fire, starfield); active style persists across launches; long-press or double-tap the visualizer to cycle. The skinned (Winamp) player honors the same choice within its 76×16 + palette constraints.
