@@ -8,8 +8,9 @@ A SwiftUI music player for iPhone and iPad, styled after the classic Winamp era.
 - **External-drive friendly.** Pick any folder Files can see (USB-C drives, SMB shares, iCloud Drive, on-device storage). Read-only locations are supported via a sandbox shadow store.
 - **Background playback** with full lock-screen / Control Center / CarPlay-style controls via `MPNowPlayingInfoCenter`.
 - **Winamp skins.** Drop classic `.wsz` files in via the importer; bundled skins ship with the app. Skinned main window, equalizer, and playlist all render from the original sprites.
-- **SmartPlay queues.** Pure Random, Artist Roulette, Album Walk, Decade Shuffle, Discovery Mix, and more — built on top of your library.
-- **Live visualizer.** 24-band spectrum, oscilloscope, and plasma reconstructions driven by AVAudioPlayer's metering.
+- **SmartPlay queues.** Twelve curators including Pure Random, Artist Roulette, Album Walk, Decade Shuffle, Discovery Mix, Mood Arc, Deep Cut, and One Per Artist — built on top of your library.
+- **Live visualizer.** Eight selectable styles (spectrum, oscilloscope, plasma, mirror, radial pulse, particles, fire, starfield) on the SwiftUI player; the skinned player honors the same choice within Winamp's pixel-grid + palette constraints. Long-press or double-tap to cycle.
+- **Sleep timer.** Auto-stop after a fixed duration (15/30/45/60 min) or at the end of the current track, with a live LCD countdown.
 
 ## Requirements
 
@@ -64,6 +65,15 @@ project.yml                  # XcodeGen source
 ## Releases
 
 See [GitHub Releases](https://github.com/LeoHChen/HarmonIQ/releases) for the full notes and tag history.
+
+### v0.4 — 2026-05-02
+- **Sleep timer**: stop after 15/30/45/60 min or at the end of the current track; live LCD countdown sits in the player transport.
+- **Visualizer overhaul**: 8 selectable styles (spectrum, oscilloscope, plasma, mirror, radial pulse, particles, fire, starfield); active style persists across launches; long-press or double-tap the visualizer to cycle. The skinned (Winamp) player honors the same choice within its 76×16 + palette constraints.
+- **SmartPlay**: three new rule-based modes — Mood Arc (high-energy → wind-down), Deep Cut (skip openers and "Greatest Hits" comps), One Per Artist (max library breadth).
+- **Branded launch screen**: Sun-Bleached Grooves splash matching the app icon (sunset gradient + black vinyl disc, no tonearm).
+- **Performance**: throttle `currentTime` publish to ~2 Hz, gate the visualizer + display link on view visibility, pause the display link when the app backgrounds. Substantially fewer SwiftUI invalidations during normal playback.
+- **Reliability**: fixed several Sendable / actor-isolation issues around background/foreground notification observers (no more compile-time isolation warnings; no spurious main-actor hops).
+- Repeat-one indicator: subtle "1" badge on the repeat button when single-track loop is active.
 
 ### v0.3 — 2026-05-01
 - Albums and Artists drill-downs work again (taps push into detail instead of looping).

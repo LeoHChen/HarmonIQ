@@ -41,8 +41,8 @@ targets:
       path: HarmonIQ/Info.plist
       properties:
         CFBundleDisplayName: HarmonIQ
-        CFBundleShortVersionString: "0.3"
-        CFBundleVersion: "2"
+        CFBundleShortVersionString: "0.4"
+        CFBundleVersion: "3"
         UILaunchScreen:
           UIImageName: LaunchImage
           UIImageRespectsSafeAreaInsets: false
