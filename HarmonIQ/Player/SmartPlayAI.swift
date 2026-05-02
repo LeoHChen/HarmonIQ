@@ -5,9 +5,12 @@ import Foundation
 ///   - Storyteller: model picks a thematic 8–12 track narrative arc
 ///   - Sonic Contrast: alternates between stylistically different tracks
 ///
-/// All three call the same Anthropic Messages endpoint with a manifest of
-/// the library; the JSON response specifies which `stableID`s to play in
-/// what order.
+/// Two backends share this pipeline:
+///   - Anthropic (cloud): generous context, full stableIDs in the manifest.
+///   - Apple Intelligence (on-device): 4096-token window, so we send a
+///     much smaller manifest with positional indexes and slim metadata.
+///     The smaller manifest is also random-sampled so any subset of the
+///     library can be the starting pool.
 enum SmartPlayAI {
     /// What the model returns + a sortable view of the library it saw.
     struct Curated {
@@ -18,34 +21,68 @@ enum SmartPlayAI {
         let rationales: [String: String]
     }
 
-    /// Maximum tracks we send in the manifest. Caps token cost on huge
-    /// libraries; the model still has plenty to choose from.
-    static let manifestCap = 1000
+    /// Maximum tracks we send to the cloud backend. Cloud has plenty of
+    /// context; this caps token cost on huge libraries.
+    static let cloudManifestCap = 1000
+
+    /// Maximum tracks we send to the on-device backend. Apple Intelligence's
+    /// foundation model has a 4096-token context window — system prompt +
+    /// user-prompt scaffolding + the model's response all live in that
+    /// budget too. With slim metadata + positional indexes (instead of
+    /// 40-char SHA1 stableIDs) this is the largest manifest that fits
+    /// reliably with room for a 25-track response.
+    static let onDeviceManifestCap = 60
 
     static func curate(mode: SmartPlayMode, userPrompt: String, pool: [Track]) async throws -> Curated {
-        let manifest = compactManifest(pool: pool)
-        let systemPrompt = systemPrompt(for: mode)
-        let userText = """
-        \(userPromptPreamble(for: mode, userText: userPrompt))
-
-        Library (\(manifest.count) tracks):
-        \(jsonString(manifest))
-
-        Return ONLY a JSON object with this shape (no markdown fence, no commentary):
-        {
-          "title": "<short queue title>",
-          "blurb": "<one short paragraph framing the queue>",
-          "queue": [
-            {"id": "<stableID from the library>", "why": "<one sentence rationale>"}
-          ]
-        }
-        """
-
-        // Pick the backend up-front (read MainActor state once, then drop
-        // back to the actor-free pipeline). Prefer on-device when it's
-        // toggled ON and the system reports the model is ready; fall back
-        // to Anthropic when not.
+        // Pick the backend up-front so we can size the manifest correctly.
         let backend = await pickBackend()
+
+        // Sample the pool. On-device gets a random sample (any subset of
+        // the library can seed a session); cloud gets the front of the
+        // library (cheap and good enough at 1000 entries).
+        let sampled: [Track]
+        switch backend {
+        case .appleIntelligence:
+            sampled = randomSample(pool: pool, count: onDeviceManifestCap)
+        case .anthropic:
+            sampled = Array(pool.prefix(cloudManifestCap))
+        }
+
+        let systemPrompt = systemPrompt(for: mode, backend: backend)
+        let userText: String
+        switch backend {
+        case .appleIntelligence:
+            // Index-based ids (`"0"`, `"1"`, …) save ~40 chars per row vs
+            // SHA1 stableIDs — critical for the 4K window.
+            let manifest = slimManifest(pool: sampled)
+            userText = """
+            \(userPromptPreamble(for: mode, userText: userPrompt))
+
+            Library (\(manifest.count) tracks; id is the row's index):
+            \(jsonString(manifest))
+
+            Return ONLY a JSON object — no markdown fences, no commentary:
+            {"title":"…","blurb":"…","queue":[{"id":"<index>","why":"…"}]}
+            """
+        case .anthropic:
+            let manifest = fullManifest(pool: sampled)
+            userText = """
+            \(userPromptPreamble(for: mode, userText: userPrompt))
+
+            Library (\(manifest.count) tracks):
+            \(jsonString(manifest))
+
+            Return ONLY a JSON object with this shape (no markdown fence, no commentary):
+            {
+              "title": "<short queue title>",
+              "blurb": "<one short paragraph framing the queue>",
+              "queue": [
+                {"id": "<stableID from the library>", "why": "<one sentence rationale>"}
+              ]
+            }
+            """
+        }
+
         let raw: String
         switch backend {
         case .appleIntelligence:
@@ -53,7 +90,7 @@ enum SmartPlayAI {
         case .anthropic:
             raw = try await AnthropicClient.send(systemPrompt: systemPrompt, userPrompt: userText)
         }
-        return try parse(raw: raw)
+        return try parse(raw: raw, backend: backend, sampledPool: sampled)
     }
 
     enum Backend { case appleIntelligence, anthropic }
@@ -69,20 +106,26 @@ enum SmartPlayAI {
 
     // MARK: - Prompt construction
 
-    private static func systemPrompt(for mode: SmartPlayMode) -> String {
+    private static func systemPrompt(for mode: SmartPlayMode, backend: Backend) -> String {
+        let idGuidance: String
+        switch backend {
+        case .appleIntelligence:
+            idGuidance = "- The `id` value in your output must be the row's numeric index from the manifest (string form), nothing else."
+        case .anthropic:
+            idGuidance = "- The `id` value must be the exact stableID string from the manifest. Never invent IDs."
+        }
         let baseline = """
         You are an expert music curator embedded in HarmonIQ, a personal
-        music player. The user gives you their full music library as a
-        compact JSON manifest, plus a curation goal. Your job is to pick
-        an ordered queue of `stableID`s (a subset of the manifest) and
-        give a one-sentence rationale per track.
+        music player. The user gives you their music library as a compact
+        JSON manifest, plus a curation goal. Your job is to pick an
+        ordered queue (a subset of the manifest) and give a one-sentence
+        rationale per track.
 
         Hard constraints:
-        - Only use `stableID` values that appear in the supplied manifest.
-          Never invent IDs.
+        \(idGuidance)
         - Output is JSON only, with the exact shape specified by the user.
         - Keep `blurb` under 280 characters.
-        - Aim for 12-25 tracks unless the goal explicitly asks for fewer.
+        - Aim for 12-25 tracks unless the goal asks for fewer.
         - Order matters — sequence is part of the curation.
         """
 
@@ -114,9 +157,10 @@ enum SmartPlayAI {
         }
     }
 
-    // MARK: - Manifest
+    // MARK: - Manifests
 
-    private struct ManifestEntry: Encodable {
+    /// Full manifest entry — used for the cloud backend.
+    private struct FullManifestEntry: Encodable {
         let id: String
         let title: String
         let artist: String
@@ -126,13 +170,20 @@ enum SmartPlayAI {
         let durationSec: Int
     }
 
-    private static func compactManifest(pool: [Track]) -> [ManifestEntry] {
-        // Cap to keep tokens low; sample the front end of the library —
-        // shuffle could miss recently-indexed tracks, and slicing is
-        // cheaper than a real sample for the typical case.
-        let limited = pool.prefix(manifestCap)
-        return limited.map { t in
-            ManifestEntry(
+    /// Slim manifest entry — used for the on-device backend. Drops album +
+    /// duration and uses a positional index as id, halving the per-row
+    /// token cost.
+    private struct SlimManifestEntry: Encodable {
+        let id: String     // positional index ("0", "1", …)
+        let title: String
+        let artist: String
+        let year: Int?
+        let genre: String?
+    }
+
+    private static func fullManifest(pool: [Track]) -> [FullManifestEntry] {
+        pool.map { t in
+            FullManifestEntry(
                 id: t.stableID,
                 title: t.displayTitle,
                 artist: t.displayArtist,
@@ -142,6 +193,23 @@ enum SmartPlayAI {
                 durationSec: Int(t.duration.rounded())
             )
         }
+    }
+
+    private static func slimManifest(pool: [Track]) -> [SlimManifestEntry] {
+        pool.enumerated().map { (idx, t) in
+            SlimManifestEntry(
+                id: String(idx),
+                title: t.displayTitle,
+                artist: t.displayArtist,
+                year: t.year,
+                genre: t.genre?.nilIfBlank
+            )
+        }
+    }
+
+    private static func randomSample(pool: [Track], count: Int) -> [Track] {
+        guard pool.count > count else { return pool.shuffled() }
+        return Array(pool.shuffled().prefix(count))
     }
 
     private static func jsonString<T: Encodable>(_ value: T) -> String {
@@ -154,10 +222,13 @@ enum SmartPlayAI {
 
     // MARK: - Parsing
 
-    private static func parse(raw: String) throws -> Curated {
+    private static func parse(raw: String, backend: Backend, sampledPool: [Track]) throws -> Curated {
         // Models occasionally wrap JSON in fences despite explicit "no markdown" — strip.
         let trimmed = stripCodeFence(raw.trimmingCharacters(in: .whitespacesAndNewlines))
-        guard let data = trimmed.data(using: .utf8),
+        // On-device output sometimes contains stray prose around the JSON
+        // even with explicit instructions; pull out the first {...} block.
+        let jsonText = extractFirstJSONObject(trimmed) ?? trimmed
+        guard let data = jsonText.data(using: .utf8),
               let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw AnthropicClient.ClientError.decodeError("not JSON: \(raw.prefix(200))")
         }
@@ -169,22 +240,69 @@ enum SmartPlayAI {
         var trackIDs: [String] = []
         var rationales: [String: String] = [:]
         for entry in queue {
-            guard let id = entry["id"] as? String else { continue }
-            trackIDs.append(id)
-            if let why = entry["why"] as? String { rationales[id] = why }
+            guard let rawId = entry["id"] else { continue }
+            // The model occasionally returns an integer instead of a string
+            // — accept either.
+            let idStr: String
+            if let s = rawId as? String { idStr = s }
+            else if let n = rawId as? Int { idStr = String(n) }
+            else { continue }
+            // Map back to a stableID. On-device path sent positional
+            // indexes, so resolve through the sampled pool.
+            let resolved: String?
+            switch backend {
+            case .appleIntelligence:
+                if let i = Int(idStr), i >= 0, i < sampledPool.count {
+                    resolved = sampledPool[i].stableID
+                } else {
+                    resolved = nil
+                }
+            case .anthropic:
+                resolved = idStr
+            }
+            guard let stableID = resolved else { continue }
+            trackIDs.append(stableID)
+            if let why = entry["why"] as? String { rationales[stableID] = why }
         }
         return Curated(title: title, blurb: blurb, trackIDs: trackIDs, rationales: rationales)
     }
 
     private static func stripCodeFence(_ s: String) -> String {
         guard s.hasPrefix("```") else { return s }
-        // Drop the opening fence (and an optional language tag), then find
-        // the closing fence and drop it.
         var rest = s.dropFirst(3)
         if let nl = rest.firstIndex(of: "\n") { rest = rest[rest.index(after: nl)...] }
         if let close = rest.range(of: "```", options: .backwards) {
             rest = rest[..<close.lowerBound]
         }
         return String(rest).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Find the first balanced `{...}` substring. Used to forgive stray
+    /// prose the on-device model sometimes inserts around the JSON.
+    private static func extractFirstJSONObject(_ s: String) -> String? {
+        guard let start = s.firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var inString = false
+        var escape = false
+        var idx = start
+        while idx < s.endIndex {
+            let c = s[idx]
+            if escape { escape = false; idx = s.index(after: idx); continue }
+            if inString {
+                if c == "\\" { escape = true }
+                else if c == "\"" { inString = false }
+            } else {
+                if c == "\"" { inString = true }
+                else if c == "{" { depth += 1 }
+                else if c == "}" {
+                    depth -= 1
+                    if depth == 0 {
+                        return String(s[start...idx])
+                    }
+                }
+            }
+            idx = s.index(after: idx)
+        }
+        return nil
     }
 }
