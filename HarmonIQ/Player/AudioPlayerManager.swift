@@ -83,11 +83,11 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 
-    @objc private func appDidEnterBackground() {
+    @MainActor @objc private func appDidEnterBackground() {
         stopDisplayLink()
     }
 
-    @objc private func appWillEnterForeground() {
+    @MainActor @objc private func appWillEnterForeground() {
         if isPlaying { startDisplayLink() }
     }
 
