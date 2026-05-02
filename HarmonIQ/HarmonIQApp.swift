@@ -26,6 +26,14 @@ struct HarmonIQApp: App {
                     await library.loadFromDisk()
                     NowPlayingManager.shared.activate()
                 }
+                // Drive-online detection on foreground: if the user plugged
+                // a drive in while HarmonIQ was backgrounded, this fires
+                // when they tap back. Roots that came online get their
+                // tracks loaded without a manual Reload tap.
+                .onReceive(NotificationCenter.default.publisher(
+                    for: UIApplication.didBecomeActiveNotification)) { _ in
+                    library.reloadOfflineRoots()
+                }
         }
     }
 

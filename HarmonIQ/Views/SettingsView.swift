@@ -185,17 +185,26 @@ private struct DriveRow: View {
                 Text(detailLine).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
+            // Reload — re-reads the drive's library.json without
+            // walking the filesystem. Use this when you plugged the
+            // drive in mid-session and the songs aren't showing yet.
             Button {
-                // Explicit user tap → force a full incremental walk
-                // (skip the cheap fingerprint short-circuit). Otherwise
-                // a stale fingerprint could silently say "up to date"
-                // when the drive's library.json doesn't reflect what's
-                // actually on disk.
+                library.reloadDrive(root)
+            } label: {
+                Image(systemName: "tray.and.arrow.down")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Reload drive")
+
+            // Reindex — full incremental walk; force=true skips the
+            // cheap-check so an explicit tap never silently no-ops.
+            Button {
                 indexer.index(root: root, force: true)
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
             .buttonStyle(.borderless)
+            .accessibilityLabel("Reindex drive")
             .disabled(indexer.isIndexing)
         }
         .swipeActions {

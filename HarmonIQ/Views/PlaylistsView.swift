@@ -111,6 +111,7 @@ struct PlaylistsView: View {
             }
         }
         .navigationTitle("Playlists")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

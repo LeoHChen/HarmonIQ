@@ -169,6 +169,28 @@ final class LibraryStore: ObservableObject {
         return ScanFingerprint(rootMtime: mtime, childCount: count)
     }
 
+    /// Re-reads a single drive's on-disk index without forcing a full
+    /// reindex. Picks up tracks that landed via another device while
+    /// this iPhone wasn't looking, and is what the Reload button in
+    /// Settings calls.
+    func reloadDrive(_ root: LibraryRoot) {
+        loadDriveData(for: root)
+    }
+
+    /// Re-loads any drive that currently has zero in-memory tracks. Called
+    /// when the app returns to the foreground — covers the common case of
+    /// the user plugging a drive in while HarmonIQ was backgrounded. The
+    /// per-drive cheap-check inside `loadDriveData` keeps this near-free
+    /// when nothing actually came online.
+    func reloadOfflineRoots() {
+        for root in roots {
+            let hasTracks = tracks.contains(where: { $0.rootBookmarkID == root.id })
+            if !hasTracks {
+                loadDriveData(for: root)
+            }
+        }
+    }
+
     private func writePlaylistsToDrive(rootID: UUID) {
         guard let root = roots.first(where: { $0.id == rootID }) else { return }
         let owned = playlists.filter { $0.rootBookmarkID == rootID }

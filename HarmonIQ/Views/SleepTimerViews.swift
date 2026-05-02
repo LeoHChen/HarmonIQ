@@ -15,8 +15,9 @@ struct SleepTimerButton: View {
         } label: {
             Image(systemName: "moon.zzz.fill")
                 .font(.title2)
-                .foregroundStyle(isActive ? Color.accentColor : .white.opacity(0.85),
-                                 .black.opacity(0.6))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.white.opacity(0.92))
+                .frame(width: 36, height: 36)
         }
         .accessibilityLabel(isActive ? "Sleep timer active" : "Set sleep timer")
         .confirmationDialog("Sleep Timer", isPresented: $showDialog, titleVisibility: .visible) {
