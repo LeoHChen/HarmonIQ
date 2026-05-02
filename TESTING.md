@@ -48,6 +48,7 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] Volume slider audibly changes loudness.
 - [ ] Stop + restart: time resets to 0:00.
 - [ ] Close the sheet and reopen via the player entry — same track, time roughly accurate.
+- [ ] Diagnostic log (issue #38): with the device attached and Console.app filtered to `subsystem:net.leochen.harmoniq category:playback`, normal playback emits `playStart` and `didFinishPlaying success=true` events; if a track aborts mid-track, `endedEarly=true` (or a `decodeError` / `interruption` / `routeChange` line) shows the cause.
 
 ---
 
