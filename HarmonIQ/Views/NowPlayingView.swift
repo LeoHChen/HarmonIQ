@@ -7,6 +7,11 @@ struct NowPlayingView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var seekingValue: Double?
     @State private var showSkinPicker = false
+    // Save AI-curated queue as a playlist (issue #58).
+    @State private var showSavePrompt = false
+    @State private var savePlaylistName = ""
+    @State private var saveToast: String?
+    @State private var saveToastUntil = Date.distantPast
 
     var body: some View {
         ZStack {
@@ -183,15 +188,95 @@ struct NowPlayingView: View {
                     .lcdReadout(corner: 3)
                     .padding(.bottom, 8)
                 }
+
+                if player.aiAnnotation != nil {
+                    Button {
+                        savePlaylistName = defaultSaveName(annotation: player.aiAnnotation)
+                        showSavePrompt = true
+                    } label: {
+                        Label("Save as Playlist", systemImage: "square.and.arrow.down")
+                            .font(.caption.bold())
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(WinampTheme.lcdGlow)
+                    .padding(.bottom, 8)
+                }
             }
             .padding(.bottom, 24)
+            .overlay(alignment: .top) { saveToastView }
         }
         .sheet(isPresented: $showSkinPicker) {
             SkinPickerSheet()
                 .environmentObject(skinManager)
         }
+        .alert("Save Smart Play Queue", isPresented: $showSavePrompt) {
+            TextField("Name", text: $savePlaylistName)
+            Button("Save") {
+                let trimmed = savePlaylistName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return }
+                performSave(name: trimmed)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Saves the current AI-curated queue as a regular playlist on the drive that owns most of the tracks.")
+        }
         .onAppear  { player.setVisualizerActive(true)  }
         .onDisappear { player.setVisualizerActive(false) }
+    }
+
+    @ViewBuilder
+    private var saveToastView: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 10.0)) { timeline in
+            let remaining = saveToastUntil.timeIntervalSince(timeline.date)
+            if remaining > 0, let msg = saveToast {
+                Text(msg)
+                    .font(WinampTheme.lcdFont(size: 12))
+                    .foregroundStyle(WinampTheme.lcdGlow)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(WinampTheme.lcdBackground.opacity(0.9))
+                    .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(WinampTheme.lcdGlow.opacity(0.6)))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .padding(.top, 60)
+                    .opacity(min(1.0, remaining / 0.4))
+                    .transition(.opacity)
+            }
+        }
+    }
+
+    private func performSave(name: String) {
+        guard let annotation = player.aiAnnotation else { return }
+        let queueIDs = player.queue.map { $0.stableID }
+        let result = library.saveSmartPlaylist(
+            name: name,
+            trackIDs: queueIDs,
+            prompt: annotation.prompt,
+            mode: annotation.mode
+        )
+        if let result = result {
+            saveToast = result.partial
+                ? "Saved \(result.savedCount) of \(result.totalCount) tracks"
+                : "Saved \(result.savedCount) tracks"
+        } else {
+            saveToast = "Couldn't save — no drive contains the queue"
+        }
+        saveToastUntil = Date().addingTimeInterval(2.0)
+    }
+
+    private func defaultSaveName(annotation: AIQueueAnnotation?) -> String {
+        if let prompt = annotation?.prompt?.trimmingCharacters(in: .whitespacesAndNewlines), !prompt.isEmpty {
+            // Capitalize first character; truncate to ~40 chars.
+            let titled = prompt.prefix(1).uppercased() + prompt.dropFirst()
+            return String(titled.prefix(40))
+        }
+        if let title = annotation?.title, !title.isEmpty {
+            return String(title.prefix(40))
+        }
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        return "Smart Mix — \(df.string(from: Date()))"
     }
 
     private var repeatIconName: String {

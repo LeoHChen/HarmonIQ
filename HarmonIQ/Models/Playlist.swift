@@ -12,6 +12,14 @@ struct Playlist: Identifiable, Hashable {
     /// True when this is the drive's system "Favorites" playlist. Each drive has
     /// at most one. Persisted to the drive (so all devices see the same set).
     var isFavorites: Bool
+    /// True when this playlist was saved from an AI Smart Play queue. Persisted.
+    var isSmart: Bool
+    /// The user's original prompt (for Vibe Match), or nil for non-prompt
+    /// modes / non-AI playlists. Persisted so the row can show what was typed.
+    var smartPrompt: String?
+    /// The `SmartPlayMode.rawValue` used to generate this queue, if any.
+    /// Stored so a future "regenerate" action can rebuild it. Persisted.
+    var smartMode: String?
 
     init(id: UUID = UUID(),
          name: String,
@@ -19,7 +27,10 @@ struct Playlist: Identifiable, Hashable {
          createdAt: Date = Date(),
          updatedAt: Date = Date(),
          rootBookmarkID: UUID,
-         isFavorites: Bool = false) {
+         isFavorites: Bool = false,
+         isSmart: Bool = false,
+         smartPrompt: String? = nil,
+         smartMode: String? = nil) {
         self.id = id
         self.name = name
         self.trackIDs = trackIDs
@@ -27,6 +38,9 @@ struct Playlist: Identifiable, Hashable {
         self.updatedAt = updatedAt
         self.rootBookmarkID = rootBookmarkID
         self.isFavorites = isFavorites
+        self.isSmart = isSmart
+        self.smartPrompt = smartPrompt
+        self.smartMode = smartMode
     }
 }
 

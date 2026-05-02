@@ -96,6 +96,10 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] Unfavorite from the player → heart unfills, count in Favorites decrements; if it was the last track the Favorites row remains (auto-managed) but shows `0 tracks`.
 - [ ] Quit + relaunch → favorite state survives; the on-drive `playlists.json` includes `"kind": "favorites"` for the system playlist.
 - [ ] With 2+ drives mounted, favorite tracks from each → two Favorites rows appear, each labelled with its drive name.
+- [ ] After running Vibe Match (or Storyteller / Sonic Contrast), the Now Playing screen shows a **Save as Playlist** button below the SMART PLAY pill. Tap → alert pre-fills with the prompt as the name; saving produces a row in the Playlists tab under an **AI-Curated** section with a sparkles icon and the prompt as subtitle.
+- [ ] Saved smart playlist plays the same tracks in the same order on relaunch.
+- [ ] Cross-drive queue: the playlist owns the drive that holds the most tracks; "Saved N of M tracks" toast appears when not all tracks are kept.
+- [ ] Existing `playlists.json` files (no `smartPrompt`/`smartMode` fields) still decode without errors.
 
 ---
 

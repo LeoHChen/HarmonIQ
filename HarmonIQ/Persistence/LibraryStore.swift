@@ -292,6 +292,67 @@ final class LibraryStore: ObservableObject {
         return playlist.trackIDs.compactMap { map[$0] }
     }
 
+    // MARK: - Smart playlists (issue #58)
+
+    struct SmartSaveResult {
+        let playlist: Playlist
+        let savedCount: Int
+        let totalCount: Int
+        var partial: Bool { savedCount < totalCount }
+    }
+
+    /// Save an AI-curated queue as a regular drive-resident playlist.
+    /// `trackIDs` is the ordered queue. `prompt`/`mode` are stashed on the
+    /// playlist so the row can show what was typed and a future Regenerate
+    /// action can rebuild it.
+    ///
+    /// Owning drive: the drive that contains the most tracks from the
+    /// queue (playlists own exactly one drive). Tracks on other drives
+    /// are dropped from the saved playlist; the result reports the
+    /// `savedCount` so the UI can show "Saved N of M tracks".
+    @discardableResult
+    func saveSmartPlaylist(name: String,
+                           trackIDs: [String],
+                           prompt: String?,
+                           mode: String?) -> SmartSaveResult? {
+        guard !trackIDs.isEmpty else { return nil }
+        // Map each queue track to its owning drive so we can count.
+        let trackByID: [String: Track] = Dictionary(uniqueKeysWithValues: tracks.map { ($0.stableID, $0) })
+        var dropPerRoot: [UUID: [String]] = [:]
+        for tid in trackIDs {
+            guard let t = trackByID[tid] else { continue }
+            dropPerRoot[t.rootBookmarkID, default: []].append(tid)
+        }
+        // Pick the drive holding the most queue tracks. Tiebreaker: first
+        // mounted drive that has a positive count, in `roots` order.
+        let chosen: UUID? = roots
+            .map { ($0.id, dropPerRoot[$0.id]?.count ?? 0) }
+            .filter { $0.1 > 0 }
+            .max(by: { $0.1 < $1.1 })?.0
+        guard let target = chosen else { return nil }
+        let kept = dropPerRoot[target] ?? []
+        // Preserve the original queue order while filtering to the chosen drive.
+        let keptSet = Set(kept)
+        let orderedKept = trackIDs.filter { keptSet.contains($0) }
+        let p = Playlist(
+            name: name,
+            trackIDs: orderedKept,
+            rootBookmarkID: target,
+            isSmart: true,
+            smartPrompt: prompt,
+            smartMode: mode
+        )
+        playlists.append(p)
+        writePlaylistsToDrive(rootID: target)
+        return SmartSaveResult(playlist: p, savedCount: orderedKept.count, totalCount: trackIDs.count)
+    }
+
+    /// All AI-saved playlists, ordered by `createdAt` descending.
+    var smartPlaylists: [Playlist] {
+        playlists.filter { $0.isSmart }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
     // MARK: - Favorites
 
     /// Per-drive system Favorites playlist, if one exists for the given drive.
