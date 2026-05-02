@@ -1,5 +1,7 @@
 # HarmonIQ
 
+**Website:** [www.leochen.net/HarmonIQ](https://www.leochen.net/HarmonIQ/) — landing site lives in [`docs/`](docs/).
+
 A SwiftUI music player for iPhone and iPad, styled after the classic Winamp era. Plays audio files straight off any folder you can mount in Files — including USB drives — and ships its index alongside the music so the same drive works on any device without re-scanning.
 
 ## Screenshots

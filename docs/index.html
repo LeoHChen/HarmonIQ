@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarmonIQ — Music for the love of vinyl, ported to your iPhone</title>
+  <meta name="description" content="A retro, hackable iOS music player with Winamp skins, Smart Play, on-device AI curation, and a real 10-band EQ. Open source.">
+  <meta property="og:title" content="HarmonIQ">
+  <meta property="og:description" content="Retro Winamp-flavored iOS music player. Drive-portable library, 10-band EQ, AI Smart Play, classic skins, 16 visualizer styles. Open source.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="vinyl" aria-hidden="true">
+      <div class="halo"></div>
+      <div class="disc">
+        <div class="grooves"></div>
+        <div class="label"></div>
+      </div>
+    </div>
+    <h1 class="lcd">HARMONIQ</h1>
+    <p class="tagline">Music for the love of vinyl,<br>ported to your iPhone.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/LeoHChen/HarmonIQ#testflight">TestFlight</a>
+      <a class="btn" href="https://github.com/LeoHChen/HarmonIQ">GitHub</a>
+    </div>
+  </section>
+
+  <!-- WHAT IT IS -->
+  <section class="band">
+    <div class="container">
+      <p class="kicker">// what it is</p>
+      <h2>A retro music player for your own files.</h2>
+      <p class="lede">No ads. No algorithm. No cloud. Just your music — playing from a folder on your phone, your USB-C drive, or your iCloud Drive — through a player that looks like it was beamed in from 1999.</p>
+    </div>
+  </section>
+
+  <!-- PILLARS -->
+  <section class="band alt">
+    <div class="container">
+      <p class="kicker">// what's inside</p>
+      <h2>Eight things HarmonIQ does that everything else stopped doing.</h2>
+      <ul class="pillars">
+        <li><span class="ico">📁</span><h3>Drive-portable library</h3><p>Index lives on the drive itself. Plug into any iPhone, the library shows up.</p></li>
+        <li><span class="ico">💾</span><h3>External drives</h3><p>Pick any folder visible in Files — including a USB-C SSD — and HarmonIQ indexes it.</p></li>
+        <li><span class="ico">🔒</span><h3>Background playback</h3><p>Lock-screen + Dynamic Island controls. Live Activity for the current track.</p></li>
+        <li><span class="ico">🎛️</span><h3>Real 10-band EQ</h3><p>AVAudioEngine + AVAudioUnitEQ. Sliders move the actual signal.</p></li>
+        <li><span class="ico">🎨</span><h3>Winamp skins</h3><p>Drop a <code>.wsz</code> in. 9 bundled, more by tap.</p></li>
+        <li><span class="ico">✨</span><h3>Smart Play</h3><p>14 rule-based modes plus 3 AI modes — Vibe Match, Storyteller, Sonic Contrast.</p></li>
+        <li><span class="ico">🧠</span><h3>On-device AI</h3><p>Optional Apple Intelligence backend. No API key, no network egress.</p></li>
+        <li><span class="ico">📈</span><h3>16 visualizer styles</h3><p>From the classic spectrum to neon glow, waterfall, Lissajous figures.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SKIN SHOWCASE -->
+  <section class="band">
+    <div class="container">
+      <p class="kicker">// skins</p>
+      <h2>Nine bundled. Bring your own .wsz.</h2>
+      <p class="lede">HarmonIQ reads classic Winamp 2.x <code>.wsz</code> archives natively — bitmaps, palette, transparency mask. Tap the visualizer to cycle the 16 styles; the active skin's VISCOLOR.TXT palette colors them.</p>
+      <div class="skin-grid">
+        <figure><img src="skins/Base-2.91.png" alt="Base-2.91 skin"><figcaption>Base-2.91.wsz</figcaption></figure>
+        <figure><img src="skins/Bento-Classified.png" alt="Bento Classified skin"><figcaption>Bento-Classified.wsz</figcaption></figure>
+        <figure><img src="skins/Crystal-Display.png" alt="Crystal Display skin"><figcaption>Crystal-Display.wsz</figcaption></figure>
+        <figure><img src="skins/Glass-Factory.png" alt="Glass Factory skin"><figcaption>Glass-Factory.wsz</figcaption></figure>
+        <figure><img src="skins/Green-Dimension-V2.png" alt="Green Dimension skin"><figcaption>Green-Dimension-V2.wsz</figcaption></figure>
+        <figure><img src="skins/Internet-Archive.png" alt="Internet Archive skin"><figcaption>Internet-Archive.wsz</figcaption></figure>
+        <figure><img src="skins/Luna-Steel.png" alt="Luna Steel skin"><figcaption>Luna-Steel.wsz</figcaption></figure>
+        <figure><img src="skins/MacOSXAqua1-5.png" alt="Mac OS X Aqua skin"><figcaption>MacOSXAqua1-5.wsz</figcaption></figure>
+        <figure><img src="skins/TopazAmp1-2.png" alt="TopazAmp skin"><figcaption>TopazAmp1-2.wsz</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- VISUALIZERS -->
+  <section class="band alt">
+    <div class="container">
+      <p class="kicker">// visualizers</p>
+      <h2>Sixteen styles, one engine.</h2>
+      <p class="lede">Each style runs on the same audio tap — RMS + peak from the EQ output, fed into a 64-sample oscilloscope buffer and 24-band spectrum. SwiftUI Canvas does the drawing at 30 fps.</p>
+      <ul class="vis-grid">
+        <li><span>SPECTRUM</span><span>OSCILLOSCOPE</span><span>PLASMA</span><span>MIRROR</span></li>
+        <li><span>RADIAL PULSE</span><span>PARTICLES</span><span>FIRE</span><span>STARFIELD</span></li>
+        <li><span>OSC · NEON GLOW</span><span>OSC · HARMONIC LAYERS</span><span>OSC · MIRROR WAVE</span><span>OSC · FILLED WAVE</span></li>
+        <li><span>OSC · RADIAL WAVE</span><span>OSC · WATERFALL</span><span>OSC · LISSAJOUS</span><span>OSC · BEAT FLASH</span></li>
+      </ul>
+      <p class="muted">Tap the visualizer in the player to cycle. <a href="https://github.com/LeoHChen/HarmonIQ/blob/main/HarmonIQ/Views/Visualizers.swift">Visualizers.swift</a> defines the lot.</p>
+    </div>
+  </section>
+
+  <!-- MAKE IT YOURS -->
+  <section class="band">
+    <div class="container">
+      <p class="kicker">// make it yours</p>
+      <h2>The architecture is documented. The patches are welcome.</h2>
+      <p class="lede">HarmonIQ is open source under MIT. Three places the project actively wants contributions:</p>
+      <ol class="hack-list">
+        <li>
+          <h3>Drop a skin in</h3>
+          <p>Put a <code>.wsz</code> in <code>HarmonIQ/Resources/Skins/</code>, run <code>xcodegen generate</code>, build. The skin parser handles atlases, palette, transparency. Or use <code>scripts/fetch-extra-skins.sh</code> with a URL list.</p>
+        </li>
+        <li>
+          <h3>Add a Smart Play mode</h3>
+          <p>Extend <code>SmartPlayMode</code> + <code>SmartPlayBuilder.buildQueue</code> in <a href="https://github.com/LeoHChen/HarmonIQ/blob/main/HarmonIQ/Player/SmartPlay.swift"><code>SmartPlay.swift</code></a>. Pure functions, easy to test, instantly visible in the Smart Play tab.</p>
+        </li>
+        <li>
+          <h3>Write a visualizer style</h3>
+          <p>Add a case to <code>VisualizerStyle</code>, a <code>@MainActor</code> drawing helper in <a href="https://github.com/LeoHChen/HarmonIQ/blob/main/HarmonIQ/Views/Visualizers.swift"><code>Visualizers.swift</code></a>, a preview thumbnail. The engine already exposes 24-band spectrum, oscilloscope buffer, beat flag, and rolling history.</p>
+        </li>
+      </ol>
+      <p class="muted">PRs welcome. The architecture lives in <a href="https://github.com/LeoHChen/HarmonIQ/blob/main/CLAUDE.md"><code>CLAUDE.md</code></a>.</p>
+    </div>
+  </section>
+
+  <!-- GET IT -->
+  <section class="band alt">
+    <div class="container center">
+      <p class="kicker">// get it</p>
+      <h2>HarmonIQ runs on iOS 16+.</h2>
+      <p class="lede">Source on GitHub. TestFlight invites are managed in the README.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/LeoHChen/HarmonIQ">Source on GitHub</a>
+        <a class="btn" href="https://github.com/LeoHChen/HarmonIQ/issues/new?labels=enhancement">Request a feature</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>HarmonIQ — MIT-licensed.<br>
+      Skins from the <a href="https://skins.webamp.org">Internet Archive's Webamp Skin Museum</a>, distributed under their original Winamp-era licenses.<br>
+      Icon design philosophy: <a href="https://github.com/LeoHChen/HarmonIQ/blob/main/design/PHILOSOPHY.md">design/PHILOSOPHY.md</a>.</p>
+    </div>
+  </footer>
+</body>
+</html>
