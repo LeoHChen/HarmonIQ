@@ -186,7 +186,12 @@ private struct DriveRow: View {
             }
             Spacer()
             Button {
-                indexer.index(root: root)
+                // Explicit user tap → force a full incremental walk
+                // (skip the cheap fingerprint short-circuit). Otherwise
+                // a stale fingerprint could silently say "up to date"
+                // when the drive's library.json doesn't reflect what's
+                // actually on disk.
+                indexer.index(root: root, force: true)
             } label: {
                 Image(systemName: "arrow.clockwise")
             }

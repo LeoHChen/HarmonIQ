@@ -21,7 +21,11 @@ final class MusicIndexer: ObservableObject {
         statusMessage = "Cancelled"
     }
 
-    func index(root: LibraryRoot) {
+    /// Kick off an index run. When `force` is true the cheap fingerprint
+    /// short-circuit is skipped and the full incremental walk always runs —
+    /// this is the contract the UI's explicit Reindex button relies on, so
+    /// tapping it never silently no-ops.
+    func index(root: LibraryRoot, force: Bool = false) {
         guard !isIndexing else { return }
         isIndexing = true
         progress = 0
@@ -31,7 +35,7 @@ final class MusicIndexer: ObservableObject {
 
         let bookmark = root.bookmark
         let rootID = root.id
-        let priorFingerprint = root.lastScanFingerprint
+        let priorFingerprint = force ? nil : root.lastScanFingerprint
         let localCacheDir = LibraryStore.shared.artworkDirectory
         let priorTracks = LibraryStore.shared.tracks.filter { $0.rootBookmarkID == rootID }
 
@@ -70,13 +74,16 @@ final class MusicIndexer: ObservableObject {
         defer { if started { resolvedURL.stopAccessingSecurityScopedResource() } }
 
         // Cheap top-level fingerprint check. If the drive root's mtime AND
-        // child count both match the last scan, declare "Up to date" and
-        // skip the walk. Caveat: in-place file edits (tag changes without
-        // rename) don't bump folder mtime, so a user who edits tags and
-        // immediately reindexes might see "Up to date" — they can hit
-        // Reindex again later, or add/remove any file at the root to
-        // invalidate the fingerprint. (Issue #55, acceptable tradeoff.)
+        // child count both match the last scan AND we already have tracks
+        // loaded for this drive, declare "Up to date" and skip the walk.
+        // Skipping the cheap-check when priorTracks is empty matters when
+        // the drive's library.json was missing or empty — the fingerprint
+        // could match by luck, and we'd incorrectly say "0 tracks, all
+        // good." Caveat: in-place file edits (tag changes without rename)
+        // don't bump folder mtime; user can hit Reindex (which now passes
+        // force=true and skips this whole block).
         if let fingerprint = priorFingerprint,
+           !priorTracks.isEmpty,
            let current = computeFingerprint(rootURL: resolvedURL),
            current == fingerprint {
             await MainActor.run {

@@ -194,7 +194,7 @@ struct NowPlayingView: View {
                         savePlaylistName = defaultSaveName(annotation: player.aiAnnotation)
                         showSavePrompt = true
                     } label: {
-                        Label("Save as Playlist", systemImage: "square.and.arrow.down")
+                        Label("Save as Playlist", systemImage: "bookmark.fill")
                             .font(.caption.bold())
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
