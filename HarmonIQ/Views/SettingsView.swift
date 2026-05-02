@@ -69,11 +69,24 @@ struct SettingsView: View {
                 Text("Optional — adds AI-driven Smart Play modes (Vibe Match, Storyteller, Sonic Contrast). Bring your own Anthropic API key. Calls are billed to your account.")
             }
 
-            Section("About") {
+            Section {
                 LabeledContent("App", value: "HarmonIQ")
-                LabeledContent("Version", value: "1.0")
+                LabeledContent("Version", value: BuildInfo.version)
+                LabeledContent("Build", value: BuildInfo.build)
+                LabeledContent("Commit", value: BuildInfo.gitCommit)
+                LabeledContent("Release tag", value: BuildInfo.gitTag)
+                LabeledContent("Built at", value: BuildInfo.builtAt)
                 LabeledContent("Tracks indexed", value: "\(library.tracks.count)")
                 LabeledContent("Playlists", value: "\(library.playlists.count)")
+                Button {
+                    UIPasteboard.general.string = BuildInfo.clipboardSummary
+                } label: {
+                    Label("Copy build info", systemImage: "doc.on.doc")
+                }
+            } header: {
+                Text("About")
+            } footer: {
+                Text("Tap “Copy build info” to grab a multi-line block (version + build + commit + tag + timestamp) for bug reports.")
             }
         }
         .navigationTitle("Settings")

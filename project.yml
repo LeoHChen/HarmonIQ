@@ -74,6 +74,35 @@ targets:
         DEVELOPMENT_ASSET_PATHS: "\"HarmonIQ/Resources/Preview Content\""
         SWIFT_EMIT_LOC_STRINGS: YES
         ENABLE_PREVIEWS: YES
+    postBuildScripts:
+      - name: Embed build metadata
+        # Writes GitCommit, GitTag, BuildTimestamp into the built app's
+        # Info.plist so the Settings → About screen can show what's
+        # actually running. Surfaced for issue #52.
+        script: |
+          set -euo pipefail
+          INFO_PLIST="${BUILT_PRODUCTS_DIR}/${INFOPLIST_PATH}"
+          if [ ! -f "${INFO_PLIST}" ]; then
+            echo "warning: Info.plist not found at ${INFO_PLIST}; skipping build metadata embed" >&2
+            exit 0
+          fi
+          if git -C "${SRCROOT}" rev-parse --git-dir >/dev/null 2>&1; then
+            GIT_COMMIT="$(git -C "${SRCROOT}" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+            GIT_TAG="$(git -C "${SRCROOT}" describe --tags --dirty --always 2>/dev/null || echo dev)"
+          else
+            GIT_COMMIT="unknown"
+            GIT_TAG="dev"
+          fi
+          BUILD_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          PLIST_BUDDY=/usr/libexec/PlistBuddy
+          for KEY in GitCommit GitTag BuildTimestamp; do
+            "${PLIST_BUDDY}" -c "Delete :${KEY}" "${INFO_PLIST}" 2>/dev/null || true
+          done
+          "${PLIST_BUDDY}" -c "Add :GitCommit string ${GIT_COMMIT}" "${INFO_PLIST}"
+          "${PLIST_BUDDY}" -c "Add :GitTag string ${GIT_TAG}" "${INFO_PLIST}"
+          "${PLIST_BUDDY}" -c "Add :BuildTimestamp string ${BUILD_AT}" "${INFO_PLIST}"
+        basedOnDependencyAnalysis: false
+        runOnlyWhenInstalling: false
 
   HarmonIQLiveActivity:
     type: app-extension

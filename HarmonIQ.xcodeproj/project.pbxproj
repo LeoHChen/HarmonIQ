@@ -62,6 +62,7 @@
 		DC9F3F437F7B059AD8D253B5 /* DriveLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEFB4D3197C2EC465A4B964C /* DriveLibraryStore.swift */; };
 		DCF4418A459E115EF770E6D9 /* AudioPlayerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */; };
 		E1D2A557F273963F3ABFCFC5 /* AllTracksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0243B50E58BF70DF26D99D0 /* AllTracksView.swift */; };
+		E21F6F0259D7758650222A56 /* BuildInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1E6758360675D09C68F165 /* BuildInfo.swift */; };
 		EC778E91CBFC41C1A6A09A2A /* Visualizers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A922A09FC20BC24E0180727 /* Visualizers.swift */; };
 		F01E667FD20EFB46CB5AF202 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32550B9D7779BCA0DDA5827D /* SearchView.swift */; };
 		FC4B30F8B53A01684F54C45E /* AISettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4AE5698FC27796904A4105 /* AISettingsView.swift */; };
@@ -100,6 +101,7 @@
 		347E6294D599CCE0B3003D2E /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
 		38FE23F9FF831246E93D46D0 /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
 		3B4DEE2EB2331B3F5BB20CB2 /* PlaylistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistsView.swift; sourceTree = "<group>"; };
+		3D1E6758360675D09C68F165 /* BuildInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildInfo.swift; sourceTree = "<group>"; };
 		3D6EA2A86E18C3306B3A4BFC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		4A34D43E2D09B36F9A92DF67 /* WinampTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinampTheme.swift; sourceTree = "<group>"; };
 		4D55B677D3210BEAEDFEA0C5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -180,6 +182,14 @@
 				C6203F24B0D3D962883456DA /* SpriteButton.swift */,
 			);
 			path = Skin;
+			sourceTree = "<group>";
+		};
+		416EA0C0BD8E69AC74FF195E /* Util */ = {
+			isa = PBXGroup;
+			children = (
+				3D1E6758360675D09C68F165 /* BuildInfo.swift */,
+			);
+			path = Util;
 			sourceTree = "<group>";
 		};
 		45559C604578B47631409FD8 /* Models */ = {
@@ -263,6 +273,7 @@
 				8B9672760105FAA96F2576E3 /* Player */,
 				619F06FDDA0CD190BCFD40C0 /* Resources */,
 				D38B3EEA7E0A561010DC85B4 /* Skins */,
+				416EA0C0BD8E69AC74FF195E /* Util */,
 				78C0FBC76EAEEFBCCF68B6C8 /* Views */,
 				AA4029B61958E1D8F6162CCA /* HarmonIQApp.swift */,
 				6E48BCF53895F042489D6F8B /* Info.plist */,
@@ -345,6 +356,7 @@
 				1BD17726AF9A8E1BBBA5EFA5 /* Resources */,
 				CFDC84B13D7A3446503B2110 /* Frameworks */,
 				132C7151AF02F0E8F2C4EF30 /* Embed Foundation Extensions */,
+				AEDF54E1E900A01307742A6C /* Embed build metadata */,
 			);
 			buildRules = (
 			);
@@ -431,6 +443,28 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		AEDF54E1E900A01307742A6C /* Embed build metadata */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Embed build metadata";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\nINFO_PLIST=\"${BUILT_PRODUCTS_DIR}/${INFOPLIST_PATH}\"\nif [ ! -f \"${INFO_PLIST}\" ]; then\n  echo \"warning: Info.plist not found at ${INFO_PLIST}; skipping build metadata embed\" >&2\n  exit 0\nfi\nif git -C \"${SRCROOT}\" rev-parse --git-dir >/dev/null 2>&1; then\n  GIT_COMMIT=\"$(git -C \"${SRCROOT}\" rev-parse --short HEAD 2>/dev/null || echo unknown)\"\n  GIT_TAG=\"$(git -C \"${SRCROOT}\" describe --tags --dirty --always 2>/dev/null || echo dev)\"\nelse\n  GIT_COMMIT=\"unknown\"\n  GIT_TAG=\"dev\"\nfi\nBUILD_AT=\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"\nPLIST_BUDDY=/usr/libexec/PlistBuddy\nfor KEY in GitCommit GitTag BuildTimestamp; do\n  \"${PLIST_BUDDY}\" -c \"Delete :${KEY}\" \"${INFO_PLIST}\" 2>/dev/null || true\ndone\n\"${PLIST_BUDDY}\" -c \"Add :GitCommit string ${GIT_COMMIT}\" \"${INFO_PLIST}\"\n\"${PLIST_BUDDY}\" -c \"Add :GitTag string ${GIT_TAG}\" \"${INFO_PLIST}\"\n\"${PLIST_BUDDY}\" -c \"Add :BuildTimestamp string ${BUILD_AT}\" \"${INFO_PLIST}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		B086249171BDEA708B022895 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -447,6 +481,7 @@
 				8CEA6C7112AA776066EDEE1E /* BitmapSlider.swift in Sources */,
 				CBDFA717362848840E08B642 /* BitmapText.swift in Sources */,
 				7F8EEECCAE52592D4BBAF6D1 /* BookmarkStore.swift in Sources */,
+				E21F6F0259D7758650222A56 /* BuildInfo.swift in Sources */,
 				3A5F09869BC9EA7F4DC88B35 /* ContentView.swift in Sources */,
 				DC9F3F437F7B059AD8D253B5 /* DriveLibraryStore.swift in Sources */,
 				BFA4ABD4D88D5BE40B5445F8 /* EqualizerManager.swift in Sources */,

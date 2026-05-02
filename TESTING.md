@@ -25,6 +25,7 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] App cold-launches to the Library tab without crashing.
 - [ ] Launch screen renders the branded gradient + vinyl disc, not a flat-color flash.
 - [ ] `git status` is clean (no accidental file leaks like `.DS_Store`, build artifacts).
+- [ ] Settings → About shows real Version, Build, Commit (short SHA), Release tag, and Built-at — not hard-coded `1.0`. "Copy build info" puts a multi-line block on the clipboard.
 
 ---
 
