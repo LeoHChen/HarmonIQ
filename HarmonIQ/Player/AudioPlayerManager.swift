@@ -3,6 +3,7 @@ import AVFoundation
 import Combine
 import SwiftUI
 import UIKit
+import os
 
 enum RepeatMode: String, Codable, CaseIterable {
     case off
@@ -13,6 +14,12 @@ enum RepeatMode: String, Codable, CaseIterable {
 @MainActor
 final class AudioPlayerManager: NSObject, ObservableObject {
     static let shared = AudioPlayerManager()
+
+    /// Diagnostic logger. Filter in Console.app with
+    /// `subsystem:net.leochen.harmoniq category:playback` to see every
+    /// finish/decode/interruption/route-change/scope-release event with
+    /// context — used to investigate issue #38 (mid-track aborts).
+    static let log = Logger(subsystem: "net.leochen.harmoniq", category: "playback")
 
     @Published private(set) var queue: [Track] = []
     @Published private(set) var currentIndex: Int = 0
@@ -81,6 +88,16 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         NotificationCenter.default.addObserver(
             self, selector: #selector(appWillEnterForeground),
             name: UIApplication.willEnterForegroundNotification, object: nil)
+        // Audio session diagnostics — logging only, no behavior change.
+        // See issue #38: we want a paper trail of interruptions and route
+        // changes so the next time playback aborts mid-track we can match
+        // it against a specific session event.
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(audioSessionInterruption(_:)),
+            name: AVAudioSession.interruptionNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(audioSessionRouteChange(_:)),
+            name: AVAudioSession.routeChangeNotification, object: nil)
     }
 
     @MainActor @objc private func appDidEnterBackground() {
@@ -89,6 +106,38 @@ final class AudioPlayerManager: NSObject, ObservableObject {
 
     @MainActor @objc private func appWillEnterForeground() {
         if isPlaying { startDisplayLink() }
+    }
+
+    @objc private func audioSessionInterruption(_ note: Notification) {
+        guard let info = note.userInfo,
+              let raw = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: raw)
+        else { return }
+        let typeStr: String = (type == .began) ? "began" : "ended"
+        let reasonRaw: UInt = info[AVAudioSessionInterruptionReasonKey] as? UInt ?? 0
+        let optsRaw: UInt = info[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
+        let optsResume = (optsRaw & AVAudioSession.InterruptionOptions.shouldResume.rawValue) != 0
+        Self.log.info("interruption type=\(typeStr, privacy: .public) reasonRaw=\(reasonRaw) optionsRaw=\(optsRaw) shouldResume=\(optsResume)")
+    }
+
+    @objc private func audioSessionRouteChange(_ note: Notification) {
+        guard let info = note.userInfo,
+              let raw = info[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: raw)
+        else { return }
+        let label: String
+        switch reason {
+        case .unknown:                 label = "unknown"
+        case .newDeviceAvailable:      label = "newDeviceAvailable"
+        case .oldDeviceUnavailable:    label = "oldDeviceUnavailable"
+        case .categoryChange:          label = "categoryChange"
+        case .override:                label = "override"
+        case .wakeFromSleep:           label = "wakeFromSleep"
+        case .noSuitableRouteForCategory: label = "noSuitableRouteForCategory"
+        case .routeConfigurationChange:label = "routeConfigurationChange"
+        @unknown default:              label = "unknown(\(raw))"
+        }
+        Self.log.info("routeChange reason=\(label, privacy: .public) reasonRaw=\(raw)")
     }
 
     // MARK: - Public API
@@ -304,8 +353,10 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             playbackError = nil
             startDisplayLink()
             NowPlayingManager.shared.update(track: track, isPlaying: true, currentTime: 0, duration: self.duration)
+            Self.log.info("playStart stableID=\(track.stableID, privacy: .public) duration=\(self.duration, format: .fixed(precision: 2)) format=\(track.fileFormat, privacy: .public)")
         } catch {
             print("[HarmonIQ] Failed to play \(track.filename): \(error)")
+            Self.log.error("playFailed stableID=\(track.stableID, privacy: .public) error=\(String(describing: error), privacy: .public)")
             isPlaying = false
             stopDisplayLink()
             playbackError = "Can't play \(track.filename): \(Self.friendlyMessage(for: error))"
@@ -367,6 +418,8 @@ final class AudioPlayerManager: NSObject, ObservableObject {
 
     private func releaseAccessRoot() {
         if let url = accessRoot {
+            let id = currentTrack?.stableID ?? "<none>"
+            Self.log.debug("releaseAccessRoot path=\(url.lastPathComponent, privacy: .public) currentStableID=\(id, privacy: .public)")
             url.stopAccessingSecurityScopedResource()
             accessRoot = nil
         }
@@ -440,7 +493,18 @@ final class AudioPlayerManager: NSObject, ObservableObject {
 
 extension AudioPlayerManager: AVAudioPlayerDelegate {
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        // Capture player state before hopping to the main actor so the log
+        // reflects what the AV player saw at finish time, not what state
+        // looks like after `advance(by:)` has already moved on.
+        let captured = (
+            success: flag,
+            currentTime: player.currentTime,
+            duration: player.duration
+        )
         Task { @MainActor in
+            let id = self.currentTrack?.stableID ?? "<none>"
+            let early = captured.duration > 0 && captured.duration - captured.currentTime > 1.0
+            Self.log.info("didFinishPlaying success=\(captured.success) currentTime=\(captured.currentTime, format: .fixed(precision: 2)) duration=\(captured.duration, format: .fixed(precision: 2)) endedEarly=\(early) stableID=\(id, privacy: .public)")
             if self.sleepStopAtTrackEnd {
                 self.pause()
                 self.sleepStopAtTrackEnd = false
@@ -455,7 +519,14 @@ extension AudioPlayerManager: AVAudioPlayerDelegate {
     }
 
     nonisolated func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        let captured = (
+            currentTime: player.currentTime,
+            duration: player.duration,
+            errorDesc: error.map { String(describing: $0) } ?? "<nil>"
+        )
         Task { @MainActor in
+            let id = self.currentTrack?.stableID ?? "<none>"
+            Self.log.error("decodeError stableID=\(id, privacy: .public) currentTime=\(captured.currentTime, format: .fixed(precision: 2)) duration=\(captured.duration, format: .fixed(precision: 2)) error=\(captured.errorDesc, privacy: .public)")
             self.advance(by: 1)
         }
     }
