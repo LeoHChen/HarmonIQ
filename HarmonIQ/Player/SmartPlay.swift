@@ -15,8 +15,21 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
     case onePerArtist
     case genreTunnel
     case eraWalk
+    // AI-assisted modes (issue #25). Require an Anthropic API key configured
+    // in Settings → AI; the modes are visible but disabled until then.
+    case vibeMatch
+    case storyteller
+    case sonicContrast
 
     var id: String { rawValue }
+
+    /// True when this mode requires an Anthropic API call to build the queue.
+    var requiresAI: Bool {
+        switch self {
+        case .vibeMatch, .storyteller, .sonicContrast: return true
+        default: return false
+        }
+    }
 
     var title: String {
         switch self {
@@ -34,6 +47,9 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
         case .onePerArtist:   return "One Per Artist"
         case .genreTunnel:    return "Genre Tunnel"
         case .eraWalk:        return "Era Walk"
+        case .vibeMatch:      return "Vibe Match"
+        case .storyteller:    return "Storyteller"
+        case .sonicContrast:  return "Sonic Contrast"
         }
     }
 
@@ -53,6 +69,9 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
         case .onePerArtist:   return "Exactly one track per artist. Maximum breadth in one sitting."
         case .genreTunnel:    return "Stays inside one genre — seeded by what's playing, or the biggest in the library."
         case .eraWalk:        return "Chronological tour — earliest year first, walking forward through the decades."
+        case .vibeMatch:      return "AI-curated. Type a vibe — Claude builds a matching queue."
+        case .storyteller:    return "AI-curated. Claude assembles an 8-12 track narrative arc with a blurb."
+        case .sonicContrast:  return "AI-curated. Adjacent tracks are intentionally distinct in style."
         }
     }
 
@@ -72,6 +91,9 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
         case .onePerArtist:   return "person.3"
         case .genreTunnel:    return "tunnel"
         case .eraWalk:        return "clock.arrow.circlepath"
+        case .vibeMatch:      return "text.bubble"
+        case .storyteller:    return "book"
+        case .sonicContrast:  return "arrow.left.arrow.right"
         }
     }
 }
@@ -211,6 +233,14 @@ enum SmartPlayBuilder {
                 return lhs.displayTitle.localizedStandardCompare(rhs.displayTitle) == .orderedAscending
             }
             return sortedKnown + withoutYear.shuffled()
+
+        case .vibeMatch, .storyteller, .sonicContrast:
+            // AI-curated modes go through `SmartPlayAI.curate` on the async
+            // path. The sync builder is invoked in places that don't expect
+            // a network round-trip, so fall back to a Pure Random shuffle —
+            // the user-facing entry point (`AudioPlayerManager.playSmartAI`)
+            // calls the AI directly instead of this builder.
+            return pool.shuffled()
         }
     }
 
