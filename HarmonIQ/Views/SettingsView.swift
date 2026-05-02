@@ -1,6 +1,18 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Canonical feedback URLs for the GitHub repo. Linked from Settings → Feedback
+/// (issue #59). The new-issue URLs include a `labels=...` query so the GitHub
+/// form opens with the right label pre-selected; the optional `template=` query
+/// is harmless when the repo doesn't have an issue template (GitHub falls back
+/// to a blank issue with the label set).
+private enum FeedbackURL {
+    static let repo = URL(string: "https://github.com/LeoHChen/HarmonIQ")!
+    static let issues = URL(string: "https://github.com/LeoHChen/HarmonIQ/issues")!
+    static let featureRequest = URL(string: "https://github.com/LeoHChen/HarmonIQ/issues/new?labels=enhancement&template=feature_request.md")!
+    static let bugReport = URL(string: "https://github.com/LeoHChen/HarmonIQ/issues/new?labels=bug&template=bug_report.md")!
+}
+
 struct SettingsView: View {
     @EnvironmentObject var library: LibraryStore
     @EnvironmentObject var indexer: MusicIndexer
@@ -67,6 +79,30 @@ struct SettingsView: View {
                 Text("AI")
             } footer: {
                 Text("Optional — adds AI-driven Smart Play modes (Vibe Match, Storyteller, Sonic Contrast). Bring your own Anthropic API key. Calls are billed to your account.")
+            }
+
+            Section {
+                Link(destination: FeedbackURL.featureRequest) {
+                    Label("Request a feature", systemImage: "lightbulb")
+                }
+                Link(destination: FeedbackURL.bugReport) {
+                    Label("Report a bug", systemImage: "ladybug")
+                }
+                Link(destination: FeedbackURL.issues) {
+                    Label("Browse open issues", systemImage: "bubble.left.and.bubble.right")
+                }
+                Link(destination: FeedbackURL.repo) {
+                    Label("Star on GitHub", systemImage: "star")
+                }
+                Button {
+                    UIPasteboard.general.string = BuildInfo.clipboardSummary
+                } label: {
+                    Label("Copy build info", systemImage: "doc.on.clipboard")
+                }
+            } header: {
+                Text("Feedback")
+            } footer: {
+                Text("Tip: tap “Copy build info” before “Report a bug” — paste it into the issue so we can triage faster.")
             }
 
             Section {
