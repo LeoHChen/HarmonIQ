@@ -67,7 +67,7 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] Tapping a skin row updates the now-playing sheet on next open.
 - [ ] In the skinned player: tap-to-cycle skin button advances to the next skin and shows its name.
 - [ ] Long-press the cycle button → scrollable skin picker sheet.
-- [ ] In the skinned player: tap the visualizer rect (76×16 area) cycles spectrum → oscilloscope → off → spectrum, persists across sheet close and app relaunch.
+- [ ] In the skinned player: tap the visualizer rect (76×16 area) cycles through all 8 visualizer styles (Spectrum, Oscilloscope, Plasma, Mirror, Radial Pulse, Particles, Fire, Starfield); plasma/circle fall back to the spectrum bar render in the 76×16 grid. Style is shared with the SwiftUI player and persists across sheet close and app relaunch.
 - [ ] Import a `.wsz` from Files → it appears in the list and loads without crashing.
 - [ ] **None** option (top of the list) falls back to the SwiftUI player on next sheet open.
 
