@@ -50,6 +50,15 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] Close the sheet and reopen via the player entry — same track, time roughly accurate.
 - [ ] Diagnostic log (issue #38): with the device attached and Console.app filtered to `subsystem:net.leochen.harmoniq category:playback`, normal playback emits `playStart` and `didFinishPlaying success=true` events; if a track aborts mid-track, `endedEarly=true` (or a `decodeError` / `interruption` / `routeChange` line) shows the cause.
 
+### EQ (issue #28)
+
+- [ ] Open the skinned player → EQ panel shows preamp + 10 sliders, a master ON toggle, and a presets dropdown.
+- [ ] Toggle ON: with EQ disabled, slider movement is inaudible. With ON enabled, dragging the 60Hz slider up audibly thickens bass; dragging 16K up audibly brightens treble.
+- [ ] Apply **Bass Boost** preset: low bands jump up, treble unchanged.
+- [ ] Apply **Flat** (or "Reset to Flat" from the dropdown): all bands return to 0 dB.
+- [ ] Drag a band — the preset label flips to `CUSTOM`.
+- [ ] Quit + relaunch: previous EQ state (bands, preamp, ON, preset name) persists.
+
 ---
 
 ## D. Shuffle + Repeat
