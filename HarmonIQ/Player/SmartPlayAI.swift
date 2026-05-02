@@ -41,8 +41,30 @@ enum SmartPlayAI {
         }
         """
 
-        let raw = try await AnthropicClient.send(systemPrompt: systemPrompt, userPrompt: userText)
+        // Pick the backend up-front (read MainActor state once, then drop
+        // back to the actor-free pipeline). Prefer on-device when it's
+        // toggled ON and the system reports the model is ready; fall back
+        // to Anthropic when not.
+        let backend = await pickBackend()
+        let raw: String
+        switch backend {
+        case .appleIntelligence:
+            raw = try await AppleIntelligenceClient.send(systemPrompt: systemPrompt, userPrompt: userText)
+        case .anthropic:
+            raw = try await AnthropicClient.send(systemPrompt: systemPrompt, userPrompt: userText)
+        }
         return try parse(raw: raw)
+    }
+
+    enum Backend { case appleIntelligence, anthropic }
+
+    @MainActor
+    private static func pickBackend() -> Backend {
+        let s = AnthropicSettings.shared
+        if s.useAppleIntelligence && AppleIntelligenceClient.isAvailable {
+            return .appleIntelligence
+        }
+        return .anthropic
     }
 
     // MARK: - Prompt construction

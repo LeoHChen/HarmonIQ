@@ -22,6 +22,7 @@
 		492B4DC977A439789D0DA1D9 /* VisualizerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15226D22B73C8F0CE0719B80 /* VisualizerSettingsView.swift */; };
 		4ADB0C6545C514B0C7DD74BC /* SkinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4AF615B9FD22338A53B687E /* SkinManager.swift */; };
 		4BAC40B449B110A162FC0AE2 /* AnthropicClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0AEFD2723ADD2EC828F5588 /* AnthropicClient.swift */; };
+		4BFD5B83D404C76871760396 /* AppleIntelligenceClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A09164BA9759B22CA0598DA5 /* AppleIntelligenceClient.swift */; };
 		4F0642BBF49AF0AD060D3949 /* Playlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = D210ACF5D89E9E21A1496719 /* Playlist.swift */; };
 		5CCAA8466F69FB84BF8B02A6 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347E6294D599CCE0B3003D2E /* SharedComponents.swift */; };
 		5DB383E665EE8EAE33D78E9C /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F130079612D4D04F3BDAF75 /* LibraryStore.swift */; };
@@ -117,6 +118,7 @@
 		9BBB248B178FE1FCF612ED97 /* WinampSkin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinampSkin.swift; sourceTree = "<group>"; };
 		9D861E89EB0B0713F92113EE /* MusicIndexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicIndexer.swift; sourceTree = "<group>"; };
 		9F130079612D4D04F3BDAF75 /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
+		A09164BA9759B22CA0598DA5 /* AppleIntelligenceClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleIntelligenceClient.swift; sourceTree = "<group>"; };
 		A31A65F1BCE09BD374018CC4 /* SmartPlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlay.swift; sourceTree = "<group>"; };
 		A4AF615B9FD22338A53B687E /* SkinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinManager.swift; sourceTree = "<group>"; };
 		A766E8A1DB63DED492B821BA /* SkinnedPlaylistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedPlaylistView.swift; sourceTree = "<group>"; };
@@ -272,6 +274,7 @@
 			isa = PBXGroup;
 			children = (
 				C0AEFD2723ADD2EC828F5588 /* AnthropicClient.swift */,
+				A09164BA9759B22CA0598DA5 /* AppleIntelligenceClient.swift */,
 				978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */,
 				1747349698811EB8ADA561A3 /* EqualizerManager.swift */,
 				B633D01EE0A630588055E78D /* NowPlayingManager.swift */,
@@ -437,6 +440,7 @@
 				0323B3047D47591B359097DF /* AlbumsView.swift in Sources */,
 				E1D2A557F273963F3ABFCFC5 /* AllTracksView.swift in Sources */,
 				4BAC40B449B110A162FC0AE2 /* AnthropicClient.swift in Sources */,
+				4BFD5B83D404C76871760396 /* AppleIntelligenceClient.swift in Sources */,
 				DA3451E853523F3F3794A302 /* ArtistsView.swift in Sources */,
 				DCF4418A459E115EF770E6D9 /* AudioPlayerManager.swift in Sources */,
 				791A8D34EE8AB6E905502339 /* BitmapNumbers.swift in Sources */,

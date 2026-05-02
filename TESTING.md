@@ -134,6 +134,14 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] **Storyteller** / **Sonic Contrast**: tap → queue starts without a prompt; footer shows model-generated title + blurb.
 - [ ] Network error (airplane mode mid-call) surfaces as an alert; UI returns to idle.
 
+#### Apple Intelligence (on-device) backend
+
+- [ ] On a supported device (iPhone 15 Pro+ running iOS 26+, Apple Intelligence enabled): Settings → AI Smart Play → "On-Device Curator" status shows **Available**; toggle is on by default.
+- [ ] **Active backend** under Status reads "Apple Intelligence (on-device)" when the toggle is on.
+- [ ] Vibe Match with the toggle on: queue builds without any network traffic (verify by enabling airplane mode → it still works).
+- [ ] On an unsupported device or simulator: status reads **Not supported on this device** / **Requires iOS 26+** / **Disabled in Settings** as appropriate; toggle is disabled; activating an AI mode falls back to the Anthropic path.
+- [ ] Toggle off → backend flips to Anthropic; both still work as long as the key is present.
+
 ---
 
 ## I. Visualizer styles (SwiftUI player)

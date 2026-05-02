@@ -98,14 +98,33 @@ enum AnthropicClient {
 @MainActor
 final class AnthropicSettings: ObservableObject {
     static let shared = AnthropicSettings()
+    static let useAppleIntelligenceKey = "harmoniq.ai.useAppleIntelligence"
 
     @Published var apiKey: String {
         didSet { UserDefaults.standard.set(apiKey, forKey: AnthropicClient.apiKeyDefaultsKey) }
     }
 
-    init() {
-        self.apiKey = UserDefaults.standard.string(forKey: AnthropicClient.apiKeyDefaultsKey) ?? ""
+    /// When true (and Apple Intelligence is available), AI Smart Play
+    /// routes through the on-device Foundation Models session instead of
+    /// the Anthropic API. No key needed, no network egress.
+    @Published var useAppleIntelligence: Bool {
+        didSet { UserDefaults.standard.set(useAppleIntelligence, forKey: Self.useAppleIntelligenceKey) }
     }
 
-    var isConfigured: Bool { !apiKey.isEmpty }
+    init() {
+        self.apiKey = UserDefaults.standard.string(forKey: AnthropicClient.apiKeyDefaultsKey) ?? ""
+        // Default ON when the user hasn't expressed a preference — local
+        // is strictly better when it's available (free + private). AI
+        // rows fall back to the Anthropic key if Apple Intelligence
+        // rejects at runtime.
+        self.useAppleIntelligence = (UserDefaults.standard.object(forKey: Self.useAppleIntelligenceKey) as? Bool) ?? true
+    }
+
+    /// True when at least one AI backend is usable right now — either
+    /// Apple Intelligence (preferred when toggled on) or a configured
+    /// Anthropic key.
+    var isConfigured: Bool {
+        if useAppleIntelligence && AppleIntelligenceClient.isAvailable { return true }
+        return !apiKey.isEmpty
+    }
 }
