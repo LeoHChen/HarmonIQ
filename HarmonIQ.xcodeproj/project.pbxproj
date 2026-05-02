@@ -16,6 +16,7 @@
 		3C97B812BAD6F65814E216E6 /* SleepTimerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C45ED4E273D5CD36352156 /* SleepTimerViews.swift */; };
 		3EE13B1011444446AF4C9346 /* MusicIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D861E89EB0B0713F92113EE /* MusicIndexer.swift */; };
 		409179BD52B576D6D435FD06 /* NowPlayingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B633D01EE0A630588055E78D /* NowPlayingManager.swift */; };
+		492B4DC977A439789D0DA1D9 /* VisualizerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15226D22B73C8F0CE0719B80 /* VisualizerSettingsView.swift */; };
 		4ADB0C6545C514B0C7DD74BC /* SkinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4AF615B9FD22338A53B687E /* SkinManager.swift */; };
 		4F0642BBF49AF0AD060D3949 /* Playlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = D210ACF5D89E9E21A1496719 /* Playlist.swift */; };
 		5CCAA8466F69FB84BF8B02A6 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347E6294D599CCE0B3003D2E /* SharedComponents.swift */; };
@@ -57,6 +58,7 @@
 
 /* Begin PBXFileReference section */
 		03C45ED4E273D5CD36352156 /* SleepTimerViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepTimerViews.swift; sourceTree = "<group>"; };
+		15226D22B73C8F0CE0719B80 /* VisualizerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualizerSettingsView.swift; sourceTree = "<group>"; };
 		21D6E4A738A357E6A860D0E0 /* ArtistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtistsView.swift; sourceTree = "<group>"; };
 		32550B9D7779BCA0DDA5827D /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		347E6294D599CCE0B3003D2E /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
@@ -197,6 +199,7 @@
 				03C45ED4E273D5CD36352156 /* SleepTimerViews.swift */,
 				BAE503899DE0AC71DEE6E6B7 /* SmartPlayView.swift */,
 				6A922A09FC20BC24E0180727 /* Visualizers.swift */,
+				15226D22B73C8F0CE0719B80 /* VisualizerSettingsView.swift */,
 				4A34D43E2D09B36F9A92DF67 /* WinampTheme.swift */,
 			);
 			path = Views;
@@ -375,6 +378,7 @@
 				77B3E1181A2A2CBFAD277C5E /* SmartPlayView.swift in Sources */,
 				69A2102040E365274784D9BD /* SpriteButton.swift in Sources */,
 				75DC9743887154D3D3823A75 /* Track.swift in Sources */,
+				492B4DC977A439789D0DA1D9 /* VisualizerSettingsView.swift in Sources */,
 				EC778E91CBFC41C1A6A09A2A /* Visualizers.swift in Sources */,
 				ADFA445F84DD3EDB1A55C5DB /* WinampSkin.swift in Sources */,
 				D2EA2CFCD49E1790A8904149 /* WinampTheme.swift in Sources */,

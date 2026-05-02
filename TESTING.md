@@ -102,6 +102,19 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 
 ---
 
+## I. Visualizer styles (SwiftUI player)
+
+- [ ] Settings → Visualizer lists 8 styles (Spectrum, Oscilloscope, Plasma, Mirror, Radial Pulse, Particles, Fire, Starfield), each with a live preview thumbnail that animates.
+- [ ] Tapping a row updates the checkmark and the now-playing visualizer matches on next open.
+- [ ] In Now Playing, the visualizer header shows `VIS · <STYLE NAME>` and a `NEXT` cycle button.
+- [ ] Tapping `NEXT` advances to the next style and shows a 1-second toast with the style name.
+- [ ] Long-press OR double-tap on the visualizer surface cycles + toasts the same way.
+- [ ] Quit and relaunch → the chosen style persists.
+- [ ] With audio paused (silence), every style renders gracefully (Particles still drifts, Starfield slowly drifts, Spectrum decays — no frozen artifacts or crashes).
+- [ ] Each style sustains roughly 30 fps with a percussive track playing (no obvious frame drops).
+
+---
+
 ## What changed for *this* PR
 
 The PR template adds a per-PR section listing the issue-specific tests from the linked issue's spec. Run those **in addition to** any of A–H that touch the same code paths. PRs that only change docs need only A.
