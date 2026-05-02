@@ -44,7 +44,9 @@ targets:
         CFBundleShortVersionString: "0.3"
         CFBundleVersion: "2"
         UILaunchScreen:
-          UIColorName: AccentColor
+          UIImageName: LaunchImage
+          UIImageRespectsSafeAreaInsets: false
+          UIColorName: LaunchBackground
         UIBackgroundModes:
           - audio
         UISupportedInterfaceOrientations:

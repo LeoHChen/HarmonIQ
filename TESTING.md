@@ -23,6 +23,7 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] `xcodegen generate` produces no diff in `project.pbxproj` after re-running.
 - [ ] `xcodebuild build -scheme HarmonIQ -destination 'platform=iOS Simulator,name=iPhone 17' -configuration Debug` is green with **zero new warnings** vs. main.
 - [ ] App cold-launches to the Library tab without crashing.
+- [ ] Launch screen renders the branded gradient + vinyl disc, not a flat-color flash.
 - [ ] `git status` is clean (no accidental file leaks like `.DS_Store`, build artifacts).
 
 ---
