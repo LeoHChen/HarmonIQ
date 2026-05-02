@@ -24,6 +24,8 @@
 	<true/>
 	<key>NSAppleMusicUsageDescription</key>
 	<string>HarmonIQ uses your media library to play tracks.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

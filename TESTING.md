@@ -105,6 +105,14 @@ If a section is irrelevant to your PR (e.g. you only touched skin loading), stil
 - [ ] Trigger Siri ("What time is it") then dismiss → music resumes without manual restart.
 - [ ] Background the app for 30 s → return → playback continues, time display catches up.
 
+### Live Activity (issue #18)
+
+- [ ] On a real iPhone (Settings → HarmonIQ → Live Activities ON): start playback → a Live Activity banner appears on the lock screen with title/artist/artwork + progress bar + play indicator.
+- [ ] Pause: the activity's play icon flips to ⏸ within ~1 s.
+- [ ] Skip to next track: the activity's title/artist/artwork updates without the banner flickering away.
+- [ ] On iPhone 14 Pro+: Dynamic Island shows compact (artwork + play icon) and expands on long-press.
+- [ ] Tap the activity → app opens to the Now Playing sheet (`harmoniq://now-playing`).
+
 ---
 
 ## H. Smart Play

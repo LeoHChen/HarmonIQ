@@ -257,6 +257,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         isPlaying = false
         stopDisplayLink()
         NowPlayingManager.shared.updatePlaybackState(isPlaying: false, currentTime: pausedAtSeconds ?? currentTime, rate: 0.0)
+        LiveActivityController.shared.tick(currentTime: pausedAtSeconds ?? currentTime, isPlaying: false)
     }
 
     func resume() {
@@ -273,6 +274,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         pausedAtSeconds = nil
         startDisplayLink()
         NowPlayingManager.shared.updatePlaybackState(isPlaying: true, currentTime: currentTime, rate: 1.0)
+        LiveActivityController.shared.tick(currentTime: currentTime, isPlaying: true)
     }
 
     func next() { advance(by: 1) }
@@ -457,6 +459,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             playbackError = nil
             startDisplayLink()
             NowPlayingManager.shared.update(track: track, isPlaying: true, currentTime: 0, duration: self.duration)
+            LiveActivityController.shared.updateTrack(track, isPlaying: true, currentTime: 0, duration: self.duration)
             Self.log.info("playStart stableID=\(track.stableID, privacy: .public) duration=\(self.duration, format: .fixed(precision: 2)) format=\(track.fileFormat, privacy: .public)")
         } catch {
             print("[HarmonIQ] Failed to play \(track.filename): \(error)")
@@ -602,6 +605,8 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         }
 
         NowPlayingManager.shared.updateElapsed(raw, isPlaying: playerNode.isPlaying)
+        // The Live Activity controller throttles internally to ~1 update / sec.
+        LiveActivityController.shared.tick(currentTime: raw, isPlaying: playerNode.isPlaying)
     }
 
     /// dBFS power → 0...1 with a soft floor.
