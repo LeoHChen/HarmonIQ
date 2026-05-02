@@ -30,50 +30,26 @@ struct SkinnedMainView: View {
             let canvasW = SkinFormat.mainWindowSize.width * pixel
             let canvasH = SkinFormat.mainWindowSize.height * pixel
             VStack(spacing: 0) {
-                HStack(spacing: 8) {
-                    // Tap to cycle to the next skin. The Menu form scrolls poorly
-                    // on iPhone once you have a dozen+ skins installed; cycling
-                    // is one tap and shows the new name inline.
-                    Button {
-                        skinManager.cycleToNextSkin()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "paintpalette.fill")
-                                .font(.title2)
-                                .foregroundStyle(.white.opacity(0.85), .black.opacity(0.6))
-                            Text(skinManager.activeSkin?.displayName ?? "No Skin")
-                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                                .foregroundStyle(.white.opacity(0.85))
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(Color.black.opacity(0.45), in: Capsule())
-                    }
-                    .accessibilityLabel("Cycle to next skin")
-                    .simultaneousGesture(
-                        // Long-press opens a scrollable picker. The contextual
-                        // menu we used before couldn't scroll once the skin
-                        // list grew past the screen height.
-                        LongPressGesture(minimumDuration: 0.4).onEnded { _ in
-                            showSkinPicker = true
-                        }
-                    )
+                HStack(spacing: 14) {
+                    // Skin cycler (tap → next skin, long-press → picker).
+                    chromeButton("paintpalette.fill",
+                                 accessibility: "Cycle to next skin",
+                                 action: { skinManager.cycleToNextSkin() })
+                        .simultaneousGesture(
+                            LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                                showSkinPicker = true
+                            }
+                        )
 
                     Spacer()
 
                     if player.aiAnnotation != nil {
-                        Button {
-                            savePlaylistName = defaultSaveName(annotation: player.aiAnnotation)
-                            showSavePrompt = true
-                        } label: {
-                            Image(systemName: "bookmark.fill")
-                                .font(.title2)
-                                .foregroundStyle(Color(red: 0.4, green: 1.0, blue: 0.55).opacity(0.95),
-                                                 .black.opacity(0.6))
-                        }
-                        .accessibilityLabel("Save AI playlist")
+                        chromeButton("bookmark.fill",
+                                     accessibility: "Save AI playlist",
+                                     action: {
+                                         savePlaylistName = defaultSaveName(annotation: player.aiAnnotation)
+                                         showSavePrompt = true
+                                     })
                     }
 
                     SkinnedFavoriteButton()
@@ -83,14 +59,9 @@ struct SkinnedMainView: View {
                     SleepTimerButton()
                         .environmentObject(player)
 
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.white.opacity(0.85), .black.opacity(0.6))
-                    }
-                    .accessibilityLabel("Close")
+                    chromeButton("xmark.circle.fill",
+                                 accessibility: "Close",
+                                 action: { dismiss() })
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 4)
@@ -196,6 +167,26 @@ struct SkinnedMainView: View {
             saveToast = "Couldn't save — no drive holds the queue"
         }
         saveToastUntil = Date().addingTimeInterval(2.0)
+    }
+
+    /// Uniform top-chrome icon button. All five buttons in the bar (skin
+    /// cycler, optional save-AI, favorite, sleep, close) use the same
+    /// 36×36 frame, .title2 SF Symbol, and white-on-dark hierarchical
+    /// fill so they line up across the row. Active states (favorite,
+    /// sleep) override the foreground color but keep the same geometry.
+    @ViewBuilder
+    private func chromeButton(_ systemName: String,
+                              accessibility: String,
+                              tint: Color? = nil,
+                              action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.title2)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(tint ?? .white.opacity(0.92))
+                .frame(width: 36, height: 36)
+        }
+        .accessibilityLabel(accessibility)
     }
 
     private func defaultSaveName(annotation: AIQueueAnnotation?) -> String {
@@ -563,8 +554,9 @@ struct SkinnedFavoriteButton: View {
         } label: {
             Image(systemName: isFav ? "heart.fill" : "heart")
                 .font(.title2)
-                .foregroundStyle(isFav ? Color.pink.opacity(0.95) : .white.opacity(0.85),
-                                 .black.opacity(0.6))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.white.opacity(0.92))
+                .frame(width: 36, height: 36)
         }
         .disabled(track == nil)
         .accessibilityLabel(isFav ? "Unfavorite track" : "Favorite track")

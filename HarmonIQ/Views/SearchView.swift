@@ -41,6 +41,7 @@ struct SearchView: View {
             }
         }
         .navigationTitle("Search")
+        .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
                     prompt: "Title, artist, album…")
         .onSubmit(of: .search) {
