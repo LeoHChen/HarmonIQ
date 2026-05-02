@@ -1,17 +1,14 @@
 import SwiftUI
 
-/// Winamp-style 10-band graphic equalizer + preamp + on/off + presets.
-///
-/// **Currently visual only** — moving sliders does not yet alter the audio.
-/// Hooking real EQ into AudioPlayerManager requires switching from
-/// `AVAudioPlayer` to `AVAudioEngine` + `AVAudioUnitEQ`, which is a separate,
-/// bigger change. The slider state lives here so the UI feels alive and the
-/// settings can be migrated over once the audio path moves to AVAudioEngine.
+/// Winamp-style 10-band graphic equalizer: preamp + 10 sliders + on/off + presets.
+/// Drives `EqualizerManager.shared`, which feeds the `AVAudioUnitEQ` inserted
+/// between the player node and the main mixer (issue #28).
 struct SkinnedEqualizerView: View {
-    @StateObject private var state = EqualizerState.shared
+    @StateObject private var eq = EqualizerManager.shared
     @EnvironmentObject var skinManager: SkinManager
+    @State private var showPresetMenu = false
 
-    private let bands: [String] = ["60", "170", "310", "600", "1K", "3K", "6K", "12K", "14K", "16K"]
+    private let bandLabels: [String] = ["60", "170", "310", "600", "1K", "3K", "6K", "12K", "14K", "16K"]
 
     var body: some View {
         let palette = SkinPalette(skin: skinManager.activeSkin)
@@ -25,20 +22,46 @@ struct SkinnedEqualizerView: View {
                     .font(.system(size: 11, weight: .bold, design: .monospaced))
                     .foregroundStyle(activeColor)
                 Spacer()
-                Toggle(isOn: $state.isEnabled) {
+                Toggle(isOn: $eq.isEnabled) {
                     Text("ON")
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundStyle(state.isEnabled ? activeColor : dimColor)
+                        .foregroundStyle(eq.isEnabled ? activeColor : dimColor)
                 }
                 .toggleStyle(.button)
                 .tint(activeColor)
-                Toggle(isOn: $state.autoMode) {
-                    Text("AUTO")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundStyle(state.autoMode ? activeColor : dimColor)
+                Menu {
+                    ForEach(EqualizerPreset.allBuiltIn) { preset in
+                        Button {
+                            eq.applyPreset(preset)
+                        } label: {
+                            if preset.name == eq.activePreset {
+                                Label(preset.name, systemImage: "checkmark")
+                            } else {
+                                Text(preset.name)
+                            }
+                        }
+                    }
+                    Divider()
+                    Button(role: .destructive) {
+                        eq.resetToFlat()
+                    } label: {
+                        Label("Reset to Flat", systemImage: "arrow.counterclockwise")
+                    }
+                } label: {
+                    HStack(spacing: 3) {
+                        Text(eq.activePreset.uppercased())
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .bold))
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .foregroundStyle(activeColor)
+                    .background(activeColor.opacity(0.12))
+                    .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(activeColor.opacity(0.5)))
+                    .clipShape(RoundedRectangle(cornerRadius: 2))
                 }
-                .toggleStyle(.button)
-                .tint(activeColor)
+                .accessibilityLabel("Equalizer presets")
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -46,37 +69,49 @@ struct SkinnedEqualizerView: View {
 
             // Band sliders + preamp
             HStack(alignment: .bottom, spacing: 6) {
-                bandSlider(title: "PRE", value: $state.preamp, isPreamp: true,
+                bandSlider(title: "PRE",
+                           value: dbBinding(get: { eq.preamp },
+                                            set: { newDb in eq.preamp = newDb; eq.markCustomIfDiverged() }),
+                           isPreamp: true,
                            activeColor: activeColor, dimColor: dimColor)
                 Rectangle().fill(Color(white: 0.2)).frame(width: 1)
-                ForEach(bands.indices, id: \.self) { i in
-                    bandSlider(title: bands[i], value: $state.bands[i], isPreamp: false,
+                ForEach(bandLabels.indices, id: \.self) { i in
+                    bandSlider(title: bandLabels[i],
+                               value: dbBinding(get: { eq.bands[i] },
+                                                set: { newDb in
+                                                    var copy = eq.bands
+                                                    copy[i] = newDb
+                                                    eq.bands = copy
+                                                    eq.markCustomIfDiverged()
+                                                }),
+                               isPreamp: false,
                                activeColor: activeColor, dimColor: dimColor)
                 }
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
-
-            // Footer note
-            Text("Visual only — full audio EQ coming with AVAudioEngine")
-                .font(.system(size: 9, design: .monospaced))
-                .foregroundStyle(dimColor)
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 4)
         }
         .background(palette.background)
         .overlay(Rectangle().stroke(Color(white: 0.25), lineWidth: 1))
     }
 
+    /// Slider works in -1...1; the manager stores -12...+12 dB. Bridge them.
+    private func dbBinding(get: @escaping () -> Float, set: @escaping (Float) -> Void) -> Binding<Double> {
+        Binding<Double>(
+            get: { Double(get() / 12.0) },
+            set: { newVal in set(Float(max(-1, min(1, newVal)) * 12.0)) }
+        )
+    }
+
     private func bandSlider(title: String, value: Binding<Double>, isPreamp: Bool,
                             activeColor: Color, dimColor: Color) -> some View {
         VStack(spacing: 2) {
-            VerticalDbSlider(value: value, enabled: state.isEnabled,
+            VerticalDbSlider(value: value, enabled: eq.isEnabled,
                              activeColor: activeColor, dimColor: dimColor)
                 .frame(width: 22, height: 90)
             Text(title)
                 .font(.system(size: 9, weight: .bold, design: .monospaced))
-                .foregroundStyle(isPreamp ? activeColor : (state.isEnabled ? activeColor : dimColor))
+                .foregroundStyle(isPreamp ? activeColor : (eq.isEnabled ? activeColor : dimColor))
         }
     }
 }
@@ -135,14 +170,4 @@ private struct VerticalDbSlider: View {
             }
         }
     }
-}
-
-@MainActor
-final class EqualizerState: ObservableObject {
-    static let shared = EqualizerState()
-
-    @Published var isEnabled: Bool = false
-    @Published var autoMode: Bool = false
-    @Published var preamp: Double = 0
-    @Published var bands: [Double] = Array(repeating: 0, count: 10)
 }

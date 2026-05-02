@@ -11,6 +11,12 @@ enum RepeatMode: String, Codable, CaseIterable {
     case one
 }
 
+/// Audio playback driven by `AVAudioEngine + AVAudioPlayerNode + AVAudioUnitEQ`.
+///
+/// Public API matches the prior `AVAudioPlayer`-based implementation so the
+/// rest of the app is unchanged. The migration is what unlocks the functional
+/// equalizer (issue #28) — `EqualizerManager.shared.eqUnit` is wired into the
+/// graph between the player node and the main mixer.
 @MainActor
 final class AudioPlayerManager: NSObject, ObservableObject {
     static let shared = AudioPlayerManager()
@@ -37,13 +43,13 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     @Published var repeatMode: RepeatMode = .off
     @Published private(set) var activeSmartMode: SmartPlayMode? = nil
 
-    /// 0...1 master volume; persisted to AVAudioPlayer when set.
+    /// 0...1 master volume. Mapped to the player node's `volume` directly.
     @Published var volume: Float = 0.85 {
-        didSet { player?.volume = volume }
+        didSet { playerNode.volume = volume }
     }
-    /// -1...1 stereo balance.
+    /// -1...1 stereo balance — mapped to the player node's `pan`.
     @Published var balance: Float = 0 {
-        didSet { player?.pan = balance }
+        didSet { playerNode.pan = balance }
     }
     /// User-visible reason the most recent play attempt failed, or nil if none.
     /// Cleared when a track plays successfully or the queue empties.
@@ -63,7 +69,24 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     /// stableIDs of tracks that have started playing in this app session — fuels Discovery Mix.
     private(set) var sessionPlayedIDs: Set<String> = []
 
-    private var player: AVAudioPlayer?
+    // MARK: - Engine state
+    private let engine = AVAudioEngine()
+    private let playerNode = AVAudioPlayerNode()
+    /// File currently scheduled in `playerNode`. nil between tracks.
+    private var audioFile: AVAudioFile?
+    /// File-frame offset where the current schedule began. Combined with
+    /// `playerNode.playerTime(forNodeTime:).sampleTime` to compute current time.
+    private var seekStartFrame: AVAudioFramePosition = 0
+    /// Latched current time at the moment we paused. Used so the UI keeps
+    /// reading the right value while the node isn't rendering.
+    private var pausedAtSeconds: TimeInterval?
+    /// Generation counter — bumped on every `playCurrent()` and `seek(...)`.
+    /// `scheduleFile` completion handlers compare against this to detect
+    /// whether they belong to a stale schedule that was preempted.
+    private var playGeneration: UInt64 = 0
+    /// Thread-safe meter sink fed by the player-node tap.
+    private let meterSink = MeterSink()
+
     private var sleepTimer: Timer?
     private var displayLink: CADisplayLink?
     private var accessRoot: URL?
@@ -78,6 +101,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
 
     override init() {
         super.init()
+        setupAudioGraph()
         setupRemoteCommands()
         // Selector-based registration avoids @Sendable closure issues: UIApplication
         // lifecycle notifications are always posted on the main thread, so the @objc
@@ -89,15 +113,40 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             self, selector: #selector(appWillEnterForeground),
             name: UIApplication.willEnterForegroundNotification, object: nil)
         // Audio session diagnostics — logging only, no behavior change.
-        // See issue #38: we want a paper trail of interruptions and route
-        // changes so the next time playback aborts mid-track we can match
-        // it against a specific session event.
+        // See issue #38.
         NotificationCenter.default.addObserver(
             self, selector: #selector(audioSessionInterruption(_:)),
             name: AVAudioSession.interruptionNotification, object: nil)
         NotificationCenter.default.addObserver(
             self, selector: #selector(audioSessionRouteChange(_:)),
             name: AVAudioSession.routeChangeNotification, object: nil)
+        // The engine can stop on configuration changes (e.g. headphones plugged
+        // in mid-stream). Restart it transparently so the user doesn't notice.
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(engineConfigurationChange(_:)),
+            name: .AVAudioEngineConfigurationChange, object: engine)
+    }
+
+    private func setupAudioGraph() {
+        let eq = EqualizerManager.shared.eqUnit
+        engine.attach(playerNode)
+        engine.attach(eq)
+        // Use a "common" stereo float format for connections; AVAudioEngine
+        // inserts converters as needed when scheduling files of any sample
+        // rate or channel layout.
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)
+        engine.connect(playerNode, to: eq, format: format)
+        engine.connect(eq, to: engine.mainMixerNode, format: format)
+        playerNode.volume = volume
+        playerNode.pan = balance
+        // Tap on the EQ output so the visualizer reflects what the user hears
+        // (post-EQ + post-volume). Tap is installed once and persists for the
+        // lifetime of the process.
+        let tapFormat = eq.outputFormat(forBus: 0)
+        let sink = meterSink
+        eq.installTap(onBus: 0, bufferSize: 1024, format: tapFormat) { buffer, _ in
+            sink.process(buffer: buffer)
+        }
     }
 
     @MainActor @objc private func appDidEnterBackground() {
@@ -140,6 +189,15 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         Self.log.info("routeChange reason=\(label, privacy: .public) reasonRaw=\(raw)")
     }
 
+    @objc private func engineConfigurationChange(_ note: Notification) {
+        Self.log.info("engineConfigurationChange — restarting engine")
+        do {
+            if !engine.isRunning { try engine.start() }
+        } catch {
+            Self.log.error("engine restart failed: \(String(describing: error), privacy: .public)")
+        }
+    }
+
     // MARK: - Public API
 
     func play(track: Track, in tracks: [Track]) {
@@ -159,8 +217,6 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         presentNowPlayingTick &+= 1
     }
 
-    /// Build a queue with a SmartPlayMode and start playback. Disables manual shuffle so
-    /// the curator's order is honored.
     /// Re-presents the now-playing sheet without touching playback. Used by the
     /// "Player" entry in the library when the user has dismissed the sheet and
     /// wants to get back to the current track.
@@ -169,6 +225,8 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         presentNowPlayingTick &+= 1
     }
 
+    /// Build a queue with a SmartPlayMode and start playback. Disables manual shuffle so
+    /// the curator's order is honored.
     func playSmart(mode: SmartPlayMode, from pool: [Track]) {
         let queue = SmartPlayBuilder.buildQueue(mode: mode, from: pool, recentlyPlayed: sessionPlayedIDs, seed: currentTrack)
         guard !queue.isEmpty else { return }
@@ -180,57 +238,89 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     }
 
     func togglePlayPause() {
-        guard let player = player else {
+        if audioFile == nil {
             if !queue.isEmpty { playCurrent() }
             return
         }
-        if player.isPlaying {
-            player.pause()
-            isPlaying = false
-            stopDisplayLink()
+        if playerNode.isPlaying {
+            pause()
         } else {
-            player.play()
-            isPlaying = true
-            startDisplayLink()
+            resume()
         }
-        NowPlayingManager.shared.updatePlaybackState(isPlaying: isPlaying, currentTime: currentTime, rate: isPlaying ? 1.0 : 0.0)
     }
 
     func pause() {
-        player?.pause()
+        // Latch current time before we pause — `playerTime(forNodeTime:)`
+        // returns nil once the node stops rendering.
+        pausedAtSeconds = currentTimeSeconds()
+        playerNode.pause()
         isPlaying = false
         stopDisplayLink()
-        NowPlayingManager.shared.updatePlaybackState(isPlaying: false, currentTime: currentTime, rate: 0.0)
+        NowPlayingManager.shared.updatePlaybackState(isPlaying: false, currentTime: pausedAtSeconds ?? currentTime, rate: 0.0)
     }
 
     func resume() {
-        guard let player = player else { return }
-        player.play()
+        guard audioFile != nil else { return }
+        do {
+            if !engine.isRunning { try engine.start() }
+        } catch {
+            Self.log.error("engine start failed on resume: \(String(describing: error), privacy: .public)")
+            playbackError = "Audio engine couldn't start: \(error.localizedDescription)"
+            return
+        }
+        playerNode.play()
         isPlaying = true
+        pausedAtSeconds = nil
         startDisplayLink()
         NowPlayingManager.shared.updatePlaybackState(isPlaying: true, currentTime: currentTime, rate: 1.0)
     }
 
-    func next() {
-        advance(by: 1)
-    }
+    func next() { advance(by: 1) }
 
     func previous() {
-        if currentTime > 3, let player = player {
-            player.currentTime = 0
-            currentTime = 0
-            NowPlayingManager.shared.updatePlaybackState(isPlaying: isPlaying, currentTime: 0, rate: isPlaying ? 1.0 : 0.0)
+        if currentTimeSeconds() > 3 {
+            seek(to: 0)
             return
         }
         advance(by: -1)
     }
 
     func seek(to seconds: TimeInterval) {
-        guard let player = player else { return }
-        let clamped = max(0, min(seconds, player.duration))
-        player.currentTime = clamped
-        currentTime = clamped
-        NowPlayingManager.shared.updatePlaybackState(isPlaying: isPlaying, currentTime: clamped, rate: isPlaying ? 1.0 : 0.0)
+        guard let file = audioFile else { return }
+        let sampleRate = file.processingFormat.sampleRate
+        let totalFrames = file.length
+        let target = AVAudioFramePosition(max(0, min(Double(totalFrames - 1), seconds * sampleRate)))
+        let remaining = max(1, totalFrames - target)
+        playGeneration &+= 1
+        let gen = playGeneration
+
+        playerNode.stop()
+        seekStartFrame = target
+        let resumeAfter = isPlaying
+
+        playerNode.scheduleSegment(file,
+                                   startingFrame: target,
+                                   frameCount: AVAudioFrameCount(remaining),
+                                   at: nil,
+                                   completionCallbackType: .dataPlayedBack) { [weak self] _ in
+            Task { @MainActor in
+                self?.handleScheduleComplete(generation: gen)
+            }
+        }
+
+        // Update the published time + lock-screen state so the UI reflects the
+        // new position even if we're paused right now.
+        currentTime = Double(target) / sampleRate
+        pausedAtSeconds = resumeAfter ? nil : currentTime
+        if resumeAfter {
+            do {
+                if !engine.isRunning { try engine.start() }
+                playerNode.play()
+            } catch {
+                Self.log.error("engine start failed on seek: \(String(describing: error), privacy: .public)")
+            }
+        }
+        NowPlayingManager.shared.updatePlaybackState(isPlaying: isPlaying, currentTime: currentTime, rate: isPlaying ? 1.0 : 0.0)
     }
 
     func toggleShuffle() {
@@ -313,11 +403,13 @@ final class AudioPlayerManager: NSObject, ObservableObject {
 
         do {
             stopDisplayLink()
+            // Stop any prior playback before releasing the old drive's scope.
+            playerNode.stop()
+            audioFile = nil
             releaseAccessRoot()
 
             // Re-activate the audio session in case an interruption (phone
-            // call, Siri, another app) deactivated it. Without this, the file
-            // loads and "plays" but produces no audible output.
+            // call, Siri, another app) deactivated it.
             let session = AVAudioSession.sharedInstance()
             if session.category != .playback {
                 try? session.setCategory(.playback, mode: .default, options: [])
@@ -339,15 +431,27 @@ final class AudioPlayerManager: NSObject, ObservableObject {
                 fileURL.appendPathComponent(component)
             }
 
-            let avPlayer = try AVAudioPlayer(contentsOf: fileURL)
-            avPlayer.delegate = self
-            avPlayer.isMeteringEnabled = true
-            avPlayer.volume = volume
-            avPlayer.pan = balance
-            avPlayer.prepareToPlay()
-            self.player = avPlayer
-            self.duration = avPlayer.duration > 0 ? avPlayer.duration : track.duration
-            avPlayer.play()
+            let file = try AVAudioFile(forReading: fileURL)
+            self.audioFile = file
+            self.seekStartFrame = 0
+            self.pausedAtSeconds = nil
+            let sampleRate = file.processingFormat.sampleRate
+            let lengthSeconds = sampleRate > 0 ? Double(file.length) / sampleRate : track.duration
+            self.duration = lengthSeconds > 0 ? lengthSeconds : track.duration
+
+            playGeneration &+= 1
+            let gen = playGeneration
+            playerNode.scheduleFile(file, at: nil, completionCallbackType: .dataPlayedBack) { [weak self] _ in
+                Task { @MainActor in
+                    self?.handleScheduleComplete(generation: gen)
+                }
+            }
+
+            if !engine.isRunning {
+                try engine.start()
+            }
+            playerNode.play()
+
             isPlaying = true
             currentTime = 0
             playbackError = nil
@@ -370,8 +474,6 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     private static func friendlyMessage(for error: Error) -> String {
         let ns = error as NSError
         if ns.domain == NSOSStatusErrorDomain {
-            // 'fmt?' / 'pty?' / -39 etc. all arrive here; whatever the OSStatus,
-            // the practical answer is "this file can't be decoded by AVAudioPlayer."
             return "format not playable (DRM-protected, unsupported codec, or unreadable)"
         }
         if ns.domain == NSCocoaErrorDomain && ns.code == NSFileReadNoPermissionError {
@@ -425,6 +527,47 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         }
     }
 
+    /// Called from the `scheduleFile`/`scheduleSegment` completion handler.
+    /// Acts only when `generation` matches the currently active schedule —
+    /// stale completions (preempted by seek/track-change/stop) are ignored.
+    private func handleScheduleComplete(generation: UInt64) {
+        guard generation == playGeneration else { return }
+        guard let file = audioFile else { return }
+        let sampleRate = file.processingFormat.sampleRate
+        let totalSeconds = sampleRate > 0 ? Double(file.length) / sampleRate : duration
+        let observed = currentTimeSeconds()
+        let early = totalSeconds > 0 && (totalSeconds - observed) > 1.0
+        let id = currentTrack?.stableID ?? "<none>"
+        Self.log.info("didFinishPlaying success=true currentTime=\(observed, format: .fixed(precision: 2)) duration=\(totalSeconds, format: .fixed(precision: 2)) endedEarly=\(early) stableID=\(id, privacy: .public)")
+
+        if sleepStopAtTrackEnd {
+            pause()
+            sleepStopAtTrackEnd = false
+            return
+        }
+        if repeatMode == .one {
+            playCurrent()
+        } else {
+            advance(by: 1)
+        }
+    }
+
+    /// Returns the file-frame position currently rendering as a wall-clock
+    /// seconds offset from the start of the file.
+    private func currentTimeSeconds() -> TimeInterval {
+        if let paused = pausedAtSeconds { return paused }
+        guard let file = audioFile else { return 0 }
+        let sampleRate = file.processingFormat.sampleRate
+        let seekSeconds = sampleRate > 0 ? Double(seekStartFrame) / sampleRate : 0
+        guard let nodeTime = playerNode.lastRenderTime,
+              let playerTime = playerNode.playerTime(forNodeTime: nodeTime),
+              playerTime.sampleRate > 0 else {
+            return seekSeconds
+        }
+        let elapsed = max(0, Double(playerTime.sampleTime) / playerTime.sampleRate)
+        return seekSeconds + elapsed
+    }
+
     // MARK: - Display link for time updates
 
     private func startDisplayLink() {
@@ -441,8 +584,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     }
 
     @objc private func tick() {
-        guard let player = player else { return }
-        let raw = player.currentTime
+        let raw = currentTimeSeconds()
 
         // Throttle @Published currentTime to ~2 Hz to avoid 30 Hz SwiftUI re-renders
         // across every label, scrubber, and time display in the hierarchy.
@@ -452,24 +594,17 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             lastPublishedTime = now
         }
 
-        // Metering is only needed when the visualizer is on screen.
-        if visualizerActive && player.isMeteringEnabled {
-            player.updateMeters()
-            var avg: Float = 0
-            var peak: Float = 0
-            let channels = max(1, player.numberOfChannels)
-            for ch in 0..<channels {
-                avg += dbToUnit(player.averagePower(forChannel: ch))
-                peak += dbToUnit(player.peakPower(forChannel: ch))
-            }
-            let n = Float(channels)
-            levels = SIMD2<Float>(avg / n, peak / n)
+        // Metering is only useful when the visualizer is on screen — read the
+        // tap-fed sink and convert dB → 0...1.
+        if visualizerActive {
+            let snap = meterSink.snapshot()
+            levels = SIMD2<Float>(dbToUnit(snap.avgDb), dbToUnit(snap.peakDb))
         }
 
-        NowPlayingManager.shared.updateElapsed(raw, isPlaying: player.isPlaying)
+        NowPlayingManager.shared.updateElapsed(raw, isPlaying: playerNode.isPlaying)
     }
 
-    /// AVAudioPlayer reports power in dB (–160 silent, 0 max). Map to 0...1 with a soft floor.
+    /// dBFS power → 0...1 with a soft floor.
     private func dbToUnit(_ db: Float) -> Float {
         let floor: Float = -55
         if db < floor { return 0 }
@@ -491,43 +626,46 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     }
 }
 
-extension AudioPlayerManager: AVAudioPlayerDelegate {
-    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        // Capture player state before hopping to the main actor so the log
-        // reflects what the AV player saw at finish time, not what state
-        // looks like after `advance(by:)` has already moved on.
-        let captured = (
-            success: flag,
-            currentTime: player.currentTime,
-            duration: player.duration
-        )
-        Task { @MainActor in
-            let id = self.currentTrack?.stableID ?? "<none>"
-            let early = captured.duration > 0 && captured.duration - captured.currentTime > 1.0
-            Self.log.info("didFinishPlaying success=\(captured.success) currentTime=\(captured.currentTime, format: .fixed(precision: 2)) duration=\(captured.duration, format: .fixed(precision: 2)) endedEarly=\(early) stableID=\(id, privacy: .public)")
-            if self.sleepStopAtTrackEnd {
-                self.pause()
-                self.sleepStopAtTrackEnd = false
-                return
-            }
-            if self.repeatMode == .one {
-                self.playCurrent()
-            } else {
-                self.advance(by: 1)
+// MARK: - Meter sink
+
+/// Thread-safe drop-box for the latest power readings. The audio tap runs on
+/// a non-main thread; the display-link tick reads on main. NSLock keeps the
+/// two from tearing each other's writes.
+private final class MeterSink: @unchecked Sendable {
+    private let lock = NSLock()
+    private var lastAvgDb: Float = -160
+    private var lastPeakDb: Float = -160
+
+    func process(buffer: AVAudioPCMBuffer) {
+        guard let channelData = buffer.floatChannelData else { return }
+        let frameLength = Int(buffer.frameLength)
+        guard frameLength > 0 else { return }
+        let channelCount = Int(buffer.format.channelCount)
+        var sumSq: Float = 0
+        var peak: Float = 0
+        for ch in 0..<channelCount {
+            let p = channelData[ch]
+            for i in 0..<frameLength {
+                let s = p[i]
+                sumSq += s * s
+                let a = s < 0 ? -s : s
+                if a > peak { peak = a }
             }
         }
+        let n = Float(frameLength * max(1, channelCount))
+        let rms = sqrtf(sumSq / n)
+        let avgDb = 20 * log10f(max(rms, 1e-6))
+        let peakDb = 20 * log10f(max(peak, 1e-6))
+        lock.lock()
+        lastAvgDb = avgDb
+        lastPeakDb = peakDb
+        lock.unlock()
     }
 
-    nonisolated func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
-        let captured = (
-            currentTime: player.currentTime,
-            duration: player.duration,
-            errorDesc: error.map { String(describing: $0) } ?? "<nil>"
-        )
-        Task { @MainActor in
-            let id = self.currentTrack?.stableID ?? "<none>"
-            Self.log.error("decodeError stableID=\(id, privacy: .public) currentTime=\(captured.currentTime, format: .fixed(precision: 2)) duration=\(captured.duration, format: .fixed(precision: 2)) error=\(captured.errorDesc, privacy: .public)")
-            self.advance(by: 1)
-        }
+    func snapshot() -> (avgDb: Float, peakDb: Float) {
+        lock.lock()
+        let a = lastAvgDb, p = lastPeakDb
+        lock.unlock()
+        return (a, p)
     }
 }
