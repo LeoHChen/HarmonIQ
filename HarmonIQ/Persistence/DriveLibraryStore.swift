@@ -53,10 +53,16 @@ enum DriveLibraryStore {
         var trackIDs: [String]
         var createdAt: Date
         var updatedAt: Date
-        /// Optional kind tag. `"favorites"` marks the drive's system Favorites
-        /// playlist; nil/missing means a normal user playlist. Optional so
-        /// existing playlists.json files (no `kind` field) decode unchanged.
+        /// Optional kind tag.
+        ///   `"favorites"` — the drive's system Favorites playlist.
+        ///   `"smart"`     — saved from an AI Smart Play queue (issue #58).
+        ///   nil / missing — a normal hand-built playlist.
+        /// Optional so existing playlists.json files decode unchanged.
         var kind: String?
+        /// Original user prompt for AI-curated playlists (issue #58). Optional.
+        var smartPrompt: String?
+        /// `SmartPlayMode.rawValue` used to generate this AI-curated queue. Optional.
+        var smartMode: String?
     }
 
     // MARK: - Paths
@@ -167,6 +173,7 @@ enum DriveLibraryStore {
     }
 
     static let favoritesKind = "favorites"
+    static let smartKind = "smart"
 
     static func toPlaylist(_ dp: DrivePlaylist, rootBookmarkID: UUID) -> Playlist {
         Playlist(
@@ -176,18 +183,27 @@ enum DriveLibraryStore {
             createdAt: dp.createdAt,
             updatedAt: dp.updatedAt,
             rootBookmarkID: rootBookmarkID,
-            isFavorites: dp.kind == favoritesKind
+            isFavorites: dp.kind == favoritesKind,
+            isSmart: dp.kind == smartKind,
+            smartPrompt: dp.smartPrompt,
+            smartMode: dp.smartMode
         )
     }
 
     static func fromPlaylist(_ p: Playlist) -> DrivePlaylist {
-        DrivePlaylist(
+        let kind: String?
+        if p.isFavorites { kind = favoritesKind }
+        else if p.isSmart { kind = smartKind }
+        else { kind = nil }
+        return DrivePlaylist(
             id: p.id,
             name: p.name,
             trackIDs: p.trackIDs,
             createdAt: p.createdAt,
             updatedAt: p.updatedAt,
-            kind: p.isFavorites ? favoritesKind : nil
+            kind: kind,
+            smartPrompt: p.isSmart ? p.smartPrompt : nil,
+            smartMode: p.isSmart ? p.smartMode : nil
         )
     }
 

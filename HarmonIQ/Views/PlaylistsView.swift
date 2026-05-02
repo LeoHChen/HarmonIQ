@@ -7,7 +7,10 @@ struct PlaylistsView: View {
     @State private var showNoDriveAlert = false
 
     private var favorites: [Playlist] { library.favoritesPlaylists }
-    private var userPlaylists: [Playlist] { library.playlists.filter { !$0.isFavorites } }
+    private var smartPlaylists: [Playlist] { library.smartPlaylists }
+    private var userPlaylists: [Playlist] {
+        library.playlists.filter { !$0.isFavorites && !$0.isSmart }
+    }
     private var driveName: [UUID: String] {
         Dictionary(uniqueKeysWithValues: library.roots.map { ($0.id, $0.displayName) })
     }
@@ -47,6 +50,38 @@ struct PlaylistsView: View {
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    if !smartPlaylists.isEmpty {
+                        Section {
+                            ForEach(smartPlaylists) { playlist in
+                                NavigationLink {
+                                    PlaylistDetailView(playlist: playlist)
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "wand.and.stars")
+                                            .font(.title3)
+                                            .foregroundStyle(.purple)
+                                            .frame(width: 36, height: 36)
+                                            .background(Color.purple.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(playlist.name)
+                                            if let prompt = playlist.smartPrompt, !prompt.isEmpty {
+                                                Text("\u{201C}\(prompt)\u{201D} · \(playlist.trackIDs.count) tracks")
+                                                    .font(.caption).foregroundStyle(.secondary)
+                                                    .lineLimit(1)
+                                            } else {
+                                                Text("\(playlist.trackIDs.count) tracks").font(.caption).foregroundStyle(.secondary)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .onDelete(perform: deleteSmartPlaylist)
+                        } header: {
+                            Label("AI-Curated", systemImage: "sparkles")
+                                .font(.caption.bold())
                         }
                     }
 
@@ -108,6 +143,13 @@ struct PlaylistsView: View {
 
     private func deleteUserPlaylist(at offsets: IndexSet) {
         let snapshot = userPlaylists
+        for idx in offsets where snapshot.indices.contains(idx) {
+            library.deletePlaylist(snapshot[idx])
+        }
+    }
+
+    private func deleteSmartPlaylist(at offsets: IndexSet) {
+        let snapshot = smartPlaylists
         for idx in offsets where snapshot.indices.contains(idx) {
             library.deletePlaylist(snapshot[idx])
         }

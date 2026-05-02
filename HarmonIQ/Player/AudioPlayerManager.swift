@@ -258,7 +258,11 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         guard !resolved.isEmpty else { return }
         activeSmartMode = mode
         isShuffleEnabled = false
-        aiAnnotation = AIQueueAnnotation(title: curated.title, blurb: curated.blurb, rationales: curated.rationales)
+        aiAnnotation = AIQueueAnnotation(title: curated.title,
+                                         blurb: curated.blurb,
+                                         rationales: curated.rationales,
+                                         prompt: userPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : userPrompt,
+                                         mode: mode.rawValue)
         loadQueue(resolved, startIndex: 0)
         playCurrent()
         presentNowPlayingTick &+= 1
@@ -668,6 +672,10 @@ struct AIQueueAnnotation: Equatable {
     let blurb: String
     /// One-line rationale per stableID, when the model provided one.
     let rationales: [String: String]
+    /// User's free-text prompt for prompt-driven modes (Vibe Match), or nil.
+    let prompt: String?
+    /// `SmartPlayMode.rawValue` that produced this queue.
+    let mode: String?
 }
 
 // MARK: - Meter sink
