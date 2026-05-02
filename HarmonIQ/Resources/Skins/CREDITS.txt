@@ -1,0 +1,37 @@
+Bundled Winamp skins
+====================
+
+The .wsz files in this folder are classic third-party Winamp 2.x skins
+sourced from the Internet Archive's Webamp Skin Museum (skins.webamp.org).
+Each skin is the work of its original author and is included here under
+the licensing terms it was distributed with — most Winamp-era skins were
+released as freeware for non-commercial redistribution.
+
+Currently bundled:
+
+  Base-2.91.wsz             — Winamp 2.91 default ("Base") skin
+  Bento-Classified.wsz      — Bento Classified
+  Crystal-Display.wsz       — Crystal Display
+  Glass-Factory.wsz         — Glass Factory
+  Green-Dimension-V2.wsz    — Green Dimension V2
+  Internet-Archive.wsz      — Internet Archive themed skin
+  Luna-Steel.wsz            — Luna Steel
+  MacOSXAqua1-5.wsz         — Mac OS X Aqua 1.5
+  TopazAmp1-2.wsz           — TopazAmp 1.2
+
+Adding more skins
+-----------------
+
+The script `scripts/fetch-extra-skins.sh` (in the repo root) downloads
+.wsz files from a list of URLs you provide on stdin, drops them into
+this folder, and reminds you to re-run `xcodegen generate`. Use it to
+add more skins from skins.webamp.org or other archives. Verify each
+skin's license terms before redistributing.
+
+Removing a skin
+---------------
+
+Just delete its .wsz file from this folder. The skin picker enumerates
+the folder at runtime — no project regeneration is required for
+removals. (Adds DO require regen because XcodeGen treats this folder
+as a build-time resource bundle.)
