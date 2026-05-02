@@ -13,7 +13,7 @@ struct SleepTimerButton: View {
         Button {
             showDialog = true
         } label: {
-            Image(systemName: "timer")
+            Image(systemName: "moon.zzz.fill")
                 .font(.title2)
                 .foregroundStyle(isActive ? Color.accentColor : .white.opacity(0.85),
                                  .black.opacity(0.6))
@@ -57,7 +57,7 @@ struct SleepTimerCountdown: View {
     @ViewBuilder
     private func label(text: String) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: "timer")
+            Image(systemName: "moon.zzz.fill")
                 .font(.system(size: 11))
                 .foregroundStyle(WinampTheme.lcdGlow)
             Text(text)

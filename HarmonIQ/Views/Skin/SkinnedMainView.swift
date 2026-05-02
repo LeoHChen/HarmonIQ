@@ -68,9 +68,10 @@ struct SkinnedMainView: View {
                             savePlaylistName = defaultSaveName(annotation: player.aiAnnotation)
                             showSavePrompt = true
                         } label: {
-                            Image(systemName: "square.and.arrow.down")
+                            Image(systemName: "bookmark.fill")
                                 .font(.title2)
-                                .foregroundStyle(.white.opacity(0.85), .black.opacity(0.6))
+                                .foregroundStyle(Color(red: 0.4, green: 1.0, blue: 0.55).opacity(0.95),
+                                                 .black.opacity(0.6))
                         }
                         .accessibilityLabel("Save AI playlist")
                     }

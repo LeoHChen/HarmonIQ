@@ -89,7 +89,7 @@ enum SmartPlayMode: String, CaseIterable, Identifiable {
         case .moodArc:        return "waveform.path.ecg"
         case .deepCut:        return "music.note.house"
         case .onePerArtist:   return "person.3"
-        case .genreTunnel:    return "tunnel"
+        case .genreTunnel:    return "arrow.right.to.line"
         case .eraWalk:        return "clock.arrow.circlepath"
         case .vibeMatch:      return "text.bubble"
         case .storyteller:    return "book"
