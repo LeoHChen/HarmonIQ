@@ -144,11 +144,12 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         playerNode.volume = volume
         playerNode.pan = balance
         // Tap on the EQ output so the visualizer reflects what the user hears
-        // (post-EQ + post-volume). Tap is installed once and persists for the
-        // lifetime of the process.
-        let tapFormat = eq.outputFormat(forBus: 0)
+        // (post-EQ + post-volume). `format: nil` lets the engine pick the
+        // actual rendered format when the graph starts — querying
+        // `outputFormat(forBus: 0)` *before* `engine.start()` returns a stale
+        // default that the tap then silently mismatches. Issue #41.
         let sink = meterSink
-        eq.installTap(onBus: 0, bufferSize: 1024, format: tapFormat) { buffer, _ in
+        eq.installTap(onBus: 0, bufferSize: 1024, format: nil) { buffer, _ in
             sink.process(buffer: buffer)
         }
     }

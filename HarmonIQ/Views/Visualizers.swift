@@ -165,9 +165,14 @@ struct VisualizerView: View {
             .clipShape(RoundedRectangle(cornerRadius: 4))
             .overlay(alignment: .center) { styleToast }
             .contentShape(Rectangle())
-            // Long-press OR double-tap on the surface cycles the style.
+            // Single-tap, double-tap, and long-press all cycle the style. The
+            // skinned (Winamp) player uses single-tap so this matches that
+            // affordance — issue #43. Double-tap stays attached because users
+            // who learned that gesture before still expect it; declaring both
+            // counts coexists fine in SwiftUI's tap dispatch.
             .onLongPressGesture(minimumDuration: 0.4) { cycleAndToast() }
             .onTapGesture(count: 2) { cycleAndToast() }
+            .onTapGesture { cycleAndToast() }
         }
         .bevelPanel(corner: 6)
     }
@@ -555,10 +560,13 @@ private func drawCircle(context: GraphicsContext, size: CGSize, engine: Visualiz
 
     // Bars around the ring.
     let count = bands.count
+    // Apply the same energy-floor pattern as commit 98c92d9 used for the
+    // other styles so quiet bars still register on a small rect (issue #41).
+    let span = maxOuter - innerR
     for i in 0..<count {
         let theta = Double(i) / Double(count) * 2 * .pi - .pi / 2
-        let len = CGFloat(bands[i]) * (maxOuter - innerR)
-        guard len >= 1 else { continue }
+        let len = max(span * 0.05, CGFloat(bands[i]) * span)
+        guard len >= 0.5 else { continue }
         let cosT = CGFloat(cos(theta))
         let sinT = CGFloat(sin(theta))
         let p1 = CGPoint(x: center.x + cosT * innerR, y: center.y + sinT * innerR)
