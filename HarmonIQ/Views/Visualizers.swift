@@ -211,7 +211,12 @@ final class VisualizerEngine: ObservableObject {
 
         let avg = level.x
         let peak = level.y
-        let energy = max(avg, peak * 0.7)
+        let metered = max(avg, peak * 0.7)
+        // When the player is playing, floor the energy so bands / oscilloscope /
+        // particles stay alive even if AVAudioPlayer metering momentarily reads
+        // ~0 (we've seen this on real hardware right after play, and across
+        // track boundaries). Real metered signal overrides the floor.
+        let energy = isPlaying ? max(0.08, metered) : metered
 
         // Beat detection: rolling-average peak with a threshold delta.
         let prevAvg = peakAvg
