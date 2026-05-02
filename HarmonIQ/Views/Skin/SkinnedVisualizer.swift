@@ -59,7 +59,12 @@ struct SkinnedVisualizer: View {
         case .spectrum, .plasma, .circle:
             // plasma/circle don't translate to the 76×16 + palette aesthetic — fall back to bars.
             drawSpectrumBars(ctx: ctx, size: size, colors: colors)
-        case .oscilloscope:
+        case .oscilloscope,
+             .oscGlow, .oscMultiLayer, .oscMirror, .oscFill,
+             .oscRadial, .oscWaterfall, .oscLissajous, .oscBeat:
+            // The fancy oscilloscope variants (issue #27) lean on SwiftUI Canvas
+            // filters/blur which don't translate to the chunky 24-color palette
+            // grid. Fall back to the canonical Winamp scope line for all of them.
             drawOscilloscope(ctx: ctx, size: size, colors: colors)
         case .mirror:
             drawMirrorBars(ctx: ctx, size: size, colors: colors)
