@@ -53,16 +53,22 @@ final class EqualizerManager: ObservableObject {
 
     /// dB gain per band, length 10. -12...+12.
     @Published var bands: [Float] {
-        didSet { applyBands(); persist() }
+        didSet { applyBands(); if !suppressPersist { persist() } }
     }
     /// dB preamp (-12...+12) — mapped to `eqUnit.globalGain`.
     @Published var preamp: Float {
-        didSet { applyPreamp(); persist() }
+        didSet { applyPreamp(); if !suppressPersist { persist() } }
     }
     /// Master bypass. When false, all bands are passed through unchanged.
     @Published var isEnabled: Bool {
-        didSet { applyBypass(); persist() }
+        didSet { applyBypass(); if !suppressPersist { persist() } }
     }
+
+    /// When true, didSet observers skip the per-write `persist()` so a
+    /// multi-property update like `applyPreset` only triggers one
+    /// UserDefaults write. Issue #83 — avoids back-to-back synchronous
+    /// UserDefaults serialization that the user could feel on tap.
+    private var suppressPersist = false
     /// Active preset name (built-in or "Custom" when band gains have been
     /// hand-tuned). Used by the UI to highlight the active row.
     @Published private(set) var activePreset: String
@@ -100,10 +106,17 @@ final class EqualizerManager: ObservableObject {
     }
 
     func applyPreset(_ preset: EqualizerPreset) {
+        // Coalesce all the writes into a single persist() at the end so a
+        // preset commit feels instant — issue #83. Without this, setting
+        // bands then preamp triggers two separate UserDefaults serializations
+        // back-to-back on the main thread.
+        suppressPersist = true
         bands = preset.bands
         preamp = preset.preamp
+        suppressPersist = false
         activePreset = preset.name
         UserDefaults.standard.set(preset.name, forKey: presetKey)
+        persist()
     }
 
     func resetToFlat() { applyPreset(.flat) }
