@@ -17,8 +17,10 @@ struct SettingsView: View {
     @EnvironmentObject var library: LibraryStore
     @EnvironmentObject var indexer: MusicIndexer
     @StateObject private var artworkFetcher = ArtworkFetcher.shared
+    @StateObject private var artistPhotoFetcher = ArtistPhotoFetcher.shared
     @State private var showPicker = false
     @State private var bulkConfirmRoot: LibraryRoot?
+    @State private var artistBulkConfirmRoot: LibraryRoot?
     @State private var rebuildConfirmRoot: LibraryRoot?
     @State private var reclassifyStatus: String = ""
 
@@ -90,6 +92,37 @@ struct SettingsView: View {
                     }
                 }
 
+                Toggle(isOn: $artistPhotoFetcher.isOnlineFetchEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Fetch artist photos online")
+                        Text("Queries MusicBrainz + Wikidata / Wikimedia")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if artistPhotoFetcher.isOnlineFetchEnabled {
+                    ForEach(library.roots) { root in
+                        Button {
+                            artistBulkConfirmRoot = root
+                        } label: {
+                            Label("Refresh missing artist photos — \(root.displayName)",
+                                  systemImage: "person.crop.circle.badge.plus")
+                        }
+                        .disabled(artistPhotoFetcher.isRefreshing)
+                    }
+                    if artistPhotoFetcher.isRefreshing {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(artistPhotoFetcher.refreshStatusMessage).font(.caption)
+                            ProgressView(value: artistPhotoFetcher.refreshProgress)
+                            Button("Stop", role: .destructive) { artistPhotoFetcher.cancelRefresh() }
+                        }
+                    } else if !artistPhotoFetcher.refreshStatusMessage.isEmpty {
+                        Text(artistPhotoFetcher.refreshStatusMessage)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 ForEach(library.roots) { root in
                     Button {
                         library.rescanArtwork(for: root)
@@ -106,7 +139,7 @@ struct SettingsView: View {
             } header: {
                 Text("Artwork")
             } footer: {
-                Text("Off by default. When on, HarmonIQ sends the album + artist of any track without local art to MusicBrainz to find a cover. Failures are silent — no other data leaves the device.\n\n“Rescan artwork on disk” adopts any covers you dropped into <Drive>/HarmonIQ/Artwork/ matching the sha1(albumArtist|album).jpg naming convention. Files that don't match a known album are ignored.")
+                Text("Both toggles are off by default and independent. When album-art is on, HarmonIQ sends the album + artist of any track without local art to MusicBrainz to find a cover. When artist photos is on, HarmonIQ sends each missing artist's name to MusicBrainz, then to Wikidata, to find a Wikimedia Commons photo. Failures are silent — no other data leaves the device.\n\n“Rescan artwork on disk” adopts any album covers you dropped into <Drive>/HarmonIQ/Artwork/ matching the sha1(albumArtist|album).jpg naming convention. Files that don't match a known album are ignored.")
             }
 
             Section {
@@ -235,6 +268,20 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) { bulkConfirmRoot = nil }
         } message: {
             Text("This sends one MusicBrainz query per album missing artwork on \(bulkConfirmRoot?.displayName ?? "this drive"), at most 1 request per second. Failures are silent.")
+        }
+        .confirmationDialog("Refresh missing artist photos?",
+                            isPresented: Binding(get: { artistBulkConfirmRoot != nil },
+                                                 set: { if !$0 { artistBulkConfirmRoot = nil } }),
+                            titleVisibility: .visible) {
+            Button("Start refresh") {
+                if let r = artistBulkConfirmRoot {
+                    artistPhotoFetcher.refreshMissingArtistPhotos(for: r)
+                }
+                artistBulkConfirmRoot = nil
+            }
+            Button("Cancel", role: .cancel) { artistBulkConfirmRoot = nil }
+        } message: {
+            Text("This sends each missing artist's name to MusicBrainz then Wikidata to find a Wikimedia Commons photo, at most 1 MusicBrainz request per second on \(artistBulkConfirmRoot?.displayName ?? "this drive"). Failures are silent.")
         }
         .confirmationDialog("Rebuild library from scratch?",
                             isPresented: Binding(get: { rebuildConfirmRoot != nil },

@@ -13,6 +13,7 @@
 		09DB5BB6958F7981EAFF5EED /* SmartPlayAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A3E5FF59C499E1F16218AA /* SmartPlayAI.swift */; };
 		116A7F3DD4FF063CD5776F50 /* LiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB2650366DAD3EEB077B33CD /* LiveActivityController.swift */; };
 		16F8F24D50C9EB96562011DC /* SmartPlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A31A65F1BCE09BD374018CC4 /* SmartPlay.swift */; };
+		345F521B16227886D1F5DC7D /* ArtistPhotoFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14ED2595E48145654B518959 /* ArtistPhotoFetcher.swift */; };
 		3623E19150C55CECDF8DF6BE /* HarmonIQActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC4F2B572BEA8AA004255D82 /* HarmonIQActivityAttributes.swift */; };
 		378FEA2A2125F0710167C4EE /* ScrollingBitmapText.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB566E7DBDC9F95DA534869C /* ScrollingBitmapText.swift */; };
 		3A5F09869BC9EA7F4DC88B35 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D6EA2A86E18C3306B3A4BFC /* ContentView.swift */; };
@@ -97,6 +98,7 @@
 
 /* Begin PBXFileReference section */
 		03C45ED4E273D5CD36352156 /* SleepTimerViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepTimerViews.swift; sourceTree = "<group>"; };
+		14ED2595E48145654B518959 /* ArtistPhotoFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtistPhotoFetcher.swift; sourceTree = "<group>"; };
 		15226D22B73C8F0CE0719B80 /* VisualizerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualizerSettingsView.swift; sourceTree = "<group>"; };
 		1747349698811EB8ADA561A3 /* EqualizerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EqualizerManager.swift; sourceTree = "<group>"; };
 		21D6E4A738A357E6A860D0E0 /* ArtistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtistsView.swift; sourceTree = "<group>"; };
@@ -211,6 +213,7 @@
 		562B9DDB1FC012BBB793F975 /* Indexer */ = {
 			isa = PBXGroup;
 			children = (
+				14ED2595E48145654B518959 /* ArtistPhotoFetcher.swift */,
 				99DCB9BA8F0F6EA560429A13 /* ArtworkFetcher.swift */,
 				F53B7620084258E7F659C7D7 /* MetadataExtractor.swift */,
 				9D861E89EB0B0713F92113EE /* MusicIndexer.swift */,
@@ -484,6 +487,7 @@
 				E1D2A557F273963F3ABFCFC5 /* AllTracksView.swift in Sources */,
 				4BAC40B449B110A162FC0AE2 /* AnthropicClient.swift in Sources */,
 				4BFD5B83D404C76871760396 /* AppleIntelligenceClient.swift in Sources */,
+				345F521B16227886D1F5DC7D /* ArtistPhotoFetcher.swift in Sources */,
 				DA3451E853523F3F3794A302 /* ArtistsView.swift in Sources */,
 				FA7DA3571AC5AD9473009C9C /* ArtworkFetcher.swift in Sources */,
 				DCF4418A459E115EF770E6D9 /* AudioPlayerManager.swift in Sources */,

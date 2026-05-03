@@ -67,6 +67,10 @@ final class ArtworkFetcher: ObservableObject {
     /// (small cushion for clock skew).
     private let rateLimiter = MusicBrainzRateLimiter()
 
+    /// Exposed so `ArtistPhotoFetcher` (issue #93) can share the same gate —
+    /// album + artist lookups must not collectively burst past 1 req/sec.
+    var musicBrainzRateLimiter: MusicBrainzRateLimiter { rateLimiter }
+
     private init() {
         self.isOnlineFetchEnabled = UserDefaults.standard.bool(forKey: Self.enabledDefaultsKey)
     }

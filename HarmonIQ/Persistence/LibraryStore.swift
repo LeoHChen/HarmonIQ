@@ -43,6 +43,17 @@ final class LibraryStore: ObservableObject {
         return dir
     }
 
+    /// Local mirror of per-artist photos (issue #93). Sibling to
+    /// `artworkDirectory`; populated by `ArtistPhotoFetcher` and by the
+    /// drive-load mirror pass. Files are named `<sha1(displayArtist)>.jpg`.
+    var artistPhotoDirectory: URL {
+        let dir = artworkDirectory.appendingPathComponent("artists", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: dir.path) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        return dir
+    }
+
     // MARK: - Load / save
 
     func loadFromDisk() async {
@@ -127,6 +138,7 @@ final class LibraryStore: ObservableObject {
         }
 
         let cacheDir = artworkDirectory
+        let artistCacheDir = artistPhotoDirectory
         struct DriveLoad {
             var library: DriveLibraryStore.DriveLibraryFile?
             var playlists: DriveLibraryStore.DrivePlaylistsFile?
@@ -136,6 +148,7 @@ final class LibraryStore: ObservableObject {
             let lib = DriveLibraryStore.loadLibrary(driveRoot: driveURL)
             let pls = DriveLibraryStore.loadPlaylists(driveRoot: driveURL)
             DriveLibraryStore.mirrorArtworkToLocalCache(driveRoot: driveURL, localCache: cacheDir)
+            DriveLibraryStore.mirrorArtistPhotosToLocalCache(driveRoot: driveURL, localCache: artistCacheDir)
             return DriveLoad(library: lib, playlists: pls, currentFingerprint: Self.computeFingerprint(rootURL: driveURL))
         }
         guard let result = result else { return }
@@ -154,6 +167,11 @@ final class LibraryStore: ObservableObject {
         // cheap pass: scan the Artwork folder, match by sha1 filename,
         // patch matching tracks. No-op when everything's already linked.
         reconcileArtworkOnLoad(rootID: root.id)
+
+        // Newly-mirrored artist photos may have appeared in the local
+        // cache during this load — drop the artist-image cache so the
+        // grid re-picks across photo + album cover on the next render.
+        invalidateArtistRepresentativeCache()
 
         // Auto-incremental: if the drive's top-level mtime + child count
         // differ from the last scan, kick off the indexer so newly-added
@@ -669,6 +687,24 @@ final class LibraryStore: ObservableObject {
         tracks.filter { $0.displayArtist == artist }
     }
 
+    /// Picks the drive that should own a downloaded artist photo for
+    /// `artist` (issue #93). Prefers writable drives with the most tracks
+    /// from that artist, ties broken by `roots` order. Returns `nil` when
+    /// the artist isn't on any currently-mounted drive — caller should
+    /// skip the fetch.
+    func preferredDriveForArtist(_ artist: String) -> UUID? {
+        var counts: [UUID: Int] = [:]
+        for t in tracks where t.displayArtist == artist {
+            counts[t.rootBookmarkID, default: 0] += 1
+        }
+        guard !counts.isEmpty else { return nil }
+        // Prefer read-write drives so the photo lands on the drive (and
+        // becomes portable to other devices). Fall back to read-only.
+        let writable = roots.filter { !$0.isReadOnly && counts[$0.id] != nil }
+        let candidates = writable.isEmpty ? roots.filter { counts[$0.id] != nil } : writable
+        return candidates.max { (counts[$0.id] ?? 0) < (counts[$1.id] ?? 0) }?.id
+    }
+
     /// Representative track for an artist (issue #89). Picks the track from
     /// the album the artist has the most tracks on; ties break by album
     /// name (localized standard, ascending). The returned track's
@@ -683,12 +719,50 @@ final class LibraryStore: ObservableObject {
         return artistRepresentativeCache?.map[artist]
     }
 
+    /// What an artist tile should display (issue #93). Returns either a real
+    /// artist photo on disk (preferred) or the representative album cover —
+    /// whichever exists locally. The choice is cached against the same
+    /// snapshot key the representative-track cache uses, plus a manual nonce
+    /// so a freshly-fetched artist photo can invalidate without forcing a
+    /// full library reload.
+    enum ArtistImageSource {
+        /// Path under `artistPhotoDirectory`.
+        case artistPhoto(filename: String)
+        /// Path under `artworkDirectory` (the representative album cover).
+        case albumCover(filename: String)
+    }
+
+    func artistImage(forArtist artist: String) -> ArtistImageSource? {
+        if let cached = artistImageCache,
+           cached.snapshotID == tracksSnapshotID,
+           cached.nonce == artistImageCacheNonce {
+            return cached.map[artist]
+        }
+        rebuildArtistImageCache()
+        return artistImageCache?.map[artist]
+    }
+
+    /// Called by `ArtistPhotoFetcher` after a successful download so the
+    /// artist tile's cached image choice flips from album cover to real
+    /// photo on the next render.
+    func invalidateArtistRepresentativeCache() {
+        artistImageCacheNonce &+= 1
+    }
+
     private struct ArtistRepresentativeCache {
         let snapshotID: Int
         let map: [String: Track]
     }
 
+    private struct ArtistImageCache {
+        let snapshotID: Int
+        let nonce: UInt64
+        let map: [String: ArtistImageSource]
+    }
+
     private var artistRepresentativeCache: ArtistRepresentativeCache?
+    private var artistImageCache: ArtistImageCache?
+    private var artistImageCacheNonce: UInt64 = 0
 
     /// Cheap snapshot identity for the tracks array so the cache can
     /// invalidate when tracks change. Uses count + first/last stableID
@@ -747,6 +821,52 @@ final class LibraryStore: ObservableObject {
             map[artist] = withArt ?? albumTracks.first
         }
         artistRepresentativeCache = ArtistRepresentativeCache(snapshotID: tracksSnapshotID, map: map)
+    }
+
+    /// Computes the per-artist image choice — real artist photo if one
+    /// exists on disk for this artist, otherwise the representative album
+    /// cover (when that track has artwork). Artists with neither don't get
+    /// an entry; the view falls back to the placeholder glyph.
+    private func rebuildArtistImageCache() {
+        if artistRepresentativeCache?.snapshotID != tracksSnapshotID {
+            rebuildArtistRepresentativeCache()
+        }
+        guard let representative = artistRepresentativeCache?.map else {
+            artistImageCache = ArtistImageCache(snapshotID: tracksSnapshotID,
+                                                nonce: artistImageCacheNonce,
+                                                map: [:])
+            return
+        }
+        let fm = FileManager.default
+        let photoDir = artistPhotoDirectory
+        let coverDir = artworkDirectory
+        var map: [String: ArtistImageSource] = [:]
+        map.reserveCapacity(representative.count)
+
+        // Build the artist photo set across every artist we know — even ones
+        // for whom we don't have a representative track (compilation-only
+        // entries, future Various-Artist hits). Cheap one-shot scan.
+        var artistsToCheck: Set<String> = []
+        for artist in representative.keys { artistsToCheck.insert(artist) }
+        for artist in allArtists { artistsToCheck.insert(artist) }
+
+        for artist in artistsToCheck {
+            let photoHash = ArtistPhotoFetcher.sha1Hex(artist)
+            let photoURL = photoDir.appendingPathComponent("\(photoHash).jpg")
+            if fm.fileExists(atPath: photoURL.path) {
+                map[artist] = .artistPhoto(filename: "\(photoHash).jpg")
+                continue
+            }
+            if let track = representative[artist], let cover = track.artworkPath {
+                let coverURL = coverDir.appendingPathComponent(cover)
+                if fm.fileExists(atPath: coverURL.path) {
+                    map[artist] = .albumCover(filename: cover)
+                }
+            }
+        }
+        artistImageCache = ArtistImageCache(snapshotID: tracksSnapshotID,
+                                            nonce: artistImageCacheNonce,
+                                            map: map)
     }
 
     /// Identifier for a single album row in the Albums view. Two flavours:
