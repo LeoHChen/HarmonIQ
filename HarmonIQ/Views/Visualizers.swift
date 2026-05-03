@@ -1,4 +1,7 @@
 import SwiftUI
+import OSLog
+
+private let visLog = Logger(subsystem: "net.leochen.harmoniq", category: "visualizer")
 
 enum VisualizerStyle: String, CaseIterable, Identifiable {
     case spectrum
@@ -74,7 +77,13 @@ final class VisualizerSettings: ObservableObject {
     private let key = "harmoniq.visualizerStyle"
 
     @Published var style: VisualizerStyle {
-        didSet { UserDefaults.standard.set(style.rawValue, forKey: key) }
+        didSet {
+            UserDefaults.standard.set(style.rawValue, forKey: key)
+            // Issue #84: confirm selection commits actually land. Visible at
+            // info level via Console.app filtered to subsystem
+            // net.leochen.harmoniq, category: visualizer.
+            visLog.info("VisualizerSettings.style → \(self.style.rawValue, privacy: .public)")
+        }
     }
 
     init() {
@@ -136,10 +145,15 @@ struct VisualizerView: View {
 
             // Visualizer surface
             TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                // Read settings.style here (outside Canvas) so SwiftUI subscribes
+                // the TimelineView body to settings changes — defensive double-
+                // wiring for issue #84 in case the inner Canvas closure was
+                // capturing a stale value on certain iOS 16 build paths.
+                let activeStyle = settings.style
                 Canvas { context, size in
                     engine.advance(date: timeline.date, level: player.levels, isPlaying: player.isPlaying)
                     drawScanlines(context: context, size: size)
-                    switch settings.style {
+                    switch activeStyle {
                     case .spectrum:      drawSpectrum(context: context, size: size, engine: engine)
                     case .oscilloscope:  drawOscilloscope(context: context, size: size, engine: engine)
                     case .plasma:        drawPlasma(context: context, size: size, engine: engine)
@@ -536,29 +550,35 @@ private func drawMirror(context: GraphicsContext, size: CGSize, engine: Visualiz
 @MainActor
 private func drawCircle(context: GraphicsContext, size: CGSize, engine: VisualizerEngine) {
     // Bars radiate outward from a center circle, length scaled by band[i].
+    // Issue #84: the previous version produced a too-subtle inner ring and
+    // bars whose 5%-of-span floor on a 220-tall panel was barely visible
+    // (~3px), which read as "no change vs spectrum". Make every element
+    // unambiguously radial so the user always sees this is a different style.
     let bands = engine.bands
     let center = CGPoint(x: size.width / 2, y: size.height / 2)
     let innerR = min(size.width, size.height) * 0.18
     let maxOuter = min(size.width, size.height) * 0.46
 
-    // Pulsing inner ring — peak energy modulates radius and brightness.
+    // Pulsing inner ring — peak energy modulates radius and brightness, but
+    // the static ring is now thick enough to be clearly visible at silence.
     let energy = bands.max() ?? 0
     let pulseR = innerR * (1.0 + CGFloat(energy) * 0.35)
     let ring = Path(ellipseIn: CGRect(x: center.x - pulseR, y: center.y - pulseR,
                                        width: pulseR * 2, height: pulseR * 2))
     var glowCtx = context
-    glowCtx.addFilter(.blur(radius: 3))
-    glowCtx.stroke(ring, with: .color(WinampTheme.lcdGlow.opacity(0.5 + Double(energy) * 0.5)), lineWidth: 2)
-    context.stroke(ring, with: .color(WinampTheme.lcdGlow), lineWidth: 1)
+    glowCtx.addFilter(.blur(radius: 4))
+    glowCtx.stroke(ring, with: .color(WinampTheme.lcdGlow.opacity(0.55 + Double(energy) * 0.45)), lineWidth: 4)
+    context.stroke(ring, with: .color(WinampTheme.lcdGlow), lineWidth: 1.5)
 
     // Bars around the ring.
     let count = bands.count
-    // Apply the same energy-floor pattern as commit 98c92d9 used for the
-    // other styles so quiet bars still register on a small rect (issue #41).
+    // Raise the energy floor from 5% to 12% of span so quiet bars are
+    // unmistakably present even on small layouts (issue #84). At max bar of
+    // ~80px on a 220-tall panel, 12% = ~10px — clearly radial, not a stub.
     let span = maxOuter - innerR
     for i in 0..<count {
         let theta = Double(i) / Double(count) * 2 * .pi - .pi / 2
-        let len = max(span * 0.05, CGFloat(bands[i]) * span)
+        let len = max(span * 0.12, CGFloat(bands[i]) * span)
         guard len >= 0.5 else { continue }
         let cosT = CGFloat(cos(theta))
         let sinT = CGFloat(sin(theta))
@@ -567,9 +587,15 @@ private func drawCircle(context: GraphicsContext, size: CGSize, engine: Visualiz
         var path = Path()
         path.move(to: p1)
         path.addLine(to: p2)
-        let frac = len / (maxOuter - innerR)
+        let frac = len / span
         let color = WinampTheme.spectrumColor(forFraction: frac)
-        context.stroke(path, with: .color(color), lineWidth: 2)
+        context.stroke(path, with: .color(color), lineWidth: 2.5)
+        // Tip dot — a small filled circle at the bar's outer end. Reinforces
+        // the radial layout from across the screen and adds a phosphor "spark"
+        // even when bars are short.
+        let tipR: CGFloat = 1.6
+        let tipRect = CGRect(x: p2.x - tipR, y: p2.y - tipR, width: tipR * 2, height: tipR * 2)
+        context.fill(Path(ellipseIn: tipRect), with: .color(color))
     }
 }
 

@@ -199,7 +199,7 @@ final class ArtworkFetcher: ObservableObject {
 
         guard let imageData = result else {
             await MainActor.run {
-                self.negativeCache.insert(albumHash)
+                _ = self.negativeCache.insert(albumHash)
             }
             return
         }
