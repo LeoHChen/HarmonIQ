@@ -133,6 +133,16 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         NotificationCenter.default.addObserver(
             self, selector: #selector(engineConfigurationChange(_:)),
             name: .AVAudioEngineConfigurationChange, object: engine)
+        // Hard reset of CoreAudio (rare). Posted when the audio server crashes
+        // or restarts — e.g. background OS event. Logging only; the engine
+        // would need a full re-setup to recover but that's out of scope for
+        // a diagnostic-only PR (issue #38).
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(mediaServicesWereLost(_:)),
+            name: AVAudioSession.mediaServicesWereLostNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(mediaServicesWereReset(_:)),
+            name: AVAudioSession.mediaServicesWereResetNotification, object: nil)
     }
 
     private func setupAudioGraph() {
@@ -199,12 +209,33 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     }
 
     @objc private func engineConfigurationChange(_ note: Notification) {
-        Self.log.info("engineConfigurationChange — restarting engine")
+        // Capture engine + player node state so we can tell whether the change
+        // dropped us out of running. If isPlaying flips false right after this,
+        // the cause is here.
+        let wasRunning = engine.isRunning
+        let nodeWasPlaying = playerNode.isPlaying
+        Self.log.info("engineConfigurationChange wasRunning=\(wasRunning) nodeWasPlaying=\(nodeWasPlaying) — restarting engine")
         do {
             if !engine.isRunning { try engine.start() }
         } catch {
             Self.log.error("engine restart failed: \(String(describing: error), privacy: .public)")
         }
+    }
+
+    /// CoreAudio server crashed. Engine is now toast — would require a full
+    /// re-setup to recover. We just log and let the user-visible fallout
+    /// (silence) be consistent with the bug we're trying to diagnose.
+    @objc private func mediaServicesWereLost(_ note: Notification) {
+        let id = currentTrack?.stableID ?? "<none>"
+        Self.log.error("mediaServicesWereLost stableID=\(id, privacy: .public) — CoreAudio server died, engine no longer functional until re-setup")
+    }
+
+    /// Posted after the audio server restarts. Mostly a paired notification
+    /// with the above; we don't auto-recover but logging it makes the timeline
+    /// in Console readable.
+    @objc private func mediaServicesWereReset(_ note: Notification) {
+        let id = currentTrack?.stableID ?? "<none>"
+        Self.log.info("mediaServicesWereReset stableID=\(id, privacy: .public) — audio server restarted")
     }
 
     // MARK: - Public API
@@ -388,6 +419,10 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         sleepStopAtTrackEnd = false
         sleepTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
             Task { @MainActor [weak self] in
+                // Log the firing distinctly so a "track aborted mid-stream"
+                // bug report can be cross-checked against this timestamp
+                // in Console (issue #38).
+                Self.log.info("sleepTimer fired — pausing playback")
                 self?.pause()
                 self?.sleepTimerEndsAt = nil
                 self?.sleepTimer = nil
