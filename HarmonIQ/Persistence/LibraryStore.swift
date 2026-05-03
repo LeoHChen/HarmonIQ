@@ -669,6 +669,86 @@ final class LibraryStore: ObservableObject {
         tracks.filter { $0.displayArtist == artist }
     }
 
+    /// Representative track for an artist (issue #89). Picks the track from
+    /// the album the artist has the most tracks on; ties break by album
+    /// name (localized standard, ascending). The returned track's
+    /// `artworkPath` (if set) is what `ArtworkView` will render in the
+    /// Artists grid. Result is cached per `tracks` snapshot so scrolling
+    /// the grid doesn't recompute on every cell read.
+    func representativeTrack(forArtist artist: String) -> Track? {
+        if let cached = artistRepresentativeCache, cached.snapshotID == tracksSnapshotID {
+            return cached.map[artist]
+        }
+        rebuildArtistRepresentativeCache()
+        return artistRepresentativeCache?.map[artist]
+    }
+
+    private struct ArtistRepresentativeCache {
+        let snapshotID: Int
+        let map: [String: Track]
+    }
+
+    private var artistRepresentativeCache: ArtistRepresentativeCache?
+
+    /// Cheap snapshot identity for the tracks array so the cache can
+    /// invalidate when tracks change. Uses count + first/last stableID
+    /// hashes — collisions would have to be carefully constructed to
+    /// matter here, and the worst case is one extra recomputation.
+    private var tracksSnapshotID: Int {
+        var hasher = Hasher()
+        hasher.combine(tracks.count)
+        hasher.combine(tracks.first?.stableID ?? "")
+        hasher.combine(tracks.last?.stableID ?? "")
+        return hasher.finalize()
+    }
+
+    private func rebuildArtistRepresentativeCache() {
+        // Group every track by displayArtist, then within each group find
+        // the album with the most tracks. Pick the first track from that
+        // album (sorted by disc/track/title) so it's deterministic across
+        // app launches with the same library.
+        var byArtist: [String: [Track]] = [:]
+        for t in tracks {
+            byArtist[t.displayArtist, default: []].append(t)
+        }
+        var map: [String: Track] = [:]
+        map.reserveCapacity(byArtist.count)
+        for (artist, group) in byArtist {
+            // "Various Artists" entries shouldn't claim the first
+            // compilation cover by default — issue #89's compilation
+            // handling note. Skip the lookup so the tile falls back to
+            // the placeholder, which reads more honestly.
+            if artist.caseInsensitiveCompare(Self.variousArtistsLabel) == .orderedSame {
+                continue
+            }
+            // Album frequency table.
+            var albumCounts: [String: Int] = [:]
+            for t in group {
+                albumCounts[t.displayAlbum, default: 0] += 1
+            }
+            // Tiebreak alphabetically (localized) so the choice is stable.
+            let chosenAlbum: String? = albumCounts
+                .sorted { lhs, rhs in
+                    if lhs.value != rhs.value { return lhs.value > rhs.value }
+                    return lhs.key.localizedStandardCompare(rhs.key) == .orderedAscending
+                }.first?.key
+            guard let chosen = chosenAlbum else { continue }
+            // Pick the deterministic first track of the chosen album.
+            // Prefer one that actually has artwork — saves rendering
+            // a placeholder when at least one cover exists for this
+            // artist somewhere on this album.
+            let albumTracks = group.filter { $0.displayAlbum == chosen }
+                .sorted { lhs, rhs in
+                    if let l = lhs.discNumber, let r = rhs.discNumber, l != r { return l < r }
+                    if let l = lhs.trackNumber, let r = rhs.trackNumber, l != r { return l < r }
+                    return lhs.displayTitle.localizedStandardCompare(rhs.displayTitle) == .orderedAscending
+                }
+            let withArt = albumTracks.first(where: { $0.artworkPath != nil })
+            map[artist] = withArt ?? albumTracks.first
+        }
+        artistRepresentativeCache = ArtistRepresentativeCache(snapshotID: tracksSnapshotID, map: map)
+    }
+
     /// Identifier for a single album row in the Albums view. Two flavours:
     ///
     /// - **Single-artist** (`isCompilation == false`): the conventional
