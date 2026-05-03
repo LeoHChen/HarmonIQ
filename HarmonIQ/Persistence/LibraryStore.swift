@@ -170,8 +170,8 @@ final class LibraryStore: ObservableObject {
 
         // Newly-mirrored artist photos may have appeared in the local
         // cache during this load — drop the artist-image cache so the
-        // grid re-picks across photo + album cover on the next render.
-        invalidateArtistRepresentativeCache()
+        // grid re-picks the real photo on the next render.
+        invalidateArtistImageCache()
 
         // Auto-incremental: if the drive's top-level mtime + child count
         // differ from the last scan, kick off the indexer so newly-added
@@ -705,20 +705,6 @@ final class LibraryStore: ObservableObject {
         return candidates.max { (counts[$0.id] ?? 0) < (counts[$1.id] ?? 0) }?.id
     }
 
-    /// Representative track for an artist (issue #89). Picks the track from
-    /// the album the artist has the most tracks on; ties break by album
-    /// name (localized standard, ascending). The returned track's
-    /// `artworkPath` (if set) is what `ArtworkView` will render in the
-    /// Artists grid. Result is cached per `tracks` snapshot so scrolling
-    /// the grid doesn't recompute on every cell read.
-    func representativeTrack(forArtist artist: String) -> Track? {
-        if let cached = artistRepresentativeCache, cached.snapshotID == tracksSnapshotID {
-            return cached.map[artist]
-        }
-        rebuildArtistRepresentativeCache()
-        return artistRepresentativeCache?.map[artist]
-    }
-
     /// What an artist tile should display. Issue #95 deliberately removes the
     /// album-cover fallback that PR #92 introduced — an artist tile should
     /// either be a real artist photo or the styled placeholder, never an
@@ -750,13 +736,8 @@ final class LibraryStore: ObservableObject {
     /// Called by `ArtistPhotoFetcher` after a successful download so the
     /// artist tile's cached image choice flips from placeholder to real
     /// photo on the next render.
-    func invalidateArtistRepresentativeCache() {
+    func invalidateArtistImageCache() {
         artistImageCacheNonce &+= 1
-    }
-
-    private struct ArtistRepresentativeCache {
-        let snapshotID: Int
-        let map: [String: Track]
     }
 
     private struct ArtistImageCache {
@@ -765,7 +746,6 @@ final class LibraryStore: ObservableObject {
         let map: [String: ArtistImageSource]
     }
 
-    private var artistRepresentativeCache: ArtistRepresentativeCache?
     private var artistImageCache: ArtistImageCache?
     private var artistImageCacheNonce: UInt64 = 0
 
@@ -779,53 +759,6 @@ final class LibraryStore: ObservableObject {
         hasher.combine(tracks.first?.stableID ?? "")
         hasher.combine(tracks.last?.stableID ?? "")
         return hasher.finalize()
-    }
-
-    private func rebuildArtistRepresentativeCache() {
-        // Group every track by displayArtist, then within each group find
-        // the album with the most tracks. Pick the first track from that
-        // album (sorted by disc/track/title) so it's deterministic across
-        // app launches with the same library.
-        var byArtist: [String: [Track]] = [:]
-        for t in tracks {
-            byArtist[t.displayArtist, default: []].append(t)
-        }
-        var map: [String: Track] = [:]
-        map.reserveCapacity(byArtist.count)
-        for (artist, group) in byArtist {
-            // "Various Artists" entries shouldn't claim the first
-            // compilation cover by default — issue #89's compilation
-            // handling note. Skip the lookup so the tile falls back to
-            // the placeholder, which reads more honestly.
-            if artist.caseInsensitiveCompare(Self.variousArtistsLabel) == .orderedSame {
-                continue
-            }
-            // Album frequency table.
-            var albumCounts: [String: Int] = [:]
-            for t in group {
-                albumCounts[t.displayAlbum, default: 0] += 1
-            }
-            // Tiebreak alphabetically (localized) so the choice is stable.
-            let chosenAlbum: String? = albumCounts
-                .sorted { lhs, rhs in
-                    if lhs.value != rhs.value { return lhs.value > rhs.value }
-                    return lhs.key.localizedStandardCompare(rhs.key) == .orderedAscending
-                }.first?.key
-            guard let chosen = chosenAlbum else { continue }
-            // Pick the deterministic first track of the chosen album.
-            // Prefer one that actually has artwork — saves rendering
-            // a placeholder when at least one cover exists for this
-            // artist somewhere on this album.
-            let albumTracks = group.filter { $0.displayAlbum == chosen }
-                .sorted { lhs, rhs in
-                    if let l = lhs.discNumber, let r = rhs.discNumber, l != r { return l < r }
-                    if let l = lhs.trackNumber, let r = rhs.trackNumber, l != r { return l < r }
-                    return lhs.displayTitle.localizedStandardCompare(rhs.displayTitle) == .orderedAscending
-                }
-            let withArt = albumTracks.first(where: { $0.artworkPath != nil })
-            map[artist] = withArt ?? albumTracks.first
-        }
-        artistRepresentativeCache = ArtistRepresentativeCache(snapshotID: tracksSnapshotID, map: map)
     }
 
     /// Computes the per-artist image choice — real artist photo on disk, or

@@ -317,9 +317,9 @@ final class ArtistPhotoFetcher: ObservableObject {
 
         guard savedFilename != nil else { return }
 
-        // Bump the artist-photo snapshot so any cached representative-image
-        // pick (which prefers a real photo over an album cover) recomputes.
-        LibraryStore.shared.invalidateArtistRepresentativeCache()
+        // Bump the artist-photo snapshot so the cached image map flips
+        // this artist from placeholder to real photo on the next render.
+        LibraryStore.shared.invalidateArtistImageCache()
     }
 
     // MARK: - Helpers (static / nonisolated)
