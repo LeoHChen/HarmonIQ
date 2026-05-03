@@ -120,7 +120,7 @@ private struct AlbumHeader: View {
                     .lineLimit(2)
                 Text(key.artist.uppercased())
                     .font(WinampTheme.lcdFont(size: 12))
-                    .foregroundStyle(Color(red: 0.85, green: 0.92, blue: 0.85))
+                    .foregroundStyle(WinampTheme.lcdText)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
                 Text(metaLine)
@@ -165,7 +165,7 @@ private struct AlbumActionButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .foregroundStyle(isPrimary ? WinampTheme.lcdGlow : Color(red: 0.85, green: 0.92, blue: 0.85))
+            .foregroundStyle(isPrimary ? WinampTheme.lcdGlow : WinampTheme.lcdText)
             .background(WinampTheme.lcdBackground)
             .overlay(
                 RoundedRectangle(cornerRadius: 4)

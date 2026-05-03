@@ -124,9 +124,7 @@ private func previewSpectrum(context: GraphicsContext, size: CGSize, engine: Vis
         guard h >= 0.5 else { continue }
         let x = CGFloat(i) * (barW + gap)
         let frac = h / size.height
-        let color: Color = frac > 0.78 ? Color(red: 1, green: 0.35, blue: 0.35)
-                          : frac > 0.55 ? Color(red: 1, green: 0.95, blue: 0.40)
-                          : WinampTheme.lcdGlow
+        let color = WinampTheme.spectrumColor(forFraction: frac)
         context.fill(Path(CGRect(x: x, y: bottom - h, width: barW, height: h)), with: .color(color))
     }
 }

@@ -206,7 +206,7 @@ struct WinampNavRow: View {
 
             Text(title)
                 .font(WinampTheme.lcdFont(size: 13))
-                .foregroundStyle(isFeatured ? WinampTheme.lcdGlow : Color(red: 0.85, green: 0.92, blue: 0.85))
+                .foregroundStyle(isFeatured ? WinampTheme.lcdGlow : WinampTheme.lcdText)
 
             Spacer()
 
