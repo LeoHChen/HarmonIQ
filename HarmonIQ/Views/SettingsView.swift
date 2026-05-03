@@ -16,7 +16,9 @@ private enum FeedbackURL {
 struct SettingsView: View {
     @EnvironmentObject var library: LibraryStore
     @EnvironmentObject var indexer: MusicIndexer
+    @StateObject private var artworkFetcher = ArtworkFetcher.shared
     @State private var showPicker = false
+    @State private var bulkConfirmRoot: LibraryRoot?
 
     var body: some View {
         List {
@@ -52,6 +54,43 @@ struct SettingsView: View {
                 Section("Last Run") {
                     Text(indexer.statusMessage).font(.caption).foregroundStyle(.secondary)
                 }
+            }
+
+            Section {
+                Toggle(isOn: $artworkFetcher.isOnlineFetchEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Fetch missing album art online")
+                        Text("Queries MusicBrainz / Cover Art Archive")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if artworkFetcher.isOnlineFetchEnabled {
+                    ForEach(library.roots) { root in
+                        Button {
+                            bulkConfirmRoot = root
+                        } label: {
+                            Label("Refresh missing artwork — \(root.displayName)",
+                                  systemImage: "photo.on.rectangle.angled")
+                        }
+                        .disabled(artworkFetcher.isRefreshing)
+                    }
+                    if artworkFetcher.isRefreshing {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(artworkFetcher.refreshStatusMessage).font(.caption)
+                            ProgressView(value: artworkFetcher.refreshProgress)
+                            Button("Stop", role: .destructive) { artworkFetcher.cancelRefresh() }
+                        }
+                    } else if !artworkFetcher.refreshStatusMessage.isEmpty {
+                        Text(artworkFetcher.refreshStatusMessage)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("Artwork")
+            } footer: {
+                Text("Off by default. When on, HarmonIQ sends the album + artist of any track without local art to MusicBrainz to find a cover. Failures are silent — no other data leaves the device.")
             }
 
             Section {
@@ -131,6 +170,20 @@ struct SettingsView: View {
             DocumentFolderPicker { url in
                 addRoot(from: url)
             }
+        }
+        .confirmationDialog("Refresh missing artwork?",
+                            isPresented: Binding(get: { bulkConfirmRoot != nil },
+                                                 set: { if !$0 { bulkConfirmRoot = nil } }),
+                            titleVisibility: .visible) {
+            Button("Start refresh") {
+                if let r = bulkConfirmRoot {
+                    artworkFetcher.refreshMissingArtwork(for: r)
+                }
+                bulkConfirmRoot = nil
+            }
+            Button("Cancel", role: .cancel) { bulkConfirmRoot = nil }
+        } message: {
+            Text("This sends one MusicBrainz query per album missing artwork on \(bulkConfirmRoot?.displayName ?? "this drive"), at most 1 request per second. Failures are silent.")
         }
     }
 

@@ -492,6 +492,13 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             NowPlayingManager.shared.update(track: track, isPlaying: true, currentTime: 0, duration: self.duration)
             LiveActivityController.shared.updateTrack(track, isPlaying: true, currentTime: 0, duration: self.duration)
             Self.log.info("playStart stableID=\(track.stableID, privacy: .public) duration=\(self.duration, format: .fixed(precision: 2)) format=\(track.fileFormat, privacy: .public)")
+
+            // If the album has no artwork and the user opted into online
+            // lookups, fire a best-effort fetch (issue #73). Off by default;
+            // when off this is a cheap no-op.
+            if track.artworkPath == nil {
+                ArtworkFetcher.shared.fetchIfMissing(for: track)
+            }
         } catch {
             print("[HarmonIQ] Failed to play \(track.filename): \(error)")
             Self.log.error("playFailed stableID=\(track.stableID, privacy: .public) error=\(String(describing: error), privacy: .public)")
