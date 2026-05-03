@@ -92,6 +92,17 @@ enum DriveLibraryStore {
         harmonIQFolder(in: driveRoot).appendingPathComponent(artworkFolderName, isDirectory: true)
     }
 
+    /// Per-artist photo folder (issue #93). Sibling to `artworkFolder` —
+    /// album covers stay at `<HarmonIQ>/Artwork/<sha1(albumArtist|album)>.jpg`,
+    /// artist photos live one level deeper at
+    /// `<HarmonIQ>/Artwork/artists/<sha1(artistName)>.jpg` so the album
+    /// rescan sweep ignores them.
+    static let artistArtworkFolderName = "artists"
+
+    static func artistArtworkFolder(in driveRoot: URL) -> URL {
+        artworkFolder(in: driveRoot).appendingPathComponent(artistArtworkFolderName, isDirectory: true)
+    }
+
     static func ensureFolders(in driveRoot: URL) throws {
         let fm = FileManager.default
         try fm.createDirectory(at: harmonIQFolder(in: driveRoot), withIntermediateDirectories: true)
@@ -233,6 +244,33 @@ enum DriveLibraryStore {
             try? fm.createDirectory(at: localCache, withIntermediateDirectories: true)
         }
         for src in entries {
+            // Skip subdirectories — `artists/` has its own mirror pass.
+            let isDir = (try? src.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
+            if isDir { continue }
+            let dst = localCache.appendingPathComponent(src.lastPathComponent)
+            if fm.fileExists(atPath: dst.path) {
+                let s = (try? src.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? -1
+                let d = (try? dst.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? -2
+                if s == d { continue }
+                try? fm.removeItem(at: dst)
+            }
+            try? fm.copyItem(at: src, to: dst)
+        }
+    }
+
+    /// Mirrors the drive's per-artist photo folder into the local cache
+    /// (issue #93). Same byte-size shortcut as the album mirror so we don't
+    /// re-copy files that haven't changed across launches.
+    static func mirrorArtistPhotosToLocalCache(driveRoot: URL, localCache: URL) {
+        let driveArt = artistArtworkFolder(in: driveRoot)
+        let fm = FileManager.default
+        guard let entries = try? fm.contentsOfDirectory(at: driveArt, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) else { return }
+        if !fm.fileExists(atPath: localCache.path) {
+            try? fm.createDirectory(at: localCache, withIntermediateDirectories: true)
+        }
+        for src in entries {
+            let isDir = (try? src.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
+            if isDir { continue }
             let dst = localCache.appendingPathComponent(src.lastPathComponent)
             if fm.fileExists(atPath: dst.path) {
                 let s = (try? src.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? -1

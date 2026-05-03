@@ -1,14 +1,18 @@
 import SwiftUI
 
 /// Artists browse view (issue #89). Visual grid mirroring `AlbumsView` —
-/// each tile shows a representative album cover for the artist (the album
-/// they have the most tracks on, alphabetic tiebreak). Artists with no
-/// artwork get a Winamp-themed placeholder.
+/// each tile shows a real artist photo if one exists locally, otherwise a
+/// representative album cover (PR #92), otherwise a Winamp-themed
+/// placeholder.
 ///
-/// v1 is offline-pure: no network fetches. Network-fetched artist photos
-/// are filed as a follow-up.
+/// Network-fetched artist photos (issue #93) are opt-in via
+/// Settings → Artwork. When the toggle is off, this view never hits the
+/// network. When on, every visible tile fires a single
+/// `ArtistPhotoFetcher.fetchIfMissing` call on appearance — the fetcher's
+/// in-flight + negative cache + 1-req/sec rate limiter handles dedup.
 struct ArtistsView: View {
     @EnvironmentObject var library: LibraryStore
+    @StateObject private var artistPhotoFetcher = ArtistPhotoFetcher.shared
 
     private let columns: [GridItem] = [
         GridItem(.adaptive(minimum: 150), spacing: 16)
@@ -30,6 +34,14 @@ struct ArtistsView: View {
                                 ArtistCard(artist: artist)
                             }
                             .buttonStyle(.plain)
+                            .onAppear {
+                                // Opportunistic fetch — the fetcher gates
+                                // on the toggle, online state, and dedup
+                                // caches, so this is cheap on every cell.
+                                if let drive = library.preferredDriveForArtist(artist) {
+                                    artistPhotoFetcher.fetchIfMissing(artist: artist, rootBookmarkID: drive)
+                                }
+                            }
                         }
                     }
                     .padding(16)
@@ -46,14 +58,14 @@ private struct ArtistCard: View {
     @EnvironmentObject var library: LibraryStore
 
     var body: some View {
-        let representative = library.representativeTrack(forArtist: artist)
+        let imageSource = library.artistImage(forArtist: artist)
         let trackCount = library.tracks(byArtist: artist).count
         VStack(alignment: .leading, spacing: 6) {
             // Use a circular crop for artist tiles to visually distinguish
             // them from album tiles (square). When no artwork at all is
             // attached to the artist's tracks, render the Winamp-themed
             // placeholder glyph.
-            ArtistTile(track: representative, size: 150)
+            ArtistTile(imageSource: imageSource, size: 150)
                 .frame(maxWidth: .infinity)
             Text(artist)
                 .font(.subheadline.weight(.semibold))
@@ -66,12 +78,11 @@ private struct ArtistCard: View {
     }
 }
 
-/// Circular artist tile. Uses the representative track's artwork when one
-/// exists; otherwise renders a microphone glyph in lcdGlow on the panel
-/// gradient — same design language as `ArtworkView`'s placeholder, but
-/// shaped as a circle to read as a "person" rather than an "album."
+/// Circular artist tile. Renders, in order of preference: a real artist
+/// photo (when one exists in the local cache), the representative album
+/// cover, or a microphone glyph placeholder.
 private struct ArtistTile: View {
-    let track: Track?
+    let imageSource: LibraryStore.ArtistImageSource?
     let size: CGFloat
 
     var body: some View {
@@ -100,9 +111,15 @@ private struct ArtistTile: View {
     }
 
     private func loadImage() -> UIImage? {
-        guard let path = track?.artworkPath else { return nil }
-        let url = LibraryStore.shared.artworkDirectory.appendingPathComponent(path)
-        return UIImage(contentsOfFile: url.path)
+        guard let source = imageSource else { return nil }
+        switch source {
+        case .artistPhoto(let filename):
+            let url = LibraryStore.shared.artistPhotoDirectory.appendingPathComponent(filename)
+            return UIImage(contentsOfFile: url.path)
+        case .albumCover(let filename):
+            let url = LibraryStore.shared.artworkDirectory.appendingPathComponent(filename)
+            return UIImage(contentsOfFile: url.path)
+        }
     }
 }
 
