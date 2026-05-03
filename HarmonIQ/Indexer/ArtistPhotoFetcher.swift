@@ -4,26 +4,42 @@ import CryptoKit
 import Network
 import UIKit
 
-/// Opt-in online artist-photo fetcher (issue #93).
+/// Opt-in online artist-photo fetcher (issue #93, expanded by #95).
 ///
-/// Sibling to `ArtworkFetcher`. Looks up an artist's MusicBrainz ID, then
-/// resolves the Wikidata entity's `P18` image (a Wikimedia Commons file) and
-/// writes the result to
-/// `<DriveRoot>/HarmonIQ/Artwork/artists/<sha1(artistName)>.jpg`, with the
-/// same security-scoped bookmark dance album art uses. The local sandbox
-/// gets a mirrored copy so views can read images without holding scope.
+/// Sibling to `ArtworkFetcher`. Resolves an artist to a MusicBrainz ID, then
+/// walks a fallback chain of public photo sources until one returns valid
+/// image bytes:
 ///
-/// Privacy: like `ArtworkFetcher`, this is off by default. The toggle in
-/// Settings is separate from the album-art toggle so users can opt into one
-/// and not the other. When off, every public entry point is a no-op — no
-/// network traffic of any kind.
+///   1. **Wikidata P18** via the MBID's `url-rels` → Wikimedia Commons.
+///   2. **TheAudioDB** `artist-mb.php?i=<MBID>` → `strArtistThumb`.
+///      (Test key `2`; documented public-use mirror, no user key required.)
+///   3. **Wikipedia REST summary** thumbnail. Page title is derived from the
+///      MBID's `url-rels` Wikipedia URL when present, else best-effort by
+///      artist name. The Wikipedia summary endpoint is permissive about CORS
+///      but expects a User-Agent — we send the same string MusicBrainz wants.
 ///
-/// Reuse: this fetcher *shares* the `MusicBrainzRateLimiter` instance owned
-/// by `ArtworkFetcher.shared` so artist + album lookups can't burst-hit
-/// MusicBrainz collectively. The Wikidata + Wikimedia Commons hops are not
-/// rate-limited beyond polite back-off; both are CDN-fronted and tolerate
-/// modest concurrency, but we still serialize the bulk refresh through the
-/// same rate-limited gate to keep the per-IP profile predictable.
+/// Fanart.tv is intentionally **not** in the chain. Their `webservice/v3`
+/// endpoint requires a per-app API key and we don't ship credentials; the
+/// "personal-API-key public mirror" alluded to by the issue brief turned out
+/// not to be a stable keyless path. TheAudioDB + Wikipedia together cover
+/// most of what Fanart.tv would have added.
+///
+/// First valid bytes win. The winning source is recorded per-MBID purely
+/// for diagnostics — the on-disk file at
+/// `<DriveRoot>/HarmonIQ/Artwork/artists/<sha1>.jpg` is the real cache, and
+/// `fetchIfMissing` short-circuits on its presence before the chain even
+/// starts.
+///
+/// Privacy: still gated by the single "Fetch artist photos online" toggle.
+/// Off by default; when off every public entry point is a no-op. The
+/// Settings footer copy lists every source so the user knows what's queried.
+///
+/// Rate limits: MusicBrainz hops continue to share the
+/// `MusicBrainzRateLimiter` owned by `ArtworkFetcher.shared` (1 req/sec
+/// across album + artist lookups). Other hosts (TheAudioDB, Wikipedia,
+/// Wikimedia Commons) get their own per-host actors with the same
+/// 1-req-sec floor so concurrent artist lookups don't burst on any single
+/// host. Different hosts can be hit in parallel within one artist's lookup.
 ///
 /// Threading mirrors `ArtworkFetcher`: `@MainActor` for published progress
 /// and writes to `LibraryStore`; network + IO hop to detached tasks.
@@ -59,10 +75,11 @@ final class ArtistPhotoFetcher: ObservableObject {
     /// fetched, so opening Artists view + a manual refresh can't issue two
     /// simultaneous network round-trips for the same artist.
     private var inFlight: Set<String> = []
-    /// Artist hashes that returned no usable photo this session — either
-    /// MusicBrainz had no MBID, the MBID had no Wikidata link, or the
-    /// Wikidata entity had no `P18`. Cleared on relaunch so an upstream
-    /// correction lets the next session retry.
+    /// Artist hashes that returned no usable photo this session — every
+    /// source in the fallback chain came back empty (no MBID, no Wikidata
+    /// link / `P18`, no TheAudioDB thumb, no Wikipedia summary thumbnail).
+    /// Cleared on relaunch so an upstream correction lets the next session
+    /// retry.
     private var negativeCache: Set<String> = []
 
     // MARK: - Reachability
@@ -317,42 +334,79 @@ final class ArtistPhotoFetcher: ObservableObject {
         "HarmonIQ/\(BuildInfo.version) (https://github.com/LeoHChen/HarmonIQ)"
     }
 
-    // MARK: - MusicBrainz → Wikidata → Wikimedia Commons
+    // MARK: - Photo source chain
 
-    /// Per-process cache of MBID → Wikidata image filename ("Foo.jpg") so a
-    /// repeat lookup of the same artist within a session avoids the second
-    /// hop. Negative entries (no MBID, no P18) are tracked via the parent
-    /// `negativeCache` keyed by artist hash.
+    /// Which source produced the bytes we ended up writing. Recorded
+    /// per-MBID for diagnostics — handy when triaging "why does this
+    /// artist's photo look weird?" against the chain order.
+    enum PhotoSource: String {
+        case wikidataP18
+        case theAudioDB
+        case wikipediaSummary
+    }
+
+    /// Per-process MBID → winning source record. Survives only for the
+    /// lifetime of the process — relaunches re-walk the chain so upstream
+    /// corrections are picked up. Successful lookups are persisted to disk
+    /// so this in-memory map only matters within a single session;
+    /// repeated calls within a session normally short-circuit on
+    /// "file already exists" before reaching the chain.
     private actor LookupCache {
-        private var mbidToImage: [String: String] = [:]
-        func record(mbid: String, image: String) { mbidToImage[mbid] = image }
-        func image(forMBID mbid: String) -> String? { mbidToImage[mbid] }
+        private var sourceByMBID: [String: PhotoSource] = [:]
+        func record(mbid: String, source: PhotoSource) { sourceByMBID[mbid] = source }
     }
     nonisolated private static let lookupCache = LookupCache()
 
-    /// Returns image bytes on success, nil on any failure.
+    /// Per-host rate gates for the non-MusicBrainz sources. Same 1-req/sec
+    /// floor MusicBrainz asks for — TheAudioDB and Wikipedia are far more
+    /// permissive in practice, but a uniform floor keeps the per-IP profile
+    /// predictable and avoids surprises if upstream tightens. The Commons
+    /// gate also covers Wikipedia thumbnail hosts (both resolve to
+    /// `upload.wikimedia.org`). Different hosts can be hit in parallel
+    /// within one artist lookup since each gate is a separate actor.
+    nonisolated private static let theAudioDBGate = MusicBrainzRateLimiter()
+    nonisolated private static let wikipediaGate = MusicBrainzRateLimiter()
+    nonisolated private static let commonsGate = MusicBrainzRateLimiter()
+
+    /// Returns image bytes on success, nil if every source in the chain
+    /// failed. Sources are tried in order; the first valid bytes win.
     nonisolated private static func lookupAndDownload(artist: String,
                                                       rateLimiter: MusicBrainzRateLimiter) async -> Data? {
-        // 1) MusicBrainz artist search — get MBID.
+        // 1) MusicBrainz artist search — get MBID. No MBID → no chain.
         await rateLimiter.waitTurn()
         guard let mbid = await searchArtistMBID(artist: artist) else { return nil }
 
-        // 2) Resolve the Wikidata image filename. Per-process cache so a
-        //    repeat lookup of the same MBID (different runs of the bulk
-        //    pass, or two near-simultaneous fetches from view + Settings)
-        //    skips the round-trip.
-        let imageFilename: String
-        if let cached = await lookupCache.image(forMBID: mbid) {
-            imageFilename = cached
-        } else {
-            await rateLimiter.waitTurn()
-            guard let resolved = await resolveWikidataImage(mbid: mbid) else { return nil }
-            await lookupCache.record(mbid: mbid, image: resolved)
-            imageFilename = resolved
+        // 2) Fetch the MB artist's url-rels once and reuse it for both
+        //    Wikidata + Wikipedia derivations. Saves a round-trip.
+        await rateLimiter.waitTurn()
+        let rels = await fetchMBUrlRels(mbid: mbid)
+
+        // 3) Wikidata P18 — historically the highest-quality source.
+        if let qid = wikidataQID(fromRels: rels) {
+            if let data = await fetchWikidataP18(qid: qid) {
+                await lookupCache.record(mbid: mbid, source: .wikidataP18)
+                return data
+            }
         }
 
-        // 3) Download the actual image bytes from Wikimedia Commons.
-        return await downloadCommonsImage(filename: imageFilename)
+        // 4) TheAudioDB strArtistThumb. Keyless (test key `2`, documented
+        //    for public use). Often has portraits when MB has no Wikidata.
+        if let data = await fetchTheAudioDB(mbid: mbid) {
+            await lookupCache.record(mbid: mbid, source: .theAudioDB)
+            return data
+        }
+
+        // 5) Wikipedia REST summary thumbnail. Title preference: explicit
+        //    `wikipedia` url-rel from MB, then bare artist name. Documented
+        //    failure modes: artists with no Wikipedia article, articles
+        //    with no `thumbnail.source` field, disambiguation pages, and
+        //    name collisions when we fall back to artist-name lookup.
+        if let data = await fetchWikipediaSummary(rels: rels, artistFallback: artist) {
+            await lookupCache.record(mbid: mbid, source: .wikipediaSummary)
+            return data
+        }
+
+        return nil
     }
 
     /// Searches MusicBrainz for an artist by name and returns the
@@ -397,41 +451,85 @@ final class ArtistPhotoFetcher: ObservableObject {
         return sorted.first?.id
     }
 
-    /// Looks up the Wikidata entity ID linked to `mbid` via the MusicBrainz
-    /// `url-rels`, then queries Wikidata for property `P18` (image) on that
-    /// entity. Returns the bare filename (e.g. `"Some Artist.jpg"`).
-    nonisolated private static func resolveWikidataImage(mbid: String) async -> String? {
-        // 3a) MusicBrainz artist with url-rels — look for a Wikidata link.
-        guard let mbURL = URL(string: "https://musicbrainz.org/ws/2/artist/\(mbid)?inc=url-rels&fmt=json") else {
-            return nil
-        }
-        var mbReq = URLRequest(url: mbURL)
-        mbReq.timeoutInterval = 10
-        mbReq.setValue(userAgent(), forHTTPHeaderField: "User-Agent")
-        mbReq.setValue("application/json", forHTTPHeaderField: "Accept")
+    // MARK: - MusicBrainz url-rels (shared by Wikidata + Wikipedia paths)
 
-        guard let (mbData, mbResp) = try? await URLSession.shared.data(for: mbReq) else { return nil }
-        guard let mbHTTP = mbResp as? HTTPURLResponse, (200..<300).contains(mbHTTP.statusCode) else {
-            return nil
+    /// Fetches the MusicBrainz artist record with `inc=url-rels` and returns
+    /// the raw `relations` array. Empty array on any failure — callers
+    /// should treat that as "no usable rels found" and fall through.
+    nonisolated private static func fetchMBUrlRels(mbid: String) async -> [[String: Any]] {
+        guard let url = URL(string: "https://musicbrainz.org/ws/2/artist/\(mbid)?inc=url-rels&fmt=json") else {
+            return []
         }
-        guard let mbJSON = try? JSONSerialization.jsonObject(with: mbData) as? [String: Any] else { return nil }
-        let rels = (mbJSON["relations"] as? [[String: Any]]) ?? []
-        var wikidataID: String?
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 10
+        req.setValue(userAgent(), forHTTPHeaderField: "User-Agent")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        guard let (data, resp) = try? await URLSession.shared.data(for: req) else { return [] }
+        guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            return []
+        }
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [] }
+        return (json["relations"] as? [[String: Any]]) ?? []
+    }
+
+    /// Extracts the Wikidata entity ID (`Q####`) from a MusicBrainz rels
+    /// array, if a wikidata url-rel is present.
+    nonisolated private static func wikidataQID(fromRels rels: [[String: Any]]) -> String? {
         for rel in rels {
-            // Both `type` == "wikidata" and a target URL on wikidata.org work.
             let type = (rel["type"] as? String)?.lowercased() ?? ""
             let urlObj = rel["url"] as? [String: Any]
             let resource = (urlObj?["resource"] as? String) ?? ""
             if type == "wikidata" || resource.contains("wikidata.org/wiki/Q") {
                 if let q = resource.split(separator: "/").last.map(String.init), q.hasPrefix("Q") {
-                    wikidataID = q
-                    break
+                    return q
                 }
             }
         }
-        guard let qid = wikidataID else { return nil }
+        return nil
+    }
 
-        // 3b) Wikidata: fetch the entity, pull P18.
+    /// Extracts the Wikipedia article title from a MusicBrainz rels array,
+    /// preferring English Wikipedia. The MB `wikipedia` rel resource looks
+    /// like `https://en.wikipedia.org/wiki/Some_Artist`. Returns the bare
+    /// title (still URL-encoded if the resource was encoded) so the caller
+    /// can plug it into the REST summary endpoint. Nil if no wikipedia
+    /// rel exists.
+    ///
+    /// Documented failure mode: an artist with only a non-English Wikipedia
+    /// rel will return nil here, and we fall through to artist-name lookup
+    /// against `en.wikipedia.org` — a deliberate bias toward the English
+    /// summary corpus, since that's what Wikipedia's REST API serves
+    /// reliably without a per-language base URL.
+    nonisolated private static func wikipediaTitle(fromRels rels: [[String: Any]]) -> String? {
+        var fallbackTitle: String?
+        for rel in rels {
+            let type = (rel["type"] as? String)?.lowercased() ?? ""
+            guard type == "wikipedia" else { continue }
+            let urlObj = rel["url"] as? [String: Any]
+            let resource = (urlObj?["resource"] as? String) ?? ""
+            // Match `https://<lang>.wikipedia.org/wiki/<Title>`.
+            guard let url = URL(string: resource),
+                  let host = url.host,
+                  host.hasSuffix(".wikipedia.org"),
+                  url.pathComponents.count >= 3,
+                  url.pathComponents[1] == "wiki"
+            else { continue }
+            let title = url.pathComponents[2]
+            if host == "en.wikipedia.org" {
+                return title
+            } else if fallbackTitle == nil {
+                fallbackTitle = title
+            }
+        }
+        return fallbackTitle
+    }
+
+    // MARK: - Source 1: Wikidata P18
+
+    /// Resolves Wikidata `P18` for `qid` and downloads the Commons image.
+    /// Returns image bytes or nil.
+    nonisolated private static func fetchWikidataP18(qid: String) async -> Data? {
         guard let wdURL = URL(string: "https://www.wikidata.org/wiki/Special:EntityData/\(qid).json") else {
             return nil
         }
@@ -455,7 +553,7 @@ final class ArtistPhotoFetcher: ObservableObject {
               let value = datavalue["value"] as? String,
               !value.isEmpty
         else { return nil }
-        return value
+        return await downloadCommonsImage(filename: value)
     }
 
     /// Wikimedia Commons direct-image URL via the `Special:FilePath`
@@ -470,6 +568,125 @@ final class ArtistPhotoFetcher: ObservableObject {
         components?.queryItems = [URLQueryItem(name: "width", value: "600")]
         guard let url = components?.url else { return nil }
 
+        await commonsGate.waitTurn()
+
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 15
+        req.setValue(userAgent(), forHTTPHeaderField: "User-Agent")
+        guard let (data, response) = try? await URLSession.shared.data(for: req) else { return nil }
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            return nil
+        }
+        guard !data.isEmpty, UIImage(data: data) != nil else { return nil }
+        return data
+    }
+
+    // MARK: - Source 2: TheAudioDB
+
+    /// Looks up an artist by MBID on TheAudioDB and downloads
+    /// `strArtistThumb` (or `strArtistFanart` as a secondary). The `2` test
+    /// API key is documented for non-commercial public use; if upstream
+    /// changes that policy this source goes silent and the chain falls
+    /// through to Wikipedia.
+    ///
+    /// Returns image bytes or nil.
+    nonisolated private static func fetchTheAudioDB(mbid: String) async -> Data? {
+        await theAudioDBGate.waitTurn()
+        guard let url = URL(string: "https://www.theaudiodb.com/api/v1/json/2/artist-mb.php?i=\(mbid)") else {
+            return nil
+        }
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 10
+        req.setValue(userAgent(), forHTTPHeaderField: "User-Agent")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        guard let (data, resp) = try? await URLSession.shared.data(for: req) else { return nil }
+        guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return nil }
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        // TheAudioDB returns `{ "artists": null }` for unknown MBIDs and
+        // `{ "artists": [ {...} ] }` for known ones.
+        guard let artists = json["artists"] as? [[String: Any]], let first = artists.first else {
+            return nil
+        }
+        let candidateKeys = ["strArtistThumb", "strArtistFanart", "strArtistFanart2", "strArtistFanart3"]
+        for key in candidateKeys {
+            if let value = first[key] as? String, !value.isEmpty,
+               let imageURL = URL(string: value) {
+                if let bytes = await downloadImage(from: imageURL, gate: nil) {
+                    return bytes
+                }
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Source 3: Wikipedia REST summary thumbnail
+
+    /// Hits Wikipedia's `page/summary` endpoint for the best title we can
+    /// derive (MB `wikipedia` rel preferred, else artist-name fallback) and
+    /// returns the JSON `thumbnail.source` image bytes.
+    ///
+    /// Failure modes worth noting for future debugging:
+    ///   * No Wikipedia article → 404 → nil.
+    ///   * Article is a disambiguation page → summary returns no
+    ///     `thumbnail` → nil. We don't try to disambiguate further; that's
+    ///     a separate quality-of-search problem and out of scope per #95.
+    ///   * Article exists but has no lead image → no thumbnail → nil.
+    ///   * Non-English Wikipedia rel → falls through to en.wikipedia.org
+    ///     name lookup, which can hit the wrong article for ambiguous
+    ///     names. Acceptable failure mode given the chain order — by this
+    ///     point Wikidata + TheAudioDB have already failed.
+    nonisolated private static func fetchWikipediaSummary(rels: [[String: Any]],
+                                                          artistFallback: String) async -> Data? {
+        let title: String
+        if let fromRels = wikipediaTitle(fromRels: rels) {
+            title = fromRels
+        } else {
+            // Best-effort: use the artist name as the page title. MediaWiki
+            // accepts spaces or underscores; URLComponents handles encoding.
+            let trimmed = artistFallback.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return nil }
+            title = trimmed.replacingOccurrences(of: " ", with: "_")
+        }
+
+        var components = URLComponents(string: "https://en.wikipedia.org/api/rest_v1/page/summary/")
+        components?.path = "/api/rest_v1/page/summary/" + title
+        guard let url = components?.url else { return nil }
+
+        await wikipediaGate.waitTurn()
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 10
+        req.setValue(userAgent(), forHTTPHeaderField: "User-Agent")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        guard let (data, resp) = try? await URLSession.shared.data(for: req) else { return nil }
+        guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return nil }
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        // Skip disambiguation pages — `type == "disambiguation"`.
+        if let type = json["type"] as? String, type == "disambiguation" { return nil }
+        // `originalimage` (full size) preferred; `thumbnail` is the 320px
+        // scaled crop. Either is fine, since we re-encode at 600px anyway.
+        let imageDicts = [json["originalimage"] as? [String: Any],
+                          json["thumbnail"] as? [String: Any]]
+        for dict in imageDicts {
+            if let dict, let source = dict["source"] as? String, let imageURL = URL(string: source) {
+                // Wikipedia thumbs live on upload.wikimedia.org, same as
+                // Commons — share the gate.
+                if let bytes = await downloadImage(from: imageURL, gate: commonsGate) {
+                    return bytes
+                }
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Generic image download
+
+    /// Downloads bytes from `url` and verifies they decode as an image.
+    /// Optional `gate` lets the caller serialize against a per-host limiter.
+    nonisolated private static func downloadImage(from url: URL,
+                                                  gate: MusicBrainzRateLimiter?) async -> Data? {
+        if let gate { await gate.waitTurn() }
         var req = URLRequest(url: url)
         req.timeoutInterval = 15
         req.setValue(userAgent(), forHTTPHeaderField: "User-Agent")
