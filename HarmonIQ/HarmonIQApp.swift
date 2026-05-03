@@ -48,7 +48,9 @@ struct HarmonIQApp: App {
     }
 
     private static func configureWinampAppearance() {
-        let titleColor = UIColor(red: 0.40, green: 1.00, blue: 0.55, alpha: 1)
+        // Route through the theme so any future tweak to lcdGlow propagates
+        // to the tab/nav title color too. Followup flagged on PR #76.
+        let titleColor = UIColor(WinampTheme.lcdGlow)
 
         let tab = UITabBarAppearance()
         tab.configureWithOpaqueBackground()
