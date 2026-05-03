@@ -9,17 +9,26 @@ struct VisualizerSettingsView: View {
         List {
             Section {
                 ForEach(VisualizerStyle.allCases) { style in
-                    Button {
-                        settings.style = style
-                    } label: {
-                        StyleRow(style: style, isActive: settings.style == style)
-                    }
-                    .buttonStyle(.plain)
+                    StyleRow(style: style, isActive: settings.style == style)
+                        // contentShape + onTapGesture beats Button-with-Canvas-label
+                        // here: SwiftUI's button machinery interacts badly with the
+                        // animating TimelineView preview inside the label, dropping
+                        // the first tap on iOS 16/17. Issue #78.
+                        .contentShape(Rectangle())
+                        .onTapGesture { settings.style = style }
+                        .listRowBackground(
+                            settings.style == style
+                                ? WinampTheme.lcdGlow.opacity(0.10)
+                                : Color.clear
+                        )
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(style.title.capitalized)\(settings.style == style ? ", selected" : "")")
+                        .accessibilityAddTraits(settings.style == style ? [.isSelected, .isButton] : .isButton)
                 }
             } header: {
                 Text("Visualizer Style")
             } footer: {
-                Text("In the now-playing view, double-tap or long-press the visualizer to cycle to the next style. Your choice persists across launches.")
+                Text("Tap any row to switch. Selection takes effect immediately on the now-playing visualizer. You can also single-, double-, or long-press the visualizer there to cycle through styles. Your choice persists across launches.")
             }
         }
         .navigationTitle("Visualizer")
@@ -31,7 +40,7 @@ private struct StyleRow: View {
     let style: VisualizerStyle
     let isActive: Bool
     // Each row owns its own engine so previews animate independently. Engine state
-    // is small (a few float arrays) — eight rows worth is well within budget.
+    // is small (a few float arrays) — every row's worth is still well within budget.
     @StateObject private var engine = VisualizerEngine()
 
     var body: some View {
@@ -39,7 +48,11 @@ private struct StyleRow: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(WinampTheme.lcdBackground)
-                TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { timeline in
+                // ~12 Hz preview: enough to communicate motion without piling
+                // up redraws on a screen that has 16 of these going at once
+                // (issue #78 — too-frequent redraws made the picker feel
+                // sluggish to tap).
+                TimelineView(.animation(minimumInterval: 1.0 / 12.0)) { timeline in
                     Canvas { context, size in
                         // Synthesized signal so the preview moves without a real audio source.
                         let t = timeline.date.timeIntervalSinceReferenceDate
@@ -70,10 +83,15 @@ private struct StyleRow: View {
                 }
             }
             .frame(width: 90, height: 40)
-            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(WinampTheme.bevelDark))
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .strokeBorder(isActive ? WinampTheme.lcdGlow : WinampTheme.bevelDark,
+                                  lineWidth: isActive ? 1.5 : 1)
+            )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(style.title.capitalized).font(.body)
+                Text(style.title.capitalized)
+                    .font(.body.weight(isActive ? .semibold : .regular))
                 Text(blurb(for: style)).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
@@ -81,7 +99,7 @@ private struct StyleRow: View {
                 Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint)
             }
         }
-        .contentShape(Rectangle())
+        .padding(.vertical, 4)
     }
 
     private func blurb(for s: VisualizerStyle) -> String {
