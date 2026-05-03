@@ -33,7 +33,9 @@
 		77D9EEF75A3909296BEF427B /* SkinSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC7D5B7F672E031A0E10CD5 /* SkinSettingsView.swift */; };
 		791A8D34EE8AB6E905502339 /* BitmapNumbers.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED17D95227132C92484D37D4 /* BitmapNumbers.swift */; };
 		7F8EEECCAE52592D4BBAF6D1 /* BookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BA0C5DAF97A47E057019501 /* BookmarkStore.swift */; };
+		81403F7C2A60B5A1AD91C5CA /* LanguageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46422ECF0A72BFA4BD1BCD69 /* LanguageView.swift */; };
 		81A7F353D3DE8032677CF41A /* HarmonIQLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FB11BD031B719E529ADE16FC /* HarmonIQLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		871C62AB9C1A5A797C65D845 /* TrackLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96EBCE54D7F402D33BAF93EE /* TrackLanguage.swift */; };
 		89D7DBC59590AF415A3B0191 /* SkinnedVolumeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 645788E38767A20E50B440A4 /* SkinnedVolumeSlider.swift */; };
 		8CEA6C7112AA776066EDEE1E /* BitmapSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5341339CB5BD57C71DD7EC /* BitmapSlider.swift */; };
 		8E0DD1135723468147BBB31D /* PlaylistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4DEE2EB2331B3F5BB20CB2 /* PlaylistsView.swift */; };
@@ -104,6 +106,7 @@
 		3B4DEE2EB2331B3F5BB20CB2 /* PlaylistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistsView.swift; sourceTree = "<group>"; };
 		3D1E6758360675D09C68F165 /* BuildInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildInfo.swift; sourceTree = "<group>"; };
 		3D6EA2A86E18C3306B3A4BFC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		46422ECF0A72BFA4BD1BCD69 /* LanguageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageView.swift; sourceTree = "<group>"; };
 		4A34D43E2D09B36F9A92DF67 /* WinampTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinampTheme.swift; sourceTree = "<group>"; };
 		4D55B677D3210BEAEDFEA0C5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		55024EA44411432F49AA2A6C /* HarmonIQLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonIQLiveActivityWidget.swift; sourceTree = "<group>"; };
@@ -115,6 +118,7 @@
 		7D9E86967B7801F70269E055 /* Skins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Skins; path = HarmonIQ/Resources/Skins; sourceTree = SOURCE_ROOT; };
 		8CA5D219A5FF2CBA19A0E003 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		91184AF88772B10074EACE0A /* SkinnedEqualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinnedEqualizerView.swift; sourceTree = "<group>"; };
+		96EBCE54D7F402D33BAF93EE /* TrackLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackLanguage.swift; sourceTree = "<group>"; };
 		978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerManager.swift; sourceTree = "<group>"; };
 		982616423A6BC3BB174F0A2E /* SkinFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinFormat.swift; sourceTree = "<group>"; };
 		99DCB9BA8F0F6EA560429A13 /* ArtworkFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkFetcher.swift; sourceTree = "<group>"; };
@@ -199,6 +203,7 @@
 			children = (
 				D210ACF5D89E9E21A1496719 /* Playlist.swift */,
 				DCC1E5260F8BCC82F22321CD /* Track.swift */,
+				96EBCE54D7F402D33BAF93EE /* TrackLanguage.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -250,6 +255,7 @@
 				21D6E4A738A357E6A860D0E0 /* ArtistsView.swift */,
 				3D6EA2A86E18C3306B3A4BFC /* ContentView.swift */,
 				E35D430429E1AB1C5D29D971 /* FoldersView.swift */,
+				46422ECF0A72BFA4BD1BCD69 /* LanguageView.swift */,
 				8CA5D219A5FF2CBA19A0E003 /* LibraryView.swift */,
 				38FE23F9FF831246E93D46D0 /* NowPlayingView.swift */,
 				3B4DEE2EB2331B3F5BB20CB2 /* PlaylistsView.swift */,
@@ -492,6 +498,7 @@
 				9546DB969B9FE4BEBDBF9F76 /* FoldersView.swift in Sources */,
 				B84CEA38828817F440C90762 /* HarmonIQActivityAttributes.swift in Sources */,
 				DAC622E13BE984A57D2E9C86 /* HarmonIQApp.swift in Sources */,
+				81403F7C2A60B5A1AD91C5CA /* LanguageView.swift in Sources */,
 				5DB383E665EE8EAE33D78E9C /* LibraryStore.swift in Sources */,
 				A10BD1CC54DC77E7DF551BA6 /* LibraryView.swift in Sources */,
 				116A7F3DD4FF063CD5776F50 /* LiveActivityController.swift in Sources */,
@@ -521,6 +528,7 @@
 				77B3E1181A2A2CBFAD277C5E /* SmartPlayView.swift in Sources */,
 				69A2102040E365274784D9BD /* SpriteButton.swift in Sources */,
 				75DC9743887154D3D3823A75 /* Track.swift in Sources */,
+				871C62AB9C1A5A797C65D845 /* TrackLanguage.swift in Sources */,
 				492B4DC977A439789D0DA1D9 /* VisualizerSettingsView.swift in Sources */,
 				EC778E91CBFC41C1A6A09A2A /* Visualizers.swift in Sources */,
 				ADFA445F84DD3EDB1A55C5DB /* WinampSkin.swift in Sources */,

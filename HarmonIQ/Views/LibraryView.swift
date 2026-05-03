@@ -41,6 +41,11 @@ struct LibraryView: View {
                         WinampNavRow(title: "ALBUMS", icon: "square.stack", count: library.allAlbums.count)
                     }
                     NavigationLink {
+                        LanguageView()
+                    } label: {
+                        WinampNavRow(title: "LANGUAGE", icon: "globe", count: TrackLanguage.allCases.count)
+                    }
+                    NavigationLink {
                         FoldersView()
                     } label: {
                         WinampNavRow(title: "FOLDERS", icon: "folder", count: library.roots.count)

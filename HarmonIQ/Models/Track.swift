@@ -30,10 +30,24 @@ struct Track: Identifiable, Codable, Hashable {
     /// indexed by a build before issue #55). The next reindex treats nil
     /// as "unknown — re-extract once" so the field gets populated.
     var fileModified: Date?
+    /// Heuristic language bucket (issue #86). Computed at index time from
+    /// `title + artist`. Optional so library.json files written before
+    /// language classification existed decode cleanly — those rows get
+    /// classified on the next index run, or via the Settings →
+    /// "Reclassify all tracks" action.
+    var language: TrackLanguage?
 
     var displayTitle: String { title.isEmpty ? filename : title }
     var displayArtist: String { (artist?.nilIfBlank) ?? (albumArtist?.nilIfBlank) ?? "Unknown Artist" }
     var displayAlbum: String { (album?.nilIfBlank) ?? "Unknown Album" }
+
+    /// Effective language bucket. Falls back to `.others` for rows that
+    /// haven't been classified yet (legacy library.json files written
+    /// before issue #86). Use this in views; the optional `language`
+    /// field is only for persistence.
+    var effectiveLanguage: TrackLanguage {
+        language ?? TrackLanguage.classify(title: title, artist: artist)
+    }
 
     var folderPath: [String] { Array(relativePath.dropLast()) }
     var folderKey: String { folderPath.joined(separator: "/") }

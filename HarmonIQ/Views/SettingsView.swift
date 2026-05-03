@@ -20,6 +20,7 @@ struct SettingsView: View {
     @State private var showPicker = false
     @State private var bulkConfirmRoot: LibraryRoot?
     @State private var rebuildConfirmRoot: LibraryRoot?
+    @State private var reclassifyStatus: String = ""
 
     var body: some View {
         List {
@@ -118,10 +119,24 @@ struct SettingsView: View {
                     }
                     .disabled(indexer.isIndexing)
                 }
+                Button {
+                    let changed = library.reclassifyAllLanguages()
+                    reclassifyStatus = changed == 0
+                        ? "Languages already up to date — \(library.tracks.count) track(s) checked."
+                        : "Reclassified \(changed) of \(library.tracks.count) track(s)."
+                } label: {
+                    Label("Reclassify all tracks by language", systemImage: "globe")
+                }
+                .disabled(library.tracks.isEmpty)
+                if !reclassifyStatus.isEmpty {
+                    Text(reclassifyStatus)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             } header: {
                 Text("Maintenance")
             } footer: {
-                Text("Wipes the drive's library.json and runs a fresh full scan. Use this if the album list is duplicated or has stale entries (issue #88). Playlists survive as long as the audio files are still at the same paths on the drive. Favorites, smart playlists, and roots.json are preserved.")
+                Text("Rebuild wipes the drive's library.json and runs a fresh full scan — use it if the album list is duplicated or has stale entries (issue #88). Reclassify recomputes the Chinese / English / Others bucket on every track without re-reading audio (issue #86). Playlists, favorites, and smart playlists are preserved by both actions.")
             }
 
             Section {

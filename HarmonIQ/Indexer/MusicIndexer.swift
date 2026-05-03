@@ -167,7 +167,13 @@ final class MusicIndexer: ObservableObject {
                let storedMtime = existing.fileModified,
                let mtime = mtime,
                abs(storedMtime.timeIntervalSince(mtime)) < 1 {
-                tracks.append(existing)
+                // Backfill language for rows indexed before issue #86 — pure
+                // string scan, cheap. Skips reuse path otherwise.
+                var reused = existing
+                if reused.language == nil {
+                    reused.language = TrackLanguage.classify(title: reused.title, artist: reused.artist)
+                }
+                tracks.append(reused)
                 unchanged += 1
                 if let path = existing.artworkPath {
                     seenArtworkKeys.insert((path as NSString).deletingPathExtension)
@@ -218,6 +224,7 @@ final class MusicIndexer: ObservableObject {
                 }
             }
 
+            let resolvedTitle = metadata.title ?? deriveTitleFromFilename(url)
             let track = Track(
                 id: UUID(),
                 stableID: stableID,
@@ -225,7 +232,7 @@ final class MusicIndexer: ObservableObject {
                 filename: url.lastPathComponent,
                 rootBookmarkID: rootID,
                 fileBookmark: nil,
-                title: metadata.title ?? deriveTitleFromFilename(url),
+                title: resolvedTitle,
                 artist: metadata.artist,
                 album: metadata.album,
                 albumArtist: metadata.albumArtist,
@@ -237,7 +244,8 @@ final class MusicIndexer: ObservableObject {
                 fileSize: fileSize,
                 fileFormat: fileFormat,
                 artworkPath: artworkPath,
-                fileModified: mtime
+                fileModified: mtime,
+                language: TrackLanguage.classify(title: resolvedTitle, artist: metadata.artist)
             )
             tracks.append(track)
             if priorByID[stableID] == nil { added += 1 } else { updated += 1 }
