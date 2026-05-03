@@ -21,8 +21,12 @@ Package.pins
 Pods/
 Carthage/Build/
 
-# Local agent / tooling state
-.claude/
+# Local agent / tooling state — keep per-machine settings + ephemeral
+# worktrees out of the repo, but DO track the project subagents so any
+# contributor using Claude Code picks them up.
+.claude/*
+!.claude/agents/
+!.claude/agents/*
 
 # Local-only reference imagery (skin grids, mockups, etc.)
 ref/
