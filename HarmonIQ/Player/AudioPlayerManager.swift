@@ -88,6 +88,10 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     /// `scheduleFile` completion handlers compare against this to detect
     /// whether they belong to a stale schedule that was preempted.
     private var playGeneration: UInt64 = 0
+    /// Tag-claimed duration (`Track.duration`, from AVAsset metadata) for the
+    /// currently-playing track. Compared against the actual file frame count
+    /// at completion to flag VBR-header mismatches (issue #38).
+    private var metadataDurationAtPlay: TimeInterval = 0
     /// Thread-safe meter sink fed by the player-node tap.
     private let meterSink = MeterSink()
 
@@ -289,6 +293,13 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         stopDisplayLink()
         NowPlayingManager.shared.updatePlaybackState(isPlaying: false, currentTime: pausedAtSeconds ?? currentTime, rate: 0.0)
         LiveActivityController.shared.tick(currentTime: pausedAtSeconds ?? currentTime, isPlaying: false)
+        // Issue #38: surfacing every pause helps line up "the song stopped"
+        // with the actual cause when reading the log timeline. We don't know
+        // the caller here, but pairing this with the surrounding logs
+        // (interruption / didFinishPlaying / sleep timer) makes it obvious.
+        let id = currentTrack?.stableID ?? "<none>"
+        let at = pausedAtSeconds ?? 0
+        Self.log.info("pause at=\(at, format: .fixed(precision: 2)) stableID=\(id, privacy: .public)")
     }
 
     func resume() {
@@ -471,6 +482,12 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             let sampleRate = file.processingFormat.sampleRate
             let lengthSeconds = sampleRate > 0 ? Double(file.length) / sampleRate : track.duration
             self.duration = lengthSeconds > 0 ? lengthSeconds : track.duration
+            // Snapshot the metadata duration so the schedule-complete log can
+            // flag a mismatch between what the tag claimed and how many frames
+            // the file actually decoded. Issue #38: the most common
+            // "premature end" cause is a bad VBR header where the metadata
+            // duration is much longer than the audible file length.
+            self.metadataDurationAtPlay = track.duration
 
             playGeneration &+= 1
             let gen = playGeneration
@@ -491,7 +508,11 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             startDisplayLink()
             NowPlayingManager.shared.update(track: track, isPlaying: true, currentTime: 0, duration: self.duration)
             LiveActivityController.shared.updateTrack(track, isPlaying: true, currentTime: 0, duration: self.duration)
-            Self.log.info("playStart stableID=\(track.stableID, privacy: .public) duration=\(self.duration, format: .fixed(precision: 2)) format=\(track.fileFormat, privacy: .public)")
+            // Mismatch between metadata duration and decoded frame count is
+            // the smoking gun for "song aborts mid-playback" reports — log
+            // both so the gap is visible at play-start time.
+            let mismatch = abs(self.duration - track.duration) > 1.0 && track.duration > 0
+            Self.log.info("playStart stableID=\(track.stableID, privacy: .public) fileSeconds=\(self.duration, format: .fixed(precision: 2)) tagSeconds=\(track.duration, format: .fixed(precision: 2)) mismatch=\(mismatch) format=\(track.fileFormat, privacy: .public)")
 
             // If the album has no artwork and the user opted into online
             // lookups, fire a best-effort fetch (issue #73). Off by default;
@@ -579,7 +600,16 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         let observed = currentTimeSeconds()
         let early = totalSeconds > 0 && (totalSeconds - observed) > 1.0
         let id = currentTrack?.stableID ?? "<none>"
-        Self.log.info("didFinishPlaying success=true currentTime=\(observed, format: .fixed(precision: 2)) duration=\(totalSeconds, format: .fixed(precision: 2)) endedEarly=\(early) stableID=\(id, privacy: .public)")
+        let tagSeconds = metadataDurationAtPlay
+        // If the file's actual frame count is materially shorter than the
+        // tag-claimed duration, the file is the culprit (truncated or bad
+        // VBR header). If they agree but `early=true`, something stopped the
+        // schedule prematurely — interruption, engine reset, or AVAudioEngine
+        // bug worth investigating.
+        let tagShortfall = tagSeconds > 0 ? max(0, tagSeconds - totalSeconds) : 0
+        let engineRunning = engine.isRunning
+        let scopeHeld = (accessRoot != nil)
+        Self.log.info("didFinishPlaying success=true currentTime=\(observed, format: .fixed(precision: 2)) fileSeconds=\(totalSeconds, format: .fixed(precision: 2)) tagSeconds=\(tagSeconds, format: .fixed(precision: 2)) tagShortfall=\(tagShortfall, format: .fixed(precision: 2)) endedEarly=\(early) engineRunning=\(engineRunning) scopeHeld=\(scopeHeld) stableID=\(id, privacy: .public)")
 
         if sleepStopAtTrackEnd {
             pause()

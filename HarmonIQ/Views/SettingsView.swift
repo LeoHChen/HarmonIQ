@@ -138,10 +138,15 @@ struct SettingsView: View {
                 } label: {
                     Label("Copy build info", systemImage: "doc.on.clipboard")
                 }
+                Button {
+                    UIPasteboard.general.string = "subsystem:net.leochen.harmoniq category:playback"
+                } label: {
+                    Label("Copy playback log filter", systemImage: "doc.on.clipboard.fill")
+                }
             } header: {
                 Text("Feedback")
             } footer: {
-                Text("Tip: tap “Copy build info” before “Report a bug” — paste it into the issue so we can triage faster.")
+                Text("Tip: tap “Copy build info” before “Report a bug” — paste it into the issue so we can triage faster. For playback bugs (e.g. mid-track aborts), use “Copy playback log filter” and paste it into Console.app while connected to your iPhone to capture the diagnostic stream.")
             }
 
             Section {
