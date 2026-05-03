@@ -51,7 +51,7 @@ struct TrackRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(track.displayTitle.uppercased())
                     .font(WinampTheme.lcdFont(size: 13))
-                    .foregroundStyle(isCurrent ? WinampTheme.lcdGlow : Color(red: 0.85, green: 0.92, blue: 0.85))
+                    .foregroundStyle(isCurrent ? WinampTheme.lcdGlow : WinampTheme.lcdText)
                     .lineLimit(1)
                 HStack(spacing: 4) {
                     if showAlbum {

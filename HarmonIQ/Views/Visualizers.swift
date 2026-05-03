@@ -426,13 +426,10 @@ private func drawSpectrum(context: GraphicsContext, size: CGSize, engine: Visual
         while drawn < h - 1 {
             let rowH = min(segH - 1, h - drawn)
             let rect = CGRect(x: x, y: y - rowH, width: barW, height: rowH)
-            // color band: green low, yellow mid, red high
+            // Phosphor-green low, amber mid, red high — central ramp lives in
+            // WinampTheme.spectrumColor so all visualizers stay in sync.
             let frac = (bottom - y + rowH) / size.height
-            let color: Color = {
-                if frac > 0.78 { return Color(red: 1, green: 0.35, blue: 0.35) }
-                if frac > 0.55 { return Color(red: 1, green: 0.95, blue: 0.40) }
-                return WinampTheme.lcdGlow
-            }()
+            let color = WinampTheme.spectrumColor(forFraction: frac)
             context.fill(Path(rect), with: .color(color))
             y -= segH
             drawn += segH
@@ -527,13 +524,9 @@ private func drawMirror(context: GraphicsContext, size: CGSize, engine: Visualiz
         let h = CGFloat(bands[i]) * (size.height * 0.5)
         guard h >= 1 else { continue }
         let x = CGFloat(i) * (barW + gap)
-        // color shifts from lime at center to red at the extremes
+        // Phosphor at center, amber/red as bars approach the extremes.
         let frac = h / (size.height * 0.5)
-        let color: Color = {
-            if frac > 0.78 { return Color(red: 1, green: 0.35, blue: 0.35) }
-            if frac > 0.55 { return Color(red: 1, green: 0.95, blue: 0.40) }
-            return WinampTheme.lcdGlow
-        }()
+        let color = WinampTheme.spectrumColor(forFraction: frac)
         context.fill(Path(CGRect(x: x, y: mid - h, width: barW, height: h)), with: .color(color))
         context.fill(Path(CGRect(x: x, y: mid, width: barW, height: h)),
                      with: .color(color.opacity(0.7)))
@@ -575,11 +568,7 @@ private func drawCircle(context: GraphicsContext, size: CGSize, engine: Visualiz
         path.move(to: p1)
         path.addLine(to: p2)
         let frac = len / (maxOuter - innerR)
-        let color: Color = {
-            if frac > 0.78 { return Color(red: 1, green: 0.35, blue: 0.35) }
-            if frac > 0.55 { return Color(red: 1, green: 0.95, blue: 0.40) }
-            return WinampTheme.lcdGlow
-        }()
+        let color = WinampTheme.spectrumColor(forFraction: frac)
         context.stroke(path, with: .color(color), lineWidth: 2)
     }
 }
@@ -714,7 +703,7 @@ private func drawOscMultiLayer(context: GraphicsContext, size: CGSize, engine: V
     var clipped = samples
     for i in 0..<clipped.count { clipped[i] = max(-1, min(1, clipped[i] * 2)) }
     let big = waveformPath(samples: clipped, size: size, amplitude: 0.45)
-    context.stroke(big, with: .color(Color(red: 1.0, green: 0.95, blue: 0.4).opacity(0.55)), lineWidth: 1.0)
+    context.stroke(big, with: .color(WinampTheme.accentAmber.opacity(0.55)), lineWidth: 1.0)
 }
 
 /// Trace reflected top/bottom from the horizontal centerline.

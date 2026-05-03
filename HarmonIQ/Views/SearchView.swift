@@ -68,7 +68,7 @@ private struct RecentSearchesView: View {
                                 .frame(width: 24)
                             Text(q)
                                 .font(WinampTheme.lcdFont(size: 13))
-                                .foregroundStyle(Color(red: 0.85, green: 0.92, blue: 0.85))
+                                .foregroundStyle(WinampTheme.lcdText)
                             Spacer()
                             Image(systemName: "arrow.up.left")
                                 .font(.system(size: 11, weight: .semibold))
