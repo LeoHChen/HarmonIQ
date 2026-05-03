@@ -1,5 +1,12 @@
 # Sun-Bleached Grooves
 
+> **Scope.** This document governs the **app icon** — the warm, sun-bleached
+> mark. The **in-app theme** (panels, LCD, bevels, transport, visualizer
+> accents) is a separate, deliberately cooler "Charcoal Phosphor" direction
+> documented in [`THEME.md`](THEME.md). The two are intentionally not the
+> same: the icon is what the app feels like remembered; the player is what
+> the app feels like operated.
+
 ## A Visual Philosophy for HarmonIQ's Mark
 
 **Sun-Bleached Grooves** is a movement of warm geometric reverence — the discipline of the modernist grid filtered through the soft amber of a 1976 Polaroid left on a dashboard. It treats the circle not as ornament but as instrument: a mechanism for memory, a vessel that *remembers* the song before the song begins. Every concentric line is a year, every hue a season. Nothing here is loud; everything is felt.
