@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import CryptoKit
 import SwiftUI
 
 @MainActor
@@ -9,6 +10,9 @@ final class LibraryStore: ObservableObject {
     @Published private(set) var tracks: [Track] = []
     @Published private(set) var roots: [LibraryRoot] = []
     @Published private(set) var playlists: [Playlist] = []
+
+    /// Status from the most recent artwork rescan (for the Settings footer).
+    @Published private(set) var artworkRescanStatus: String = ""
 
     private let queue = DispatchQueue(label: "net.leochen.harmoniq.librarystore", qos: .utility)
 
@@ -145,6 +149,12 @@ final class LibraryStore: ObservableObject {
             mergePlaylists(forRoot: root.id, with: mapped)
         }
 
+        // Adopt any artwork files that landed on disk between launches but
+        // aren't referenced in library.json yet (issue #77). This is a
+        // cheap pass: scan the Artwork folder, match by sha1 filename,
+        // patch matching tracks. No-op when everything's already linked.
+        reconcileArtworkOnLoad(rootID: root.id)
+
         // Auto-incremental: if the drive's top-level mtime + child count
         // differ from the last scan, kick off the indexer so newly-added
         // files appear without the user having to tap Reindex (issue
@@ -189,6 +199,162 @@ final class LibraryStore: ObservableObject {
                 loadDriveData(for: root)
             }
         }
+    }
+
+    // MARK: - Artwork rescan (issue #77)
+
+    /// Walks `<DriveRoot>/HarmonIQ/Artwork/` (or the local sandbox shadow for
+    /// read-only roots), and adopts any `<sha1>.jpg` whose hash matches a
+    /// known album on this drive. Patches `Track.artworkPath` for matching
+    /// tracks, re-mirrors files to the local cache, and rewrites
+    /// `library.json`.
+    ///
+    /// Filename convention is `sha1(albumArtist|album).jpg` — the same key
+    /// the indexer and the online fetcher use. Files that don't match a
+    /// known album are left alone.
+    ///
+    /// Returns a tuple of `(tracksUpdated, albumsAdopted)` for surfacing in UI.
+    @discardableResult
+    func rescanArtwork(for root: LibraryRoot) -> (tracksUpdated: Int, albumsAdopted: Int) {
+        let result = performArtworkRescan(rootID: root.id, silent: false)
+        artworkRescanStatus = result.message
+        return (result.tracksUpdated, result.albumsAdopted)
+    }
+
+    /// Quiet variant called from drive-load. Same logic as `rescanArtwork`,
+    /// but no status string update unless something changed — we don't want
+    /// to overwrite the indexer's "Indexed N tracks" message on every launch.
+    fileprivate func reconcileArtworkOnLoad(rootID: UUID) {
+        let result = performArtworkRescan(rootID: rootID, silent: true)
+        if result.tracksUpdated > 0 {
+            print("[HarmonIQ] Adopted \(result.albumsAdopted) artwork file(s) on drive load — patched \(result.tracksUpdated) track row(s).")
+        }
+    }
+
+    private struct ArtworkRescanResult {
+        let tracksUpdated: Int
+        let albumsAdopted: Int
+        let message: String
+    }
+
+    private func performArtworkRescan(rootID: UUID, silent: Bool) -> ArtworkRescanResult {
+        guard let root = roots.first(where: { $0.id == rootID }) else {
+            return ArtworkRescanResult(tracksUpdated: 0, albumsAdopted: 0, message: "Drive not found.")
+        }
+        let driveTracks = tracks.filter { $0.rootBookmarkID == rootID }
+        if driveTracks.isEmpty {
+            return ArtworkRescanResult(tracksUpdated: 0, albumsAdopted: 0,
+                                       message: "No tracks on \(root.displayName) — nothing to match.")
+        }
+
+        // Map known albums to (hash → first sample track) so we can decide
+        // which on-disk files are interesting.
+        var hashToAlbum: [String: (albumArtist: String?, artist: String?, album: String?)] = [:]
+        for t in driveTracks {
+            let key = Self.albumKey(albumArtist: t.albumArtist, artist: t.artist, album: t.album)
+            let h = Self.sha1Hex(key)
+            if hashToAlbum[h] == nil {
+                hashToAlbum[h] = (t.albumArtist, t.artist, t.album)
+            }
+        }
+
+        // Find which artwork files actually exist on disk for this drive.
+        let cacheDir = artworkDirectory
+        let presentHashes: Set<String>
+        if root.isReadOnly {
+            // Read-only roots have no on-drive Artwork folder — the local
+            // cache is the source of truth.
+            presentHashes = Self.scanArtworkFolder(cacheDir)
+        } else {
+            let driveHashes: Set<String>? = withDriveAccess(root) { driveURL in
+                let driveArt = DriveLibraryStore.artworkFolder(in: driveURL)
+                let hashes = Self.scanArtworkFolder(driveArt)
+                // Re-mirror so the local cache reflects whatever appeared on
+                // the drive between launches (manual drop, AirDrop into Files,
+                // a sibling iPhone's fetcher, etc.).
+                DriveLibraryStore.mirrorArtworkToLocalCache(driveRoot: driveURL, localCache: cacheDir)
+                return hashes
+            }
+            presentHashes = driveHashes ?? []
+        }
+
+        if presentHashes.isEmpty {
+            return ArtworkRescanResult(
+                tracksUpdated: 0, albumsAdopted: 0,
+                message: "No artwork files found on \(root.displayName)."
+            )
+        }
+
+        // Patch every track on this drive whose album hash has a matching
+        // file on disk and whose recorded artworkPath is missing or stale.
+        var updatedCount = 0
+        var adoptedHashes: Set<String> = []
+        let canonical: (String) -> String = { "\($0).jpg" }
+        let updatedTracks: [Track] = tracks.map { t in
+            guard t.rootBookmarkID == rootID else { return t }
+            let key = Self.albumKey(albumArtist: t.albumArtist, artist: t.artist, album: t.album)
+            let h = Self.sha1Hex(key)
+            guard presentHashes.contains(h) else { return t }
+            let target = canonical(h)
+            if t.artworkPath == target { return t }
+            adoptedHashes.insert(h)
+            updatedCount += 1
+            var copy = t
+            copy.artworkPath = target
+            return copy
+        }
+
+        // Drop on-disk files that don't correspond to any known album from
+        // the count surfaced to the user — they're harmless but shouldn't
+        // be conflated with adopted ones.
+        let _ = presentHashes.subtracting(adoptedHashes)
+
+        if updatedCount == 0 {
+            return ArtworkRescanResult(
+                tracksUpdated: 0, albumsAdopted: 0,
+                message: silent ? "" : "All artwork on \(root.displayName) was already linked."
+            )
+        }
+
+        // Persist: replaceTracks rewrites library.json (or the sandbox
+        // shadow). Filter to this drive's slice — replaceTracks expects
+        // the full per-drive set.
+        let perRoot = updatedTracks.filter { $0.rootBookmarkID == rootID }
+        replaceTracks(forRoot: rootID, with: perRoot)
+
+        let message = "Adopted \(adoptedHashes.count) album cover(s) on \(root.displayName) — patched \(updatedCount) track(s)."
+        return ArtworkRescanResult(tracksUpdated: updatedCount,
+                                   albumsAdopted: adoptedHashes.count,
+                                   message: message)
+    }
+
+    private static func scanArtworkFolder(_ folder: URL) -> Set<String> {
+        let fm = FileManager.default
+        guard let entries = try? fm.contentsOfDirectory(at: folder,
+                                                        includingPropertiesForKeys: nil,
+                                                        options: [.skipsHiddenFiles]) else { return [] }
+        var out: Set<String> = []
+        for entry in entries {
+            let name = entry.lastPathComponent
+            // Accept any extension we can render — be lenient about the
+            // image format the user dropped in.
+            let ext = entry.pathExtension.lowercased()
+            guard ["jpg", "jpeg", "png", "heic", "webp"].contains(ext) else { continue }
+            let stem = (name as NSString).deletingPathExtension
+            // sha1 is 40 hex chars. Anything else is ignored.
+            guard stem.count == 40, stem.allSatisfy({ $0.isHexDigit }) else { continue }
+            out.insert(stem)
+        }
+        return out
+    }
+
+    fileprivate static func albumKey(albumArtist: String?, artist: String?, album: String?) -> String {
+        "\(albumArtist ?? artist ?? "Unknown")|\(album ?? "Unknown")"
+    }
+
+    fileprivate static func sha1Hex(_ s: String) -> String {
+        let digest = Insecure.SHA1.hash(data: Data(s.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
     }
 
     private func writePlaylistsToDrive(rootID: UUID) {
