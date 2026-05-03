@@ -44,6 +44,11 @@ enum DriveLibraryStore {
         /// by builds before issue #55 still decode; treated as "unknown,
         /// re-extract once" by the indexer to backfill on next scan.
         var fileModified: Date?
+        /// Heuristic language bucket (issue #86). Optional so library.json
+        /// files written before classification existed decode cleanly — a
+        /// nil row is reclassified on the next index run, or via the
+        /// Settings "Reclassify all tracks" action.
+        var language: String?
     }
 
     struct DrivePlaylistsFile: Codable {
@@ -153,7 +158,8 @@ enum DriveLibraryStore {
             fileSize: dt.fileSize,
             fileFormat: dt.fileFormat,
             artworkPath: dt.artworkPath,
-            fileModified: dt.fileModified
+            fileModified: dt.fileModified,
+            language: dt.language.flatMap { TrackLanguage(rawValue: $0) }
         )
     }
 
@@ -174,7 +180,8 @@ enum DriveLibraryStore {
             fileSize: t.fileSize,
             fileFormat: t.fileFormat,
             artworkPath: t.artworkPath,
-            fileModified: t.fileModified
+            fileModified: t.fileModified,
+            language: t.language?.rawValue
         )
     }
 

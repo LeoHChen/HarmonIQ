@@ -775,6 +775,59 @@ final class LibraryStore: ObservableObject {
         }
     }
 
+    // MARK: - Language (issue #86)
+
+    /// Track count per language bucket. Used by the Library hub to render
+    /// counts next to each row.
+    var languageCounts: [TrackLanguage: Int] {
+        var out: [TrackLanguage: Int] = [:]
+        for t in tracks {
+            out[t.effectiveLanguage, default: 0] += 1
+        }
+        return out
+    }
+
+    /// Tracks classified into `bucket`, sorted by display title. The
+    /// language hub passes the result straight to a list view.
+    func tracks(forLanguage bucket: TrackLanguage) -> [Track] {
+        tracks.filter { $0.effectiveLanguage == bucket }
+            .sorted { lhs, rhs in
+                if lhs.displayArtist != rhs.displayArtist {
+                    return lhs.displayArtist.localizedStandardCompare(rhs.displayArtist) == .orderedAscending
+                }
+                return lhs.displayTitle.localizedStandardCompare(rhs.displayTitle) == .orderedAscending
+            }
+    }
+
+    /// Reclassifies every track on every drive in-place and persists. Used
+    /// when the user has already-indexed drives from a build before issue
+    /// #86 — saves the user from running a full reindex just to get
+    /// language buckets populated. Returns the count of rows whose
+    /// classification actually changed (purely for status display).
+    @discardableResult
+    func reclassifyAllLanguages() -> Int {
+        var changed = 0
+        var rebuilt: [Track] = []
+        rebuilt.reserveCapacity(tracks.count)
+        for t in tracks {
+            let bucket = TrackLanguage.classify(title: t.title, artist: t.artist)
+            if t.language != bucket {
+                changed += 1
+                var copy = t
+                copy.language = bucket
+                rebuilt.append(copy)
+            } else {
+                rebuilt.append(t)
+            }
+        }
+        // Persist per drive so each library.json is rewritten once.
+        let perRoot = Dictionary(grouping: rebuilt, by: { $0.rootBookmarkID })
+        for (rootID, perRootTracks) in perRoot {
+            replaceTracks(forRoot: rootID, with: perRootTracks)
+        }
+        return changed
+    }
+
     func search(_ query: String) -> [Track] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !q.isEmpty else { return [] }
