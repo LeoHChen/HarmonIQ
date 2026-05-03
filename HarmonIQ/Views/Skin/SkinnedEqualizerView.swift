@@ -48,20 +48,32 @@ struct SkinnedEqualizerView: View {
                         Label("Reset to Flat", systemImage: "arrow.counterclockwise")
                     }
                 } label: {
-                    HStack(spacing: 3) {
+                    // Issue #83: bumped font 10→11, padding h:6/v:2 → h:10/v:6
+                    // (~74×26 visible chip + outer .padding extends the hit
+                    // surface another 4pt). The EQ header is space-
+                    // constrained so we can't quite hit Apple's 44pt HIG
+                    // minimum, but this is well above the previous ~50×14 and
+                    // first-tap dispatch on the SwiftUI Menu becomes reliable
+                    // because the label's hit shape is now meaningfully
+                    // larger than the surrounding text.
+                    HStack(spacing: 4) {
                         Text(eq.activePreset.uppercased())
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.system(size: 9, weight: .bold))
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
                     .foregroundStyle(activeColor)
-                    .background(activeColor.opacity(0.12))
-                    .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(activeColor.opacity(0.5)))
-                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                    .background(activeColor.opacity(0.18))
+                    .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(activeColor.opacity(0.55)))
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                    .padding(4)
+                    .contentShape(Rectangle())
                 }
+                .menuOrder(.fixed)
                 .accessibilityLabel("Equalizer presets")
+                .accessibilityHint("Active preset: \(eq.activePreset)")
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
