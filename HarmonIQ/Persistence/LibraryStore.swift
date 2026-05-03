@@ -388,6 +388,38 @@ final class LibraryStore: ObservableObject {
         saveRoots()
     }
 
+    /// Wipes the on-drive (or sandbox-shadow) `library.json` for `root`,
+    /// drops in-memory tracks for that drive, clears the drive's stored
+    /// fingerprint so the next scan walks the full filesystem, and
+    /// returns. Playlists are intentionally preserved — they reference
+    /// tracks by `stableID` (drive-relative `sha1(relativePath)`), which
+    /// stays valid as long as the audio files are still at the same paths.
+    /// The caller is expected to kick off `MusicIndexer.index(root:force:)`
+    /// after this returns. Settings does this with a confirmation dialog
+    /// (issue #88).
+    func rebuildLibrary(for root: LibraryRoot) {
+        // 1. Drop in-memory tracks for this drive.
+        tracks.removeAll { $0.rootBookmarkID == root.id }
+        // 2. Delete the persisted index file so a fresh scan starts from
+        //    nothing — no stale rows hanging around if the indexer is
+        //    interrupted mid-rebuild.
+        if root.isReadOnly {
+            try? FileManager.default.removeItem(at: SandboxRootStore.libraryFile(rootID: root.id))
+        } else {
+            withDriveAccess(root) { driveURL in
+                let url = DriveLibraryStore.libraryFile(in: driveURL)
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
+        // 3. Clear the cheap-check fingerprint + track count so the next
+        //    scan can't short-circuit on "Up to date".
+        if let idx = roots.firstIndex(where: { $0.id == root.id }) {
+            roots[idx].lastScanFingerprint = nil
+            roots[idx].trackCount = 0
+            saveRoots()
+        }
+    }
+
     func removeRoot(_ root: LibraryRoot) {
         roots.removeAll { $0.id == root.id }
         // Drop in-memory tracks/playlists belonging to this drive. The on-drive files
@@ -426,7 +458,21 @@ final class LibraryStore: ObservableObject {
 
     private func mergeTracks(forRoot rootID: UUID, with newTracks: [Track]) {
         var preserved = tracks.filter { $0.rootBookmarkID != rootID }
-        preserved.append(contentsOf: newTracks)
+        // Uniqueness invariant (issue #88): a single drive must never carry
+        // two tracks with the same stableID. The indexer already enforces
+        // this by construction, but defensively dedupe on every merge so a
+        // bad library.json on disk (or a future bug) can't poison memory.
+        // Keep first occurrence — this matches how the indexer iterates the
+        // filesystem (alphabetic) so the choice is deterministic.
+        var seen: Set<String> = []
+        var deduped: [Track] = []
+        deduped.reserveCapacity(newTracks.count)
+        for t in newTracks {
+            if seen.insert(t.stableID).inserted {
+                deduped.append(t)
+            }
+        }
+        preserved.append(contentsOf: deduped)
         preserved.sort { lhs, rhs in
             lhs.relativePath.joined(separator: "/").localizedStandardCompare(rhs.relativePath.joined(separator: "/")) == .orderedAscending
         }
@@ -623,15 +669,84 @@ final class LibraryStore: ObservableObject {
         tracks.filter { $0.displayArtist == artist }
     }
 
+    /// Identifier for a single album row in the Albums view. Two flavours:
+    ///
+    /// - **Single-artist** (`isCompilation == false`): the conventional
+    ///   `(album, artist)` pair. Two tracks belong to the same album iff
+    ///   they share both fields.
+    /// - **Compilation** (`isCompilation == true`): album-only grouping.
+    ///   `artist` is set to `"Various Artists"` for display. Triggered when
+    ///   the same album string appears with ≥3 distinct artists on the same
+    ///   drive (issue #88) — collapses fragmented "1995 Grammy Nominees"
+    ///   rows into a single entry.
     struct AlbumKey: Hashable, Identifiable {
         let album: String
         let artist: String
-        var id: String { "\(artist)|\(album)" }
+        let isCompilation: Bool
+        var id: String { isCompilation ? "compilation|\(album)" : "\(artist)|\(album)" }
+
+        init(album: String, artist: String, isCompilation: Bool = false) {
+            self.album = album
+            self.artist = artist
+            self.isCompilation = isCompilation
+        }
+    }
+
+    static let variousArtistsLabel = "Various Artists"
+
+    /// Threshold for compilation detection: when the same album string on
+    /// one drive appears with at least this many distinct displayArtist
+    /// values, treat it as a Various-Artists compilation and collapse to a
+    /// single album row. Three matches the issue #88 ask: pragmatic, avoids
+    /// false-positive collapses on duo albums where the artist field is
+    /// noisy ("Artist A; Artist B" / "Artist A feat. Artist B").
+    private static let compilationArtistThreshold = 3
+
+    /// Albums on a given drive that look like compilations (same album,
+    /// many artists). Computed once per `tracks` snapshot and used to
+    /// decide whether `(album, artist)` keys collapse into a single
+    /// "Various Artists" row.
+    private func compilationAlbumsByRoot() -> [UUID: Set<String>] {
+        var perRoot: [UUID: [String: Set<String>]] = [:]
+        for t in tracks {
+            // Use the raw album field — fall back to displayAlbum when nil
+            // so "Unknown Album" rows aren't treated as one giant comp.
+            let album = t.displayAlbum
+            // Skip "Unknown Album" entirely: a drive full of orphan tracks
+            // would otherwise collapse into a single fake compilation.
+            if album == "Unknown Album" { continue }
+            perRoot[t.rootBookmarkID, default: [:]][album, default: []].insert(t.displayArtist)
+        }
+        var out: [UUID: Set<String>] = [:]
+        for (rootID, albums) in perRoot {
+            var comps: Set<String> = []
+            for (album, artists) in albums where artists.count >= Self.compilationArtistThreshold {
+                comps.insert(album)
+            }
+            if !comps.isEmpty { out[rootID] = comps }
+        }
+        return out
+    }
+
+    /// True when `track`'s album/drive pair is a compilation in the
+    /// current library. Used by callers that need to decide whether the
+    /// track should be displayed under a single Various-Artists row.
+    func isCompilationTrack(_ track: Track) -> Bool {
+        let comps = compilationAlbumsByRoot()
+        return comps[track.rootBookmarkID]?.contains(track.displayAlbum) ?? false
     }
 
     var allAlbums: [AlbumKey] {
+        let comps = compilationAlbumsByRoot()
         var set: Set<AlbumKey> = []
-        for t in tracks { set.insert(AlbumKey(album: t.displayAlbum, artist: t.displayArtist)) }
+        for t in tracks {
+            let isComp = comps[t.rootBookmarkID]?.contains(t.displayAlbum) ?? false
+            if isComp {
+                set.insert(AlbumKey(album: t.displayAlbum, artist: Self.variousArtistsLabel, isCompilation: true))
+            } else {
+                set.insert(AlbumKey(album: t.displayAlbum, artist: t.displayArtist))
+            }
+        }
         return set.sorted { lhs, rhs in
             if lhs.album != rhs.album {
                 return lhs.album.localizedStandardCompare(rhs.album) == .orderedAscending
@@ -641,12 +756,23 @@ final class LibraryStore: ObservableObject {
     }
 
     func tracks(forAlbum key: AlbumKey) -> [Track] {
-        tracks.filter { $0.displayAlbum == key.album && $0.displayArtist == key.artist }
-            .sorted { lhs, rhs in
-                if let l = lhs.discNumber, let r = rhs.discNumber, l != r { return l < r }
-                if let l = lhs.trackNumber, let r = rhs.trackNumber, l != r { return l < r }
-                return lhs.displayTitle.localizedStandardCompare(rhs.displayTitle) == .orderedAscending
+        let matches: [Track]
+        if key.isCompilation {
+            // Compilation: every track on any drive whose album string
+            // matches AND whose drive flagged this album as a comp.
+            let comps = compilationAlbumsByRoot()
+            matches = tracks.filter { t in
+                guard t.displayAlbum == key.album else { return false }
+                return comps[t.rootBookmarkID]?.contains(t.displayAlbum) ?? false
             }
+        } else {
+            matches = tracks.filter { $0.displayAlbum == key.album && $0.displayArtist == key.artist }
+        }
+        return matches.sorted { lhs, rhs in
+            if let l = lhs.discNumber, let r = rhs.discNumber, l != r { return l < r }
+            if let l = lhs.trackNumber, let r = rhs.trackNumber, l != r { return l < r }
+            return lhs.displayTitle.localizedStandardCompare(rhs.displayTitle) == .orderedAscending
+        }
     }
 
     func search(_ query: String) -> [Track] {

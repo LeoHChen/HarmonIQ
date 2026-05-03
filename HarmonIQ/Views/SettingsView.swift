@@ -19,6 +19,7 @@ struct SettingsView: View {
     @StateObject private var artworkFetcher = ArtworkFetcher.shared
     @State private var showPicker = false
     @State private var bulkConfirmRoot: LibraryRoot?
+    @State private var rebuildConfirmRoot: LibraryRoot?
 
     var body: some View {
         List {
@@ -105,6 +106,22 @@ struct SettingsView: View {
                 Text("Artwork")
             } footer: {
                 Text("Off by default. When on, HarmonIQ sends the album + artist of any track without local art to MusicBrainz to find a cover. Failures are silent — no other data leaves the device.\n\n“Rescan artwork on disk” adopts any covers you dropped into <Drive>/HarmonIQ/Artwork/ matching the sha1(albumArtist|album).jpg naming convention. Files that don't match a known album are ignored.")
+            }
+
+            Section {
+                ForEach(library.roots) { root in
+                    Button(role: .destructive) {
+                        rebuildConfirmRoot = root
+                    } label: {
+                        Label("Rebuild library — \(root.displayName)",
+                              systemImage: "arrow.counterclockwise.circle")
+                    }
+                    .disabled(indexer.isIndexing)
+                }
+            } header: {
+                Text("Maintenance")
+            } footer: {
+                Text("Wipes the drive's library.json and runs a fresh full scan. Use this if the album list is duplicated or has stale entries (issue #88). Playlists survive as long as the audio files are still at the same paths on the drive. Favorites, smart playlists, and roots.json are preserved.")
             }
 
             Section {
@@ -203,6 +220,21 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) { bulkConfirmRoot = nil }
         } message: {
             Text("This sends one MusicBrainz query per album missing artwork on \(bulkConfirmRoot?.displayName ?? "this drive"), at most 1 request per second. Failures are silent.")
+        }
+        .confirmationDialog("Rebuild library from scratch?",
+                            isPresented: Binding(get: { rebuildConfirmRoot != nil },
+                                                 set: { if !$0 { rebuildConfirmRoot = nil } }),
+                            titleVisibility: .visible) {
+            Button("Rebuild", role: .destructive) {
+                if let r = rebuildConfirmRoot {
+                    library.rebuildLibrary(for: r)
+                    indexer.index(root: r, force: true)
+                }
+                rebuildConfirmRoot = nil
+            }
+            Button("Cancel", role: .cancel) { rebuildConfirmRoot = nil }
+        } message: {
+            Text("Deletes \(rebuildConfirmRoot?.displayName ?? "this drive")'s library.json and runs a fresh scan. Playlists survive as long as audio files stay at the same paths. The bookmark and favorites are preserved.")
         }
     }
 
