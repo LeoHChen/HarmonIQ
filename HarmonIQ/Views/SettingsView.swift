@@ -87,10 +87,24 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                ForEach(library.roots) { root in
+                    Button {
+                        library.rescanArtwork(for: root)
+                    } label: {
+                        Label("Rescan artwork on disk — \(root.displayName)",
+                              systemImage: "arrow.triangle.2.circlepath")
+                    }
+                }
+                if !library.artworkRescanStatus.isEmpty {
+                    Text(library.artworkRescanStatus)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             } header: {
                 Text("Artwork")
             } footer: {
-                Text("Off by default. When on, HarmonIQ sends the album + artist of any track without local art to MusicBrainz to find a cover. Failures are silent — no other data leaves the device.")
+                Text("Off by default. When on, HarmonIQ sends the album + artist of any track without local art to MusicBrainz to find a cover. Failures are silent — no other data leaves the device.\n\n“Rescan artwork on disk” adopts any covers you dropped into <Drive>/HarmonIQ/Artwork/ matching the sha1(albumArtist|album).jpg naming convention. Files that don't match a known album are ignored.")
             }
 
             Section {
