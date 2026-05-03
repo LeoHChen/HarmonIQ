@@ -95,7 +95,7 @@ struct SettingsView: View {
                 Toggle(isOn: $artistPhotoFetcher.isOnlineFetchEnabled) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Fetch artist photos online")
-                        Text("Queries MusicBrainz + Wikidata / Wikimedia")
+                        Text("Queries MusicBrainz, Wikidata, TheAudioDB, Wikipedia")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -139,7 +139,7 @@ struct SettingsView: View {
             } header: {
                 Text("Artwork")
             } footer: {
-                Text("Both toggles are off by default and independent. When album-art is on, HarmonIQ sends the album + artist of any track without local art to MusicBrainz to find a cover. When artist photos is on, HarmonIQ sends each missing artist's name to MusicBrainz, then to Wikidata, to find a Wikimedia Commons photo. Failures are silent — no other data leaves the device.\n\n“Rescan artwork on disk” adopts any album covers you dropped into <Drive>/HarmonIQ/Artwork/ matching the sha1(albumArtist|album).jpg naming convention. Files that don't match a known album are ignored.")
+                Text("Both toggles are off by default and independent. When album-art is on, HarmonIQ sends the album + artist of any track without local art to MusicBrainz to find a cover. When artist photos is on, HarmonIQ resolves the artist on MusicBrainz, then walks a fallback chain — Wikidata (Wikimedia Commons), TheAudioDB, and Wikipedia — and uses the first portrait that returns. Album covers are never used as artist photos; if no portrait is found, the tile shows a placeholder. Failures are silent — no other data leaves the device.\n\n“Rescan artwork on disk” adopts any album covers you dropped into <Drive>/HarmonIQ/Artwork/ matching the sha1(albumArtist|album).jpg naming convention. Files that don't match a known album are ignored.")
             }
 
             Section {
@@ -281,7 +281,7 @@ struct SettingsView: View {
             }
             Button("Cancel", role: .cancel) { artistBulkConfirmRoot = nil }
         } message: {
-            Text("This sends each missing artist's name to MusicBrainz then Wikidata to find a Wikimedia Commons photo, at most 1 MusicBrainz request per second on \(artistBulkConfirmRoot?.displayName ?? "this drive"). Failures are silent.")
+            Text("This sends each missing artist's name to MusicBrainz, then walks a fallback chain (Wikidata → TheAudioDB → Wikipedia) until a portrait is found, at most 1 MusicBrainz request per second on \(artistBulkConfirmRoot?.displayName ?? "this drive"). Failures are silent.")
         }
         .confirmationDialog("Rebuild library from scratch?",
                             isPresented: Binding(get: { rebuildConfirmRoot != nil },

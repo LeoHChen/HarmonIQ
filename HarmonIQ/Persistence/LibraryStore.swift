@@ -719,17 +719,22 @@ final class LibraryStore: ObservableObject {
         return artistRepresentativeCache?.map[artist]
     }
 
-    /// What an artist tile should display (issue #93). Returns either a real
-    /// artist photo on disk (preferred) or the representative album cover —
-    /// whichever exists locally. The choice is cached against the same
-    /// snapshot key the representative-track cache uses, plus a manual nonce
-    /// so a freshly-fetched artist photo can invalidate without forcing a
-    /// full library reload.
+    /// What an artist tile should display. Issue #95 deliberately removes the
+    /// album-cover fallback that PR #92 introduced — an artist tile should
+    /// either be a real artist photo or the styled placeholder, never an
+    /// album cover (which misrepresents the artist). Future contributors:
+    /// don't re-add an `albumCover` branch here "to be helpful" — keeping
+    /// the placeholder is the explicit UX choice. If a real photo can't be
+    /// found, lean on `ArtistPhotoFetcher`'s expanded fallback chain
+    /// (MusicBrainz → Wikidata P18 → TheAudioDB → Wikipedia summary) to do
+    /// better, not on the album cover.
+    ///
+    /// Cached against `tracksSnapshotID` plus a manual nonce so a
+    /// freshly-fetched artist photo can invalidate without forcing a full
+    /// library reload.
     enum ArtistImageSource {
         /// Path under `artistPhotoDirectory`.
         case artistPhoto(filename: String)
-        /// Path under `artworkDirectory` (the representative album cover).
-        case albumCover(filename: String)
     }
 
     func artistImage(forArtist artist: String) -> ArtistImageSource? {
@@ -743,7 +748,7 @@ final class LibraryStore: ObservableObject {
     }
 
     /// Called by `ArtistPhotoFetcher` after a successful download so the
-    /// artist tile's cached image choice flips from album cover to real
+    /// artist tile's cached image choice flips from placeholder to real
     /// photo on the next render.
     func invalidateArtistRepresentativeCache() {
         artistImageCacheNonce &+= 1
@@ -823,45 +828,22 @@ final class LibraryStore: ObservableObject {
         artistRepresentativeCache = ArtistRepresentativeCache(snapshotID: tracksSnapshotID, map: map)
     }
 
-    /// Computes the per-artist image choice — real artist photo if one
-    /// exists on disk for this artist, otherwise the representative album
-    /// cover (when that track has artwork). Artists with neither don't get
-    /// an entry; the view falls back to the placeholder glyph.
+    /// Computes the per-artist image choice — real artist photo on disk, or
+    /// nothing. Issue #95: the album-cover fallback is intentionally gone.
+    /// Artists without a real photo don't get an entry; the view renders
+    /// the styled placeholder.
     private func rebuildArtistImageCache() {
-        if artistRepresentativeCache?.snapshotID != tracksSnapshotID {
-            rebuildArtistRepresentativeCache()
-        }
-        guard let representative = artistRepresentativeCache?.map else {
-            artistImageCache = ArtistImageCache(snapshotID: tracksSnapshotID,
-                                                nonce: artistImageCacheNonce,
-                                                map: [:])
-            return
-        }
         let fm = FileManager.default
         let photoDir = artistPhotoDirectory
-        let coverDir = artworkDirectory
         var map: [String: ArtistImageSource] = [:]
-        map.reserveCapacity(representative.count)
+        let artists = allArtists
+        map.reserveCapacity(artists.count)
 
-        // Build the artist photo set across every artist we know — even ones
-        // for whom we don't have a representative track (compilation-only
-        // entries, future Various-Artist hits). Cheap one-shot scan.
-        var artistsToCheck: Set<String> = []
-        for artist in representative.keys { artistsToCheck.insert(artist) }
-        for artist in allArtists { artistsToCheck.insert(artist) }
-
-        for artist in artistsToCheck {
+        for artist in artists {
             let photoHash = ArtistPhotoFetcher.sha1Hex(artist)
             let photoURL = photoDir.appendingPathComponent("\(photoHash).jpg")
             if fm.fileExists(atPath: photoURL.path) {
                 map[artist] = .artistPhoto(filename: "\(photoHash).jpg")
-                continue
-            }
-            if let track = representative[artist], let cover = track.artworkPath {
-                let coverURL = coverDir.appendingPathComponent(cover)
-                if fm.fileExists(atPath: coverURL.path) {
-                    map[artist] = .albumCover(filename: cover)
-                }
             }
         }
         artistImageCache = ArtistImageCache(snapshotID: tracksSnapshotID,
