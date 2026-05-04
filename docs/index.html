@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HarmonIQ — Music for your own collections, ported to your iPhone</title>
-  <meta name="description" content="An iPhone music player built for collectors. Plays the MP3s and ripped CDs you already own, straight off your drive — no streaming, no algorithm, no account. AI curation runs on-device. Open source.">
+  <meta name="description" content="An iPhone music player built for collectors. Plays the MP3s and ripped CDs you already own, straight off your drive — no streaming, no algorithm, no account. v1.1 lands a Charcoal Phosphor palette, browse-by-language, artist headshots, and opt-in album-art fetch.">
   <meta property="og:title" content="HarmonIQ — Music for your own collections">
-  <meta property="og:description" content="Bring your old MP3 folders and ripped-CD archives to a modern iPhone player. Drive-portable library, on-device AI playlists, real 10-band EQ. Works offline.">
+  <meta property="og:description" content="Bring your old MP3 folders and ripped-CD archives to a modern iPhone player. Charcoal Phosphor palette, browse by language, artist headshots, drive-portable library, on-device AI playlists, real 10-band EQ. Works offline.">
   <meta property="og:type" content="website">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -79,8 +79,26 @@
     </div>
   </section>
 
-  <!-- SKIN SHOWCASE -->
+  <!-- WHAT'S NEW (v1.1) -->
   <section class="band">
+    <div class="container">
+      <p class="kicker">// new in v1.1</p>
+      <h2>Charcoal chassis. Heavier knobs. Photos of the artists.</h2>
+      <p class="lede">v1.1 is polish across the palette, the browse modes, and the maintenance flows — without giving up the offline-first stance. The CRT got deeper. The chassis got darker. The artists got faces.</p>
+      <ul class="pillars">
+        <li><span class="ico">🎨</span><h3>Charcoal Phosphor</h3><p>Authentically Winamp-2.x. Graphite chassis, deeper green LCD, amber + red accents in the spectrum bars. Heavier, more machined.</p></li>
+        <li><span class="ico">🌐</span><h3>Browse by language</h3><p>Library → Language partitions your collection into Chinese / English / Others. Heuristic CJK + Latin split — useful when your library sprawls across scripts.</p></li>
+        <li><span class="ico">👤</span><h3>Artist headshots</h3><p>Artists tab is now a visual grid. Opt-in fetcher pulls real headshots from MusicBrainz → Wikidata → Wikimedia → TheAudioDB → Wikipedia. Off by default.</p></li>
+        <li><span class="ico">🖼️</span><h3>Album art on tap</h3><p>Opt-in fetcher backfills missing covers from MusicBrainz + Cover Art Archive. Drop your own files into <code>HarmonIQ/Artwork/</code> on the drive — they get picked up silently.</p></li>
+        <li><span class="ico">🔒</span><h3>Lock screen, in lockstep</h3><p>The lock-screen widget and the Live Activity / Dynamic Island now share a single fan-out path. Pause, skip, artwork — all land on both in the same frame.</p></li>
+        <li><span class="ico">🛠️</span><h3>Maintenance, consolidated</h3><p>One per-drive Refresh sheet: quick refresh, reindex, fetch art, rebuild. Compilation albums fold to "Various Artists". New offline <code>library-doctor</code> CLI.</p></li>
+      </ul>
+      <p class="muted">Plus radial-pulse renders unambiguously radial, the visualizer + EQ pickers commit on first tap, and the AI Smart Play UI hides cleanly when no curator is reachable. Full notes in the <a href="https://github.com/LeoHChen/HarmonIQ/blob/main/README.md#v11--2026-05-03">README changelog</a>.</p>
+    </div>
+  </section>
+
+  <!-- SKIN SHOWCASE -->
+  <section class="band alt">
     <div class="container">
       <p class="kicker">// skins</p>
       <h2>Nine bundled. Bring your own .wsz.</h2>
@@ -100,7 +118,7 @@
   </section>
 
   <!-- VISUALIZERS -->
-  <section class="band alt">
+  <section class="band">
     <div class="container">
       <p class="kicker">// visualizers</p>
       <h2>Sixteen styles, one engine.</h2>
@@ -116,7 +134,7 @@
   </section>
 
   <!-- MAKE IT YOURS -->
-  <section class="band">
+  <section class="band alt">
     <div class="container">
       <p class="kicker">// make it yours</p>
       <h2>The architecture is documented. The patches are welcome.</h2>
@@ -140,7 +158,7 @@
   </section>
 
   <!-- GET IT -->
-  <section class="band alt">
+  <section class="band">
     <div class="container center">
       <p class="kicker">// get it</p>
       <h2>Bring your collection forward.</h2>

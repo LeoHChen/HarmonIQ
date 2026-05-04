@@ -42,8 +42,8 @@ targets:
       path: HarmonIQ/Info.plist
       properties:
         CFBundleDisplayName: HarmonIQ
-        CFBundleShortVersionString: "1.0"
-        CFBundleVersion: "4"
+        CFBundleShortVersionString: "1.1"
+        CFBundleVersion: "5"
         UILaunchScreen:
           UIImageName: LaunchImage
           UIImageRespectsSafeAreaInsets: false
@@ -115,8 +115,8 @@ targets:
       path: HarmonIQLiveActivity/Info.plist
       properties:
         CFBundleDisplayName: HarmonIQ Live Activity
-        CFBundleShortVersionString: "1.0"
-        CFBundleVersion: "4"
+        CFBundleShortVersionString: "1.1"
+        CFBundleVersion: "5"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:

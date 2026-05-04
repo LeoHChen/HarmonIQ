@@ -95,6 +95,26 @@ project.yml                  # XcodeGen source
 
 See [GitHub Releases](https://github.com/LeoHChen/HarmonIQ/releases) for the full notes and tag history.
 
+### v1.1 — 2026-05-03
+
+The "make it look right, find it fast, keep it offline" release. Polish across the palette, the browse modes, the maintenance flows, and the lock-screen — without giving up the offline-first stance.
+
+**Charcoal Phosphor.** A more authentically Winamp-2.x palette: graphite chassis, deeper CRT-green LCD, sharper corners, amber + red chromatic accents in the spectrum visualizer. The whole player feels heavier and more "machined" without changing a single feature. (#76)
+
+**Browse by language.** New Library → **Language** hub partitions the library into Chinese / English / Others using a heuristic CJK + Latin classifier. Useful when your collection sprawls across scripts. (#91)
+
+**Artists, with photos.** New Artists browse renders as a visual grid with representative covers, then upgrades to *real* artist headshots when the opt-in network photo fetcher is enabled (MusicBrainz → Wikidata → Wikimedia → TheAudioDB → Wikipedia). Artist tiles are guaranteed to show a headshot or a placeholder — never an album cover masquerading as the artist. (#92, #94, #96)
+
+**Opt-in artwork on tap.** A new opt-in fetcher (off by default) backfills missing album art from MusicBrainz + Cover Art Archive. Albums view also picks up artwork files dropped manually into `<Drive>/HarmonIQ/Artwork/` — silent reconciliation pass on drive-load. (#74, #79)
+
+**Maintenance, consolidated.** All per-drive library actions live behind one **Refresh…** sheet in Settings: Quick refresh / Reindex tracks / Fetch from internet / Advanced → Rebuild. New `tools/library-doctor.swift` (`--report` / `--dedupe` / `--rebuild`) for offline cleanup; compilation albums fold to one "Various Artists" entry. (#90, #100)
+
+**Lock-screen lockstep.** The lock-screen `MPNowPlayingInfo` widget and the HarmonIQ Live Activity now share a single fan-out path — pause/skip/artwork updates land on both, in the same frame. (#104)
+
+**Visualizer + EQ polish.** Radial Pulse renders unambiguously radial at any energy level. Visualizer style picker commits on first tap. EQ preset picker is easier to tap and faster to commit. (#80, #85, #87)
+
+**AI Smart Play, gracefully absent.** On iPhones without Apple Intelligence and without an Anthropic key configured, the AI section now hides cleanly instead of teasing disabled rows. Cloud fallback continues to work on older devices when a key is configured. (#102)
+
 ### v1.0 — 2026-05-02
 
 The "your collection deserves a real player" release. Brings the offline-first, drive-portable foundation up to a 1.0 feature set built around **data sovereignty** for collectors with thousands of MP3s and ripped CDs.
