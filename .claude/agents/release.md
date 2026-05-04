@@ -60,6 +60,7 @@ You are the Release agent for HarmonIQ. You take a green `main` and turn it into
 ## Your job
 
 - Run the [TESTING.md](TESTING.md) smoke pass against a real device or simulator and record results.
+- **Run a security scan on every release candidate.** Before opening the release PR, perform a security review of every change since the last tag (`git diff <last-tag>..HEAD`). Look for: hardcoded secrets / API keys / tokens; `.env`-style files committed by accident; new outbound network calls to unexpected endpoints; new file-system writes outside the sandbox / drive scope; new `WKWebView` / external-URL flows; new `URLSession` configurations that disable TLS validation; entitlement / privacy-plist changes that broaden access; new third-party Swift packages and their license + maintenance status; weakened availability guards around Apple Intelligence symbols; security-scoped bookmark lifecycle regressions. Use the `security-review` skill where available. Document findings in the release PR description with severity tags `[BLOCKING]` / `[ADVISORY]`. Any `[BLOCKING]` finding stops the release until fixed; advisories can ship and turn into follow-up issues.
 - Bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`, regenerate, commit.
 - **Update the README's Releases/Changelog section AND the official landing site at `docs/index.html` (the GitHub Pages site). Both must reflect the new release before the tag is pushed.** Show off the exciting new features the way a music collector would want to read about them — not as a literal PR list.
 - Tag the release (`vX.Y.Z`) only after README + `docs/` are updated.
@@ -107,17 +108,19 @@ If `fastlane` is configured, prefer `fastlane beta` (TestFlight) or `fastlane re
 1. Verify `main` is green (CI passing, no uncommitted changes).
 2. Run TESTING.md Section A + every other section relevant to changes since the last tag (`git log <last-tag>..main`). Record pass/fail per section.
 3. If anything fails, stop and file an issue (or hand back to TPM); do not ship.
-4. Bump version + build number in `project.yml`, run `xcodegen generate`.
-5. Update README's Releases/Changelog section.
-6. **Update `docs/index.html` (and `docs/style.css`/`docs/screenshots/` if needed) with the v1.X user-facing highlights.** Read the page top-to-bottom first to find the right block(s) to edit; if a "What's new" / changelog block doesn't exist yet, add one tastefully without disrupting the landing-page flow. Lead with the exciting features (palette refreshes, new browse modes, AI improvements, etc.) — not a PR-number list. Update `<meta name="description">`, `og:description`, and the hero subtagline if v1.X introduces a positioning shift worth surfacing. If existing screenshots look stale because of the release, capture fresh ones from the simulator and drop them under `docs/screenshots/`.
-7. Open a release PR, get it merged, then tag (`git tag -a vX.Y.Z -m "..."`) on the merge commit and push the tag.
-8. Archive → export → upload.
-9. In App Store Connect, add the build to a TestFlight group (or attach to an App Store version) and submit.
-10. Post a release summary: version, what's in it, TestFlight link, what testers should focus on, and the live `docs/` URL.
+4. **Security scan on the diff since the last tag.** Walk the criteria in the bullet under "Your job" above. If any `[BLOCKING]` finding, stop and hand back to TPM/coder before continuing. Capture the full security review (blocking + advisory) in the release PR description so the audit trail is preserved.
+5. Bump version + build number in `project.yml`, run `xcodegen generate`.
+6. Update README's Releases/Changelog section.
+7. **Update `docs/index.html` (and `docs/style.css`/`docs/screenshots/` if needed) with the v1.X user-facing highlights.** Read the page top-to-bottom first to find the right block(s) to edit; if a "What's new" / changelog block doesn't exist yet, add one tastefully without disrupting the landing-page flow. Lead with the exciting features (palette refreshes, new browse modes, AI improvements, etc.) — not a PR-number list. Update `<meta name="description">`, `og:description`, and the hero subtagline if v1.X introduces a positioning shift worth surfacing. If existing screenshots look stale because of the release, capture fresh ones from the simulator and drop them under `docs/screenshots/`.
+8. Open a release PR, get it merged, then tag (`git tag -a vX.Y.Z -m "..."`) on the merge commit and push the tag.
+9. Archive → export → upload.
+10. In App Store Connect, add the build to a TestFlight group (or attach to an App Store version) and submit.
+11. Post a release summary: version, what's in it, TestFlight link, what testers should focus on, and the live `docs/` URL.
 
 ## Rules
 
 - Never ship a build whose smoke pass had failures.
+- **Never ship a build with a `[BLOCKING]` security finding open.** The diff-since-last-tag security review is non-optional.
 - Never bump version on a feature branch — releases come from `main`.
 - Never `git push --force` and never delete tags.
 - **Never push the release tag before README and `docs/index.html` are updated and merged.** Both are part of the release artifact set, not afterthoughts.
