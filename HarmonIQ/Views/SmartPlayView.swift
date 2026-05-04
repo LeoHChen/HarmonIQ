@@ -29,41 +29,52 @@ struct SmartPlayView: View {
                             SmartPlayRow(mode: mode, pool: library.tracks, onTap: { play(mode: $0) })
                         }
                     }
-                    Section {
-                        ForEach(aiModes) { mode in
-                            SmartPlayRow(mode: mode,
-                                         pool: library.tracks,
-                                         disabled: !aiSettings.isConfigured,
-                                         onTap: { play(mode: $0) })
-                        }
-                        if !aiSettings.isConfigured {
-                            NavigationLink {
-                                AISettingsView()
-                            } label: {
-                                Label("Add Anthropic API key in Settings", systemImage: "key")
-                                    .font(.caption)
-                                    .foregroundStyle(.tint)
+                    // Hide the AI section entirely on devices where no
+                    // provider is reachable (e.g. iPhone 14 with no key).
+                    // `aiSettings` is @Published-backed so toggling the
+                    // on-device preference or adding a key in Settings → AI
+                    // re-evaluates this and reveals the rows here.
+                    if AIProvider.anyAvailable {
+                        Section {
+                            ForEach(aiModes) { mode in
+                                SmartPlayRow(mode: mode,
+                                             pool: library.tracks,
+                                             disabled: !aiSettings.isConfigured,
+                                             onTap: { play(mode: $0) })
                             }
-                        }
-                    } header: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "wand.and.stars")
-                            Text("AI-CURATED")
-                        }
-                    } footer: {
-                        if let curating = player.aiCurating {
-                            HStack(spacing: 6) {
-                                ProgressView().controlSize(.small)
-                                Text("Claude is curating \(curating.title)…")
-                                    .font(.caption)
+                            // Edge case: a provider is available but
+                            // unusable in the current preference state
+                            // (e.g. on-device toggled off, no API key
+                            // entered). Surface a path back to AI Settings.
+                            if !aiSettings.isConfigured {
+                                NavigationLink {
+                                    AISettingsView()
+                                } label: {
+                                    Label("Configure in AI Settings", systemImage: "key")
+                                        .font(.caption)
+                                        .foregroundStyle(.tint)
+                                }
                             }
-                        } else if let annotation = player.aiAnnotation {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(annotation.title).font(.caption.bold())
-                                Text(annotation.blurb).font(.caption)
+                        } header: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "wand.and.stars")
+                                Text("AI-CURATED")
                             }
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 4)
+                        } footer: {
+                            if let curating = player.aiCurating {
+                                HStack(spacing: 6) {
+                                    ProgressView().controlSize(.small)
+                                    Text("Claude is curating \(curating.title)…")
+                                        .font(.caption)
+                                }
+                            } else if let annotation = player.aiAnnotation {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(annotation.title).font(.caption.bold())
+                                    Text(annotation.blurb).font(.caption)
+                                }
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 4)
+                            }
                         }
                     }
                 }
