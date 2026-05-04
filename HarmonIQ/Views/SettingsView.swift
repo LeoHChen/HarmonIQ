@@ -19,16 +19,13 @@ struct SettingsView: View {
     @StateObject private var artworkFetcher = ArtworkFetcher.shared
     @StateObject private var artistPhotoFetcher = ArtistPhotoFetcher.shared
     @State private var showPicker = false
-    @State private var bulkConfirmRoot: LibraryRoot?
-    @State private var artistBulkConfirmRoot: LibraryRoot?
-    @State private var rebuildConfirmRoot: LibraryRoot?
-    @State private var reclassifyStatus: String = ""
+    @State private var refreshSheetRoot: LibraryRoot?
 
     var body: some View {
         List {
             Section {
                 ForEach(library.roots) { root in
-                    DriveRow(root: root)
+                    DriveRow(root: root, onRefresh: { refreshSheetRoot = root })
                 }
                 .onDelete { offsets in
                     for idx in offsets {
@@ -43,7 +40,7 @@ struct SettingsView: View {
             } header: {
                 Text("Music Drives")
             } footer: {
-                Text("Pick any folder visible in Files — including a USB drive — and HarmonIQ will recursively index its audio files. If the folder is read-only, the index is stored on this device and cross-device portability is disabled.")
+                Text("Pick any folder visible in Files — including a USB drive — and HarmonIQ will recursively index its audio files. If the folder is read-only, the index is stored on this device and cross-device portability is disabled.\n\nTap the slider icon next to a drive to open Refresh, where you can rescan, reindex, fetch missing artwork, or rebuild the library.")
             }
 
             if indexer.isIndexing {
@@ -69,29 +66,6 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                if artworkFetcher.isOnlineFetchEnabled {
-                    ForEach(library.roots) { root in
-                        Button {
-                            bulkConfirmRoot = root
-                        } label: {
-                            Label("Refresh missing artwork — \(root.displayName)",
-                                  systemImage: "photo.on.rectangle.angled")
-                        }
-                        .disabled(artworkFetcher.isRefreshing)
-                    }
-                    if artworkFetcher.isRefreshing {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(artworkFetcher.refreshStatusMessage).font(.caption)
-                            ProgressView(value: artworkFetcher.refreshProgress)
-                            Button("Stop", role: .destructive) { artworkFetcher.cancelRefresh() }
-                        }
-                    } else if !artworkFetcher.refreshStatusMessage.isEmpty {
-                        Text(artworkFetcher.refreshStatusMessage)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
                 Toggle(isOn: $artistPhotoFetcher.isOnlineFetchEnabled) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Fetch artist photos online")
@@ -100,76 +74,10 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                if artistPhotoFetcher.isOnlineFetchEnabled {
-                    ForEach(library.roots) { root in
-                        Button {
-                            artistBulkConfirmRoot = root
-                        } label: {
-                            Label("Refresh missing artist photos — \(root.displayName)",
-                                  systemImage: "person.crop.circle.badge.plus")
-                        }
-                        .disabled(artistPhotoFetcher.isRefreshing)
-                    }
-                    if artistPhotoFetcher.isRefreshing {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(artistPhotoFetcher.refreshStatusMessage).font(.caption)
-                            ProgressView(value: artistPhotoFetcher.refreshProgress)
-                            Button("Stop", role: .destructive) { artistPhotoFetcher.cancelRefresh() }
-                        }
-                    } else if !artistPhotoFetcher.refreshStatusMessage.isEmpty {
-                        Text(artistPhotoFetcher.refreshStatusMessage)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                ForEach(library.roots) { root in
-                    Button {
-                        library.rescanArtwork(for: root)
-                    } label: {
-                        Label("Rescan artwork on disk — \(root.displayName)",
-                              systemImage: "arrow.triangle.2.circlepath")
-                    }
-                }
-                if !library.artworkRescanStatus.isEmpty {
-                    Text(library.artworkRescanStatus)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             } header: {
-                Text("Artwork")
+                Text("Online sources")
             } footer: {
-                Text("Both toggles are off by default and independent. When album-art is on, HarmonIQ sends the album + artist of any track without local art to MusicBrainz to find a cover. When artist photos is on, HarmonIQ resolves the artist on MusicBrainz, then walks a fallback chain — Wikidata (Wikimedia Commons), TheAudioDB, and Wikipedia — and uses the first portrait that returns. Album covers are never used as artist photos; if no portrait is found, the tile shows a placeholder. Failures are silent — no other data leaves the device.\n\n“Rescan artwork on disk” adopts any album covers you dropped into <Drive>/HarmonIQ/Artwork/ matching the sha1(albumArtist|album).jpg naming convention. Files that don't match a known album are ignored.")
-            }
-
-            Section {
-                ForEach(library.roots) { root in
-                    Button(role: .destructive) {
-                        rebuildConfirmRoot = root
-                    } label: {
-                        Label("Rebuild library — \(root.displayName)",
-                              systemImage: "arrow.counterclockwise.circle")
-                    }
-                    .disabled(indexer.isIndexing)
-                }
-                Button {
-                    let changed = library.reclassifyAllLanguages()
-                    reclassifyStatus = changed == 0
-                        ? "Languages already up to date — \(library.tracks.count) track(s) checked."
-                        : "Reclassified \(changed) of \(library.tracks.count) track(s)."
-                } label: {
-                    Label("Reclassify all tracks by language", systemImage: "globe")
-                }
-                .disabled(library.tracks.isEmpty)
-                if !reclassifyStatus.isEmpty {
-                    Text(reclassifyStatus)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } header: {
-                Text("Maintenance")
-            } footer: {
-                Text("Rebuild wipes the drive's library.json and runs a fresh full scan — use it if the album list is duplicated or has stale entries (issue #88). Reclassify recomputes the Chinese / English / Others bucket on every track without re-reading audio (issue #86). Playlists, favorites, and smart playlists are preserved by both actions.")
+                Text("Both toggles are off by default and independent. They control whether HarmonIQ may reach the internet to fill gaps. When album-art is on, HarmonIQ sends the album + artist of any track without local art to MusicBrainz to find a cover. When artist photos is on, HarmonIQ resolves the artist on MusicBrainz, then walks a fallback chain — Wikidata (Wikimedia Commons), TheAudioDB, and Wikipedia — and uses the first portrait that returns. Album covers are never used as artist photos; if no portrait is found, the tile shows a placeholder. Failures are silent — no other data leaves the device.\n\nThese toggles only authorise the lookups; trigger one with a drive's Refresh sheet.")
             }
 
             Section {
@@ -255,48 +163,10 @@ struct SettingsView: View {
                 addRoot(from: url)
             }
         }
-        .confirmationDialog("Refresh missing artwork?",
-                            isPresented: Binding(get: { bulkConfirmRoot != nil },
-                                                 set: { if !$0 { bulkConfirmRoot = nil } }),
-                            titleVisibility: .visible) {
-            Button("Start refresh") {
-                if let r = bulkConfirmRoot {
-                    artworkFetcher.refreshMissingArtwork(for: r)
-                }
-                bulkConfirmRoot = nil
+        .sheet(item: $refreshSheetRoot) { root in
+            NavigationView {
+                RefreshDriveSheet(root: root)
             }
-            Button("Cancel", role: .cancel) { bulkConfirmRoot = nil }
-        } message: {
-            Text("This sends one MusicBrainz query per album missing artwork on \(bulkConfirmRoot?.displayName ?? "this drive"), at most 1 request per second. Failures are silent.")
-        }
-        .confirmationDialog("Refresh missing artist photos?",
-                            isPresented: Binding(get: { artistBulkConfirmRoot != nil },
-                                                 set: { if !$0 { artistBulkConfirmRoot = nil } }),
-                            titleVisibility: .visible) {
-            Button("Start refresh") {
-                if let r = artistBulkConfirmRoot {
-                    artistPhotoFetcher.refreshMissingArtistPhotos(for: r)
-                }
-                artistBulkConfirmRoot = nil
-            }
-            Button("Cancel", role: .cancel) { artistBulkConfirmRoot = nil }
-        } message: {
-            Text("This sends each missing artist's name to MusicBrainz, then walks a fallback chain (Wikidata → TheAudioDB → Wikipedia) until a portrait is found, at most 1 MusicBrainz request per second on \(artistBulkConfirmRoot?.displayName ?? "this drive"). Failures are silent.")
-        }
-        .confirmationDialog("Rebuild library from scratch?",
-                            isPresented: Binding(get: { rebuildConfirmRoot != nil },
-                                                 set: { if !$0 { rebuildConfirmRoot = nil } }),
-                            titleVisibility: .visible) {
-            Button("Rebuild", role: .destructive) {
-                if let r = rebuildConfirmRoot {
-                    library.rebuildLibrary(for: r)
-                    indexer.index(root: r, force: true)
-                }
-                rebuildConfirmRoot = nil
-            }
-            Button("Cancel", role: .cancel) { rebuildConfirmRoot = nil }
-        } message: {
-            Text("Deletes \(rebuildConfirmRoot?.displayName ?? "this drive")'s library.json and runs a fresh scan. Playlists survive as long as audio files stay at the same paths. The bookmark and favorites are preserved.")
         }
     }
 
@@ -328,6 +198,7 @@ struct SettingsView: View {
 
 private struct DriveRow: View {
     let root: LibraryRoot
+    let onRefresh: () -> Void
     @EnvironmentObject var library: LibraryStore
     @EnvironmentObject var indexer: MusicIndexer
 
@@ -354,6 +225,8 @@ private struct DriveRow: View {
             // Reload — re-reads the drive's library.json without
             // walking the filesystem. Use this when you plugged the
             // drive in mid-session and the songs aren't showing yet.
+            // Lives outside the Refresh sheet because it's a recovery
+            // affordance, not a maintenance action.
             Button {
                 library.reloadDrive(root)
             } label: {
@@ -362,16 +235,17 @@ private struct DriveRow: View {
             .buttonStyle(.borderless)
             .accessibilityLabel("Reload drive")
 
-            // Reindex — full incremental walk; force=true skips the
-            // cheap-check so an explicit tap never silently no-ops.
+            // Single Refresh entry point per drive (issue #98). Opens
+            // a sheet with Quick refresh / Reindex / Online lookups /
+            // Rebuild — covers everything a user used to need a row
+            // of buttons for.
             Button {
-                indexer.index(root: root, force: true)
+                onRefresh()
             } label: {
-                Image(systemName: "arrow.clockwise")
+                Image(systemName: "slider.horizontal.3")
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel("Reindex drive")
-            .disabled(indexer.isIndexing)
+            .accessibilityLabel("Refresh drive")
         }
         .swipeActions {
             Button(role: .destructive) {
@@ -391,6 +265,231 @@ private struct DriveRow: View {
             parts.append("indexed \(f.string(from: last))")
         }
         return parts.joined(separator: " · ")
+    }
+}
+
+/// Single consolidated maintenance entry point per drive (issue #98).
+/// Replaces the previous sprawl of Reindex / Refresh missing artwork /
+/// Refresh missing artist photos / Rescan artwork / Reclassify language /
+/// Rebuild library buttons. Each section here calls into the existing
+/// `LibraryStore` / `MusicIndexer` / `ArtworkFetcher` / `ArtistPhotoFetcher`
+/// methods — this is a UI relayout, not a behaviour change.
+private struct RefreshDriveSheet: View {
+    let root: LibraryRoot
+    @EnvironmentObject var library: LibraryStore
+    @EnvironmentObject var indexer: MusicIndexer
+    @ObservedObject private var artworkFetcher = ArtworkFetcher.shared
+    @ObservedObject private var artistPhotoFetcher = ArtistPhotoFetcher.shared
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var quickStatus: String = ""
+    @State private var forceReindex = false
+    @State private var showReindexConfirm = false
+    @State private var showRebuildConfirm = false
+    @State private var showAlbumArtConfirm = false
+    @State private var showArtistPhotoConfirm = false
+    @State private var showAdvanced = false
+
+    var body: some View {
+        Form {
+            // 1. Quick refresh — cheapest, no confirmation, no network.
+            Section {
+                Button {
+                    runQuickRefresh()
+                } label: {
+                    Label("Quick refresh", systemImage: "sparkles")
+                }
+                .disabled(indexer.isIndexing)
+                if !quickStatus.isEmpty {
+                    Text(quickStatus)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Quick")
+            } footer: {
+                Text("Re-reads any album covers you dropped into <Drive>/HarmonIQ/Artwork/, recomputes language buckets (Chinese / English / Others) for every track, and refreshes internal display caches. No network, no audio re-read. Safe to run any time.")
+            }
+
+            // 2. Reindex tracks — incremental walk; force toggle exposes
+            // the previous "force=true" path that bypasses the cheap-check.
+            Section {
+                Toggle("Force re-read all files", isOn: $forceReindex)
+                Button {
+                    if forceReindex {
+                        showReindexConfirm = true
+                    } else {
+                        indexer.index(root: root, force: false)
+                    }
+                } label: {
+                    Label("Reindex tracks", systemImage: "arrow.clockwise")
+                }
+                .disabled(indexer.isIndexing)
+            } header: {
+                Text("Reindex")
+            } footer: {
+                Text("Walks the drive for new or changed audio files and updates per-track metadata + embedded artwork. Existing entries are kept. Force re-read ignores the fast-check fingerprint and inspects every file — slower, only needed if a previous scan looked stale.")
+            }
+
+            // 3. Online sources — gated by the umbrella toggles. When a
+            // toggle is off, the row is disabled with a hint pointing
+            // back to Settings → Online sources.
+            onlineSection
+
+            // 4. Advanced — the destructive Rebuild lives here, hidden
+            // by default so a casual user can't tap it accidentally.
+            Section {
+                DisclosureGroup(isExpanded: $showAdvanced) {
+                    Button(role: .destructive) {
+                        showRebuildConfirm = true
+                    } label: {
+                        Label("Rebuild library from scratch", systemImage: "arrow.counterclockwise.circle")
+                    }
+                    .disabled(indexer.isIndexing)
+                } label: {
+                    Label("Advanced", systemImage: "wrench.and.screwdriver")
+                }
+            } footer: {
+                Text("Rebuild deletes this drive's library.json and runs a fresh full scan. Use it only if the album list is duplicated or has stale entries that Reindex hasn't been able to clear. Playlists, favorites, and smart playlists are preserved as long as audio files stay at the same paths.")
+            }
+        }
+        .navigationTitle("Refresh")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done") { dismiss() }
+            }
+        }
+        // Force-reindex confirmation — only shown when the toggle is on
+        // and the user taps Reindex.
+        .confirmationDialog("Force re-read all files?",
+                            isPresented: $showReindexConfirm,
+                            titleVisibility: .visible) {
+            Button("Reindex everything") {
+                indexer.index(root: root, force: true)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This walks every audio file on \(root.displayName), bypassing the fast-check fingerprint. Slower than a normal reindex; only use if you suspect the index is stale.")
+        }
+        .confirmationDialog("Fetch missing album art online?",
+                            isPresented: $showAlbumArtConfirm,
+                            titleVisibility: .visible) {
+            Button("Start") {
+                artworkFetcher.refreshMissingArtwork(for: root)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Sends one MusicBrainz query per album missing artwork on \(root.displayName), at most 1 request per second. Failures are silent.")
+        }
+        .confirmationDialog("Fetch missing artist photos online?",
+                            isPresented: $showArtistPhotoConfirm,
+                            titleVisibility: .visible) {
+            Button("Start") {
+                artistPhotoFetcher.refreshMissingArtistPhotos(for: root)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Sends each missing artist's name to MusicBrainz, then walks a fallback chain (Wikidata → TheAudioDB → Wikipedia) until a portrait is found, at most 1 MusicBrainz request per second on \(root.displayName). Failures are silent.")
+        }
+        .confirmationDialog("Rebuild library from scratch?",
+                            isPresented: $showRebuildConfirm,
+                            titleVisibility: .visible) {
+            Button("Rebuild", role: .destructive) {
+                library.rebuildLibrary(for: root)
+                indexer.index(root: root, force: true)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Deletes \(root.displayName)'s library.json and runs a fresh scan. Playlists survive as long as audio files stay at the same paths. The bookmark and favorites are preserved.")
+        }
+    }
+
+    @ViewBuilder
+    private var onlineSection: some View {
+        let albumArtOn = artworkFetcher.isOnlineFetchEnabled
+        let artistPhotosOn = artistPhotoFetcher.isOnlineFetchEnabled
+        let anyOn = albumArtOn || artistPhotosOn
+
+        Section {
+            if !anyOn {
+                Label("Online lookup is off", systemImage: "wifi.slash")
+                    .foregroundStyle(.secondary)
+                Text("Enable Fetch missing album art online or Fetch artist photos online in Settings → Online sources to use this section.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                if albumArtOn {
+                    Button {
+                        showAlbumArtConfirm = true
+                    } label: {
+                        Label("Fetch album art", systemImage: "photo.on.rectangle.angled")
+                    }
+                    .disabled(artworkFetcher.isRefreshing)
+                }
+                if artistPhotosOn {
+                    Button {
+                        showArtistPhotoConfirm = true
+                    } label: {
+                        Label("Fetch artist photos", systemImage: "person.crop.circle.badge.plus")
+                    }
+                    .disabled(artistPhotoFetcher.isRefreshing)
+                }
+
+                // Album-art fetcher progress + Stop. Shared across all
+                // drives by design (the fetcher itself only runs one
+                // batch at a time).
+                if artworkFetcher.isRefreshing {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(artworkFetcher.refreshStatusMessage).font(.caption)
+                        ProgressView(value: artworkFetcher.refreshProgress)
+                        Button("Stop", role: .destructive) { artworkFetcher.cancelRefresh() }
+                    }
+                } else if !artworkFetcher.refreshStatusMessage.isEmpty {
+                    Text(artworkFetcher.refreshStatusMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if artistPhotoFetcher.isRefreshing {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(artistPhotoFetcher.refreshStatusMessage).font(.caption)
+                        ProgressView(value: artistPhotoFetcher.refreshProgress)
+                        Button("Stop", role: .destructive) { artistPhotoFetcher.cancelRefresh() }
+                    }
+                } else if !artistPhotoFetcher.refreshStatusMessage.isEmpty {
+                    Text(artistPhotoFetcher.refreshStatusMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } header: {
+            Text("Fetch from the internet")
+        } footer: {
+            Text("Album-art and artist-photo lookups are independent and respect the umbrella toggles in Settings → Online sources. Each batch runs at most one query per second. Tap Stop to cancel mid-batch — what's already downloaded is kept.")
+        }
+    }
+
+    private func runQuickRefresh() {
+        // Three cheap, idempotent operations rolled into one button.
+        // Every step is a no-op when nothing's stale, so spamming this
+        // is harmless. Status string is best-effort — we surface the
+        // most informative bit.
+        let result = library.rescanArtwork(for: root)
+        let reclassified = library.reclassifyAllLanguages()
+        library.invalidateArtistImageCache()
+
+        var parts: [String] = []
+        if result.tracksUpdated > 0 {
+            parts.append("Adopted \(result.albumsAdopted) cover(s) — patched \(result.tracksUpdated) track(s).")
+        }
+        if reclassified > 0 {
+            parts.append("Reclassified \(reclassified) track(s) by language.")
+        }
+        if parts.isEmpty {
+            parts.append("Up to date — nothing to update on \(root.displayName).")
+        }
+        quickStatus = parts.joined(separator: " ")
     }
 }
 
