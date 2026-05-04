@@ -100,6 +100,13 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     private var accessRoot: URL?
     private var playOrder: [Int] = [] // indexes into queue
     private var orderPosition: Int = 0
+    /// Eager-loaded artwork for `currentTrack`. Resolved once at track
+    /// change from the local sandbox mirror so it's valid regardless of
+    /// whether the drive's security-scoped resource is open. Both the
+    /// MPNowPlayingInfo widget and the Live Activity render this same
+    /// image — see issue #103. `nil` when the track has no artwork or the
+    /// mirror file is missing; both surfaces then show their placeholder.
+    private var currentArtwork: UIImage?
 
     // Whether the now-playing sheet is open and the visualizer is visible.
     // When false the display link runs at 2 Hz (time-only) and metering is skipped.
@@ -322,8 +329,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         playerNode.pause()
         isPlaying = false
         stopDisplayLink()
-        NowPlayingManager.shared.updatePlaybackState(isPlaying: false, currentTime: pausedAtSeconds ?? currentTime, rate: 0.0)
-        LiveActivityController.shared.tick(currentTime: pausedAtSeconds ?? currentTime, isPlaying: false)
+        publishNowPlaying(elapsed: pausedAtSeconds ?? currentTime, isPlaying: false)
         // Issue #38: surfacing every pause helps line up "the song stopped"
         // with the actual cause when reading the log timeline. We don't know
         // the caller here, but pairing this with the surrounding logs
@@ -346,8 +352,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         isPlaying = true
         pausedAtSeconds = nil
         startDisplayLink()
-        NowPlayingManager.shared.updatePlaybackState(isPlaying: true, currentTime: currentTime, rate: 1.0)
-        LiveActivityController.shared.tick(currentTime: currentTime, isPlaying: true)
+        publishNowPlaying(elapsed: currentTime, isPlaying: true)
     }
 
     func next() { advance(by: 1) }
@@ -395,7 +400,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
                 Self.log.error("engine start failed on seek: \(String(describing: error), privacy: .public)")
             }
         }
-        NowPlayingManager.shared.updatePlaybackState(isPlaying: isPlaying, currentTime: currentTime, rate: isPlaying ? 1.0 : 0.0)
+        publishNowPlaying(elapsed: currentTime, isPlaying: isPlaying)
     }
 
     func toggleShuffle() {
@@ -541,8 +546,10 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             currentTime = 0
             playbackError = nil
             startDisplayLink()
-            NowPlayingManager.shared.update(track: track, isPlaying: true, currentTime: 0, duration: self.duration)
-            LiveActivityController.shared.updateTrack(track, isPlaying: true, currentTime: 0, duration: self.duration)
+            // Resolve artwork once per track so both lock-screen surfaces
+            // render the same image (issue #103).
+            currentArtwork = loadArtwork(for: track)
+            publishNowPlaying(elapsed: 0, isPlaying: true)
             // Mismatch between metadata duration and decoded frame count is
             // the smoking gun for "song aborts mid-playback" reports — log
             // both so the gap is visible at play-start time.
@@ -658,6 +665,31 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         }
     }
 
+    /// Build a `NowPlayingSnapshot` for the current track at `elapsed`
+    /// seconds and fan it out atomically to MPNowPlayingInfoCenter and the
+    /// Live Activity. Single call site for every now-playing update so the
+    /// two surfaces can never disagree (issue #103).
+    private func publishNowPlaying(elapsed: TimeInterval, isPlaying: Bool) {
+        let snap = NowPlayingSnapshot(
+            track: currentTrack,
+            isPlaying: isPlaying,
+            elapsed: elapsed,
+            duration: duration,
+            artwork: currentArtwork,
+            sampledAt: Date()
+        )
+        NowPlayingManager.shared.publish(snap)
+    }
+
+    /// Resolve and cache the artwork image for `track` from the local
+    /// sandbox mirror. The mirror is populated by drive-load so it's
+    /// readable without holding security-scoped access.
+    private func loadArtwork(for track: Track) -> UIImage? {
+        guard let path = track.artworkPath else { return nil }
+        let url = LibraryStore.shared.artworkDirectory.appendingPathComponent(path)
+        return UIImage(contentsOfFile: url.path)
+    }
+
     /// Returns the file-frame position currently rendering as a wall-clock
     /// seconds offset from the start of the file.
     private func currentTimeSeconds() -> TimeInterval {
@@ -707,9 +739,10 @@ final class AudioPlayerManager: NSObject, ObservableObject {
             levels = SIMD2<Float>(dbToUnit(snap.avgDb), dbToUnit(snap.peakDb))
         }
 
-        NowPlayingManager.shared.updateElapsed(raw, isPlaying: playerNode.isPlaying)
-        // The Live Activity controller throttles internally to ~1 update / sec.
-        LiveActivityController.shared.tick(currentTime: raw, isPlaying: playerNode.isPlaying)
+        // Single fan-out — the snapshot's same-second elapsed-only updates
+        // are coalesced inside `LiveActivityController.publish` so we stay
+        // under ActivityKit's update budget. (Issue #103.)
+        publishNowPlaying(elapsed: raw, isPlaying: playerNode.isPlaying)
     }
 
     /// dBFS power → 0...1 with a soft floor.
