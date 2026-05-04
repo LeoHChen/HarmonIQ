@@ -113,9 +113,10 @@ If `fastlane` is configured, prefer `fastlane beta` (TestFlight) or `fastlane re
 6. Update README's Releases/Changelog section.
 7. **Update `docs/index.html` (and `docs/style.css`/`docs/screenshots/` if needed) with the v1.X user-facing highlights.** Read the page top-to-bottom first to find the right block(s) to edit; if a "What's new" / changelog block doesn't exist yet, add one tastefully without disrupting the landing-page flow. Lead with the exciting features (palette refreshes, new browse modes, AI improvements, etc.) — not a PR-number list. Update `<meta name="description">`, `og:description`, and the hero subtagline if v1.X introduces a positioning shift worth surfacing. If existing screenshots look stale because of the release, capture fresh ones from the simulator and drop them under `docs/screenshots/`.
 8. Open a release PR, get it merged, then tag (`git tag -a vX.Y.Z -m "..."`) on the merge commit and push the tag.
-9. Archive → export → upload.
-10. In App Store Connect, add the build to a TestFlight group (or attach to an App Store version) and submit.
-11. Post a release summary: version, what's in it, TestFlight link, what testers should focus on, and the live `docs/` URL.
+9. **Create a GitHub Release from the tag.** Run `gh release create vX.Y.Z --title "vX.Y.Z — <one-line theme>" --notes-file <notes>` (or pipe via `--notes` for short notes). Use the same user-facing prose as README's Releases section — the GitHub Release is what shows up at `https://github.com/LeoHChen/HarmonIQ/releases` and what the landing site links to. Do NOT use `--draft` and do NOT use `--prerelease` for stable releases. This step is non-optional; the release isn't visible to the public on the Releases page until it lands.
+10. Archive → export → upload.
+11. In App Store Connect, add the build to a TestFlight group (or attach to an App Store version) and submit.
+12. Post a release summary: version, what's in it, TestFlight link, GitHub Release URL, the live `docs/` URL, and what testers should focus on.
 
 ## Rules
 
@@ -124,5 +125,6 @@ If `fastlane` is configured, prefer `fastlane beta` (TestFlight) or `fastlane re
 - Never bump version on a feature branch — releases come from `main`.
 - Never `git push --force` and never delete tags.
 - **Never push the release tag before README and `docs/index.html` are updated and merged.** Both are part of the release artifact set, not afterthoughts.
+- **Always create the public GitHub Release from the tag.** A pushed tag without a GitHub Release is invisible to users browsing `https://github.com/LeoHChen/HarmonIQ/releases`. The Release object is what makes the version public, separate from the App Store cycle.
 - If `xcodebuild archive` warns about signing, stop and report — don't fiddle with provisioning profiles or team IDs to make it pass.
 - Always confirm with the user before the final "Submit for Review" click in App Store Connect; TestFlight uploads can proceed automatically once the smoke pass is clean.
