@@ -282,6 +282,28 @@ code {
   font-style: italic;
 }
 
+/* DOCS SECTIONS ---------------------------------------------------------- */
+.docs-section h3 {
+  font-family: "Menlo", monospace;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--grad-2);
+  margin-top: 24px;
+}
+.code-block {
+  background: rgba(0,0,0,0.06);
+  padding: 16px;
+  font-family: "Menlo", monospace;
+  font-size: 14px;
+  overflow-x: auto;
+  border: 2px inset rgba(0,0,0,0.1);
+}
+.code-block code {
+  background: none;
+  padding: 0;
+}
+
 /* HACK LIST -------------------------------------------------------------- */
 .hack-list {
   list-style: none;
