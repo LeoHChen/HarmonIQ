@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarmonIQ — Getting started: drives, cables, ripping CDs</title>
+  <meta name="description" content="A hands-on setup guide for HarmonIQ. Pick a USB-C SSD, find a real data cable, rip your CDs, tag your files, lay them out so the player can read them, and plug the drive into your iPhone.">
+  <meta property="og:title" content="HarmonIQ — Getting started">
+  <meta property="og:description" content="From buying an SSD to plugging your music collection into an iPhone. Plain-English steps for non-technical readers.">
+  <meta property="og:type" content="article">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- HEADER -->
+  <section class="band">
+    <div class="container">
+      <p class="kicker">// getting started</p>
+      <h2>From a stack of CDs to a player on your phone.</h2>
+      <p class="lede">HarmonIQ plays the music you already own — straight off a drive, on your iPhone. That sentence assumes a few things: you have a drive, you have music on it, the music is tagged sensibly, and the drive can talk to your phone. None of that is hard, but each step has one quiet trap. This page walks through all of them, in order, in plain English.</p>
+      <p class="lede">No Terminal. No Xcode. No code. Just hardware choices, a couple of free apps, and ten minutes of patience.</p>
+      <p class="muted"><a href="index.html">← Back to the HarmonIQ home page</a></p>
+    </div>
+  </section>
+
+  <!-- 1. PICK A DRIVE -->
+  <section class="band alt">
+    <div class="container">
+      <p class="kicker">// 1. pick a drive</p>
+      <h2>Get a USB-C SSD. Skip the spinning hard drive.</h2>
+      <p class="lede">HarmonIQ reads from any folder the iPhone Files app can see. In practice that means: a portable SSD that plugs into your phone with a USB-C cable. SSDs have no moving parts, draw very little power, and don't need to spin up — all three matter when the only thing powering the drive is your phone's battery.</p>
+      <p class="lede">Spinning external hard drives (the chunkier 2.5-inch kind) often pull more current than an iPhone is willing to hand out over a single port. They <em>can</em> work with a powered USB hub, but if you have the choice, an SSD is the path of least pain.</p>
+      <p class="lede"><strong>How big?</strong> A rough rule of thumb for high-bitrate MP3 / ALAC / FLAC rips: about <strong>1 GB per album</strong>. So:</p>
+      <ul>
+        <li><strong>256 GB</strong> — a few hundred albums. A focused collection.</li>
+        <li><strong>1 TB</strong> — a serious library. Most people stop here.</li>
+        <li><strong>2 TB and up</strong> — "everything I ever owned, plus the bootlegs."</li>
+      </ul>
+      <p class="lede">Brands and models drift year to year, so rather than pick one here, look at a current neutral roundup like Wirecutter's <a href="https://www.nytimes.com/wirecutter/reviews/best-portable-ssd/" target="_blank" rel="noopener">Best Portable SSD</a> guide. Anything bus-powered with USB-C and decent reviews will do — HarmonIQ is not picky about read speed.</p>
+      <p class="muted"><strong>exFAT</strong> is the safe cross-platform format — readable and writable on iOS, macOS, and Windows. <strong>APFS</strong> is fine if the drive only ever talks to Apple devices (iPhone, iPad, Mac); Windows can't read it natively. <strong>NTFS</strong> drives are read-only on iOS — playback works, but HarmonIQ can't write its on-drive index or save playlists back. If you're not sure, pick exFAT.</p>
+    </div>
+  </section>
+
+  <!-- 2. CABLES -->
+  <section class="band">
+    <div class="container">
+      <p class="kicker">// 2. cables — the silent gotcha</p>
+      <h2>Half of all "it didn't work" stories are a charge-only cable.</h2>
+      <p class="lede">Not every USB-C cable carries data. Many — especially the ones that ship in a box with a phone charger — only carry power. Plug one of those between your iPhone and an SSD and the drive will sit there, silent, while you get increasingly suspicious of the drive itself. It's almost always the cable.</p>
+      <p class="lede"><strong>USB-C iPhones (15, 16, 17 and newer):</strong> use a USB-C cable that explicitly says <em>USB 3</em> or higher on the packaging or the cable itself. USB 2 cables technically work but max out around 480 Mbps — fine for playback, slow for first-time copying. Heads up: every iPhone 15 ships with a USB 2 USB-C Charge Cable in the box, including the Pro and Pro Max. The iPhone 15 Pro / Pro Max <em>port</em> can do USB 3 up to 10 Gb/s, but you'll need a separately-purchased cable rated for USB 3 to actually get those speeds. The base iPhone 15 / Plus is USB 2 at the port, regardless of cable.</p>
+      <p class="lede"><strong>Lightning iPhones (14 and older):</strong> you need an <a href="https://support.apple.com/en-us/111344" target="_blank" rel="noopener">Apple Lightning to USB Camera Adapter</a> (the "USB 3" version is faster than the original) plus a normal USB-A or USB-C cable to the drive. The adapter is what lets the iPhone talk to USB peripherals at all — without it, an external drive is invisible.</p>
+      <p class="lede"><strong>If the drive shows up briefly and disappears,</strong> you've hit a power problem. The iPhone hands out a limited budget of current; some 2.5-inch portable SSDs and almost all 2.5-inch HDDs draw more than that. Two fixes: use an SSD that's clearly bus-powered and modest (most M.2-based USB-C SSDs are), or run the drive through a powered USB hub that supplies its own electricity.</p>
+      <p class="muted">Long cables, especially long cheap ones, are also a silent failure mode — the signal degrades, the drive enumerates and disappears, and Files shows a flicker. A 0.5–1 m cable from a reputable brand will save an evening of debugging.</p>
+    </div>
+  </section>
+
+  <!-- 3. MUSIC ONTO THE DRIVE -->
+  <section class="band alt">
+    <div class="container docs-section">
+      <p class="kicker">// 3. get music onto the drive</p>
+      <h2>Rip your CDs. Tag them. Copy them over.</h2>
+      <p class="lede">If your music is already in folders on your computer — congratulations, this section is just "drag and drop them onto the new drive." If it's still on plastic discs, you'll want a CD ripper. The ripper reads the audio off the disc and writes a file (usually MP3, ALAC, or FLAC) per track.</p>
+
+      <h3>On macOS</h3>
+      <p class="lede"><a href="https://tmkk.undo.jp/xld/index_e.html" target="_blank" rel="noopener">XLD</a> (X Lossless Decoder) is the standard free CD ripper for Mac. It writes lossless ALAC or FLAC, supports the AccurateRip database for verifying that your rip matches what other people got off the same pressing, and is genuinely set-and-forget. The Apple Music app will also rip CDs (Music → Settings → Files → Import Settings) and is the easiest path if you only care about lossy AAC.</p>
+
+      <h3>On Windows</h3>
+      <p class="lede"><a href="https://www.exactaudiocopy.de/" target="_blank" rel="noopener">Exact Audio Copy</a> (EAC) is the long-running gold standard — free, slightly fiddly to configure the first time, but writes verifiably accurate rips. It supports <a href="https://www.accuraterip.com/" target="_blank" rel="noopener">AccurateRip</a> too. Windows Media Player can also rip if you just want something basic.</p>
+
+      <h3>Tagging — what HarmonIQ reads</h3>
+      <p class="lede">Once you have files, tag them properly. HarmonIQ reads the embedded tags to build the library; if your files say "Track 01" for the title and nothing for the artist, that's what you'll see in the player. Two free, well-regarded taggers:</p>
+      <ul>
+        <li><a href="https://www.mp3tag.de/en/" target="_blank" rel="noopener">Mp3tag</a> — fast, manual, very good at bulk edits. Windows native, runs on Mac via a paid App Store version.</li>
+        <li><a href="https://picard.musicbrainz.org/" target="_blank" rel="noopener">MusicBrainz Picard</a> — cross-platform, looks each album up in the MusicBrainz database and fills the tags for you. Closer to "drop a folder in, click Save."</li>
+      </ul>
+      <p class="lede">At minimum, fill in <strong>Artist</strong>, <strong>Album</strong>, <strong>Title</strong>, <strong>Track #</strong>, <strong>Year</strong>, and <strong>Genre</strong>. For compilations and various-artist albums, set the <strong>Album Artist</strong> tag to <code>Various Artists</code> — HarmonIQ folds those into a single album entry instead of fragmenting it into one entry per featured artist. Embed cover art into each file when you can.</p>
+
+      <h3>Supported formats</h3>
+      <p class="lede">HarmonIQ plays <code>.mp3</code>, <code>.m4a</code> (AAC and ALAC), <code>.flac</code>, <code>.wav</code>, <code>.aiff</code>, <code>.aif</code>, and <code>.aac</code>. If you're new to format names: <a href="https://en.wikipedia.org/wiki/MP3" target="_blank" rel="noopener">MP3</a> is the universal lossy format; <a href="https://en.wikipedia.org/wiki/Apple_Lossless" target="_blank" rel="noopener">ALAC</a> and <a href="https://en.wikipedia.org/wiki/FLAC" target="_blank" rel="noopener">FLAC</a> are lossless (bit-perfect copies of the CD); <a href="https://en.wikipedia.org/wiki/Advanced_Audio_Coding" target="_blank" rel="noopener">AAC</a> is the lossy format Apple Music uses. Pick one and stay consistent — your collection is easier to manage when it isn't a mix of five formats.</p>
+    </div>
+  </section>
+
+  <!-- 4. FOLDER LAYOUT -->
+  <section class="band">
+    <div class="container docs-section">
+      <p class="kicker">// 4. folder layout</p>
+      <h2>Artist / Album / track. The boring layout is the right one.</h2>
+      <p class="lede">HarmonIQ reads tags first and folder names second, but a clean folder layout makes everything — copying, backing up, finding "that one album" with Files — much less painful. The layout that works for almost everybody:</p>
+      <pre class="code-block"><code>&lt;DriveRoot&gt;/
+  Music/
+    Beach House/
+      Bloom/
+        01 - Myth.flac
+        02 - Wild.flac
+        ...
+      Teen Dream/
+        ...
+    Miles Davis/
+      Kind of Blue/
+        ...</code></pre>
+      <p class="lede">For compilations and soundtracks, either nest them under a <code>Various Artists</code> folder or just set the <strong>Album Artist</strong> tag to <code>Various Artists</code> and let HarmonIQ fold them at the library level. Both work; pick whichever feels less fiddly.</p>
+      <p class="lede"><strong>One folder you don't touch:</strong> at the root of every drive HarmonIQ uses, the app creates and maintains a <code>HarmonIQ/</code> folder containing <code>library.json</code>, <code>playlists.json</code>, and an <code>Artwork/</code> cache. That folder is the drive-side index — it's what makes the same drive show up the same way on a different iPhone. Don't edit those files by hand. If something goes wrong, the Settings → Refresh sheet has a Rebuild button that deletes and regenerates the library index from a fresh scan; playlists and artwork survive as long as the audio files stay at the same paths.</p>
+      <p class="lede">As of v1.1 you <em>can</em> drop your own album-cover images into <code>&lt;Drive&gt;/HarmonIQ/Artwork/</code> and HarmonIQ will pick them up silently when the drive is loaded — handy if you want to override a cover the indexer picked or fill in art the embedded tags missed.</p>
+    </div>
+  </section>
+
+  <!-- 5. PLUG IT IN -->
+  <section class="band alt">
+    <div class="container docs-section">
+      <p class="kicker">// 5. plug it into your iphone</p>
+      <h2>Files first. HarmonIQ second.</h2>
+      <p class="lede">The Files app is the ground truth. If your drive doesn't show up there, HarmonIQ can't see it either — the player picks folders <em>through</em> Files, not around it. So the first time you connect a drive:</p>
+      <ol>
+        <li>Plug the drive into your iPhone (USB-C cable, or Lightning + Camera Adapter).</li>
+        <li>Open the <a href="https://support.apple.com/guide/iphone/intro-to-files-on-iphone-iphff5d92aff/ios" target="_blank" rel="noopener">Files</a> app.</li>
+        <li>Tap <strong>Browse</strong> at the bottom. Your drive should appear under <strong>Locations</strong> with whatever name it was formatted with.</li>
+        <li>Tap into it. Navigate down to the folder that contains your <code>Artist/Album/...</code> tree. Confirm your music is actually there.</li>
+      </ol>
+      <p class="lede">Now in HarmonIQ: open <strong>Settings</strong>, tap <strong>Add a music drive</strong>, and pick the folder you just verified. HarmonIQ will index the contents into a fresh <code>HarmonIQ/</code> folder on the drive (or adopt an existing one if you've used the drive on another phone before). When the indexer finishes, the Library tab fills in.</p>
+
+      <h3>Troubleshooting</h3>
+      <p class="lede"><strong>The drive doesn't show up in Files.</strong> Ninety percent of the time this is the cable. Swap it for one you know carries data. If you're on a Lightning iPhone, check that you actually have a Camera Adapter, not a passive Lightning-to-USB cable. If the drive is a 2.5-inch hard drive, suspect bus power — try a powered hub.</p>
+      <p class="lede"><strong>HarmonIQ says "0 tracks" after indexing.</strong> Most likely the folder you picked contains only unsupported file formats, or the indexer hasn't actually finished — check the progress indicator under Settings. HarmonIQ walks every subfolder of whatever you pick, so picking a parent of your <code>Artist/Album/...</code> tree is fine. If it's neither of those, the drive may have briefly disconnected during indexing — try Settings → Refresh → Reindex.</p>
+      <p class="lede"><strong>The drive disconnects mid-song.</strong> Bus-power problem again. Either the drive briefly drew more current than the phone would supply, or the cable lost contact under tension. Use a self-powered drive, a powered USB hub, or a shorter cable.</p>
+      <p class="lede"><strong>Tags look wrong / artists are split / albums are fragmented.</strong> Re-tag the files in <a href="https://www.mp3tag.de/en/" target="_blank" rel="noopener">Mp3tag</a> or <a href="https://picard.musicbrainz.org/" target="_blank" rel="noopener">Picard</a> on your computer, copy them back over, and run Settings → Refresh → Reindex tracks. The drive-side index regenerates from the new tags.</p>
+    </div>
+  </section>
+
+  <!-- CLOSER -->
+  <section class="band">
+    <div class="container center">
+      <p class="kicker">// you're done</p>
+      <h2>Now go put on a record.</h2>
+      <p class="lede">A drive, a cable, a few hours of ripping, and you have a music library that lives on a piece of hardware you own — not on a server somebody else can change their mind about. Carry it to a friend's iPhone, plug it in, your library shows up. That's the whole pitch.</p>
+      <div class="cta">
+        <a class="btn primary" href="index.html">Back to HarmonIQ</a>
+        <a class="btn" href="https://github.com/LeoHChen/HarmonIQ/issues/new?labels=question">Ask a question</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>HarmonIQ — MIT-licensed.<br>
+      Skins from the <a href="https://skins.webamp.org">Internet Archive's Webamp Skin Museum</a>, distributed under their original Winamp-era licenses.<br>
+      Icon design philosophy: <a href="https://github.com/LeoHChen/HarmonIQ/blob/main/design/PHILOSOPHY.md">design/PHILOSOPHY.md</a>.</p>
+    </div>
+  </footer>
+</body>
+</html>

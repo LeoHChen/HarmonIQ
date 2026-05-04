@@ -41,6 +41,8 @@ The vibe is "bring your old MP3 collection forward" — your CD rips and 2003-er
 - **16 visualizer styles.** Spectrum, oscilloscope, plasma, mirror, radial pulse, particles, fire, starfield — plus 8 fancy oscilloscope variants (neon glow, harmonic layers, mirror wave, filled wave, radial wave, waterfall, Lissajous, beat flash). Tap the visualizer to cycle.
 - **Sleep timer.** Auto-stop after a fixed duration (15/30/45/60 min) or at the end of the current track, with a live LCD countdown.
 
+> New to USB drives or CD ripping? See the [non-tech setup guide](https://www.leochen.net/HarmonIQ/getting-started.html) — picking a drive, finding a real data cable, ripping CDs, tagging, and plugging it all into your iPhone.
+
 ## Requirements
 
 - iOS 16+
