@@ -22,7 +22,12 @@ enum AnthropicClient {
         return v.isEmpty ? nil : v
     }
 
-    static var isConfigured: Bool { apiKey != nil }
+    /// True when the user has entered an Anthropic API key. Read directly
+    /// from UserDefaults so the gating helper (`AIProvider.anyAvailable`)
+    /// can stay non-isolated.
+    static var hasKey: Bool { apiKey != nil }
+
+    static var isConfigured: Bool { hasKey }
 
     enum ClientError: Error, LocalizedError {
         case missingAPIKey
@@ -126,5 +131,21 @@ final class AnthropicSettings: ObservableObject {
     var isConfigured: Bool {
         if useAppleIntelligence && AppleIntelligenceClient.isAvailable { return true }
         return !apiKey.isEmpty
+    }
+}
+
+/// Single source of truth for "is any AI backend usable on this device?".
+/// `SmartPlayView` and `AISettingsView` gate UI on `anyAvailable` so AI
+/// affordances disappear entirely on devices that can run neither
+/// Apple Intelligence nor the cloud client (e.g. iPhone 14 with no
+/// Anthropic key) instead of greying out.
+enum AIProvider {
+    /// True when at least one provider can accept a curation call right
+    /// now: Apple Intelligence on-device is reachable, OR the user has
+    /// stored an Anthropic API key. The toggle preference doesn't matter
+    /// here — `SmartPlayAI.pickBackend` falls through to cloud when local
+    /// is off, so a configured key alone is enough to expose AI rows.
+    static var anyAvailable: Bool {
+        AppleIntelligenceClient.isAvailable || AnthropicClient.hasKey
     }
 }

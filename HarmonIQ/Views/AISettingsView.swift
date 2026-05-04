@@ -29,15 +29,15 @@ struct AISettingsView: View {
         case .available:
             return "On-device curation runs entirely on your iPhone — no API key, no network egress, free. Smart Play uses Apple's foundation model when this toggle is on."
         case .requiresOSUpdate:
-            return "Apple Intelligence's foundation models ship with iOS 26. Update iOS or use the Anthropic API below."
+            return "Apple Intelligence's foundation models ship with iOS 26. To use AI Smart Play on this device, enter an Anthropic API key below — calls will run in the cloud instead."
         case .deviceNotEligible:
-            return "Apple Intelligence requires an iPhone 15 Pro or newer. Use the Anthropic API below."
+            return "Apple Intelligence requires an iPhone 15 Pro or newer. To use AI Smart Play on this device, enter an Anthropic API key below — calls will run in the cloud instead."
         case .appleIntelligenceDisabled:
-            return "Open Settings → Apple Intelligence and enable it, then return here. The toggle is then live."
+            return "Open Settings → Apple Intelligence and enable it, then return here. Or enter an Anthropic API key below to use the cloud path instead."
         case .modelNotReady:
-            return "iOS is still downloading the Apple Intelligence model. Try again in a few minutes; the toggle will go live automatically."
+            return "iOS is still downloading the Apple Intelligence model. Try again in a few minutes; the toggle will go live automatically. Or enter an Anthropic API key below to use the cloud path now."
         case .unknown:
-            return "Apple Intelligence didn't report a known state. Falling back to the Anthropic API path."
+            return "Apple Intelligence didn't report a known state. Falling back to the Anthropic API path — enter a key below to use AI Smart Play."
         }
     }
 
@@ -109,6 +109,11 @@ struct AISettingsView: View {
         if settings.useAppleIntelligence && AppleIntelligenceClient.isAvailable {
             return "Apple Intelligence (on-device)"
         }
-        return settings.apiKey.isEmpty ? "Not configured" : "Anthropic (cloud)"
+        if settings.apiKey.isEmpty {
+            return AppleIntelligenceClient.isAvailable
+                ? "Off (toggle disabled)"
+                : "Off (add Anthropic key to enable)"
+        }
+        return "Anthropic (cloud)"
     }
 }
