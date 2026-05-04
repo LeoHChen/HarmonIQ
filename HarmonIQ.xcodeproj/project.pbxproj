@@ -55,6 +55,7 @@
 		BFA4ABD4D88D5BE40B5445F8 /* EqualizerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1747349698811EB8ADA561A3 /* EqualizerManager.swift */; };
 		BFEC72EA12BDE9A75C6FFEB2 /* SkinnedVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D68585262E7BD5EBB3CDF779 /* SkinnedVisualizer.swift */; };
 		C1E390816F8C0F10CAFE7D26 /* HarmonIQLiveActivityBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35BA7A18964112136E71B61 /* HarmonIQLiveActivityBundle.swift */; };
+		C47BFF9A3192AFF82CDC5440 /* LlamaSilhouette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A043DD83B5CEC8AABDFAA47 /* LlamaSilhouette.swift */; };
 		C7F097C03E3F811A8FFD64F6 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F01297D60CC5B6C050170B45 /* Preview Assets.xcassets */; };
 		CBDFA717362848840E08B642 /* BitmapText.swift in Sources */ = {isa = PBXBuildFile; fileRef = F995634B51E300AA46B6DBF7 /* BitmapText.swift */; };
 		CE1BF955311C8DB60D692FE8 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38FE23F9FF831246E93D46D0 /* NowPlayingView.swift */; };
@@ -125,6 +126,7 @@
 		978941B5C224F0EFA9E46A90 /* AudioPlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerManager.swift; sourceTree = "<group>"; };
 		982616423A6BC3BB174F0A2E /* SkinFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinFormat.swift; sourceTree = "<group>"; };
 		99DCB9BA8F0F6EA560429A13 /* ArtworkFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkFetcher.swift; sourceTree = "<group>"; };
+		9A043DD83B5CEC8AABDFAA47 /* LlamaSilhouette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LlamaSilhouette.swift; sourceTree = "<group>"; };
 		9BA0C5DAF97A47E057019501 /* BookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkStore.swift; sourceTree = "<group>"; };
 		9BBB248B178FE1FCF612ED97 /* WinampSkin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinampSkin.swift; sourceTree = "<group>"; };
 		9D861E89EB0B0713F92113EE /* MusicIndexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicIndexer.swift; sourceTree = "<group>"; };
@@ -262,6 +264,7 @@
 				E35D430429E1AB1C5D29D971 /* FoldersView.swift */,
 				46422ECF0A72BFA4BD1BCD69 /* LanguageView.swift */,
 				8CA5D219A5FF2CBA19A0E003 /* LibraryView.swift */,
+				9A043DD83B5CEC8AABDFAA47 /* LlamaSilhouette.swift */,
 				38FE23F9FF831246E93D46D0 /* NowPlayingView.swift */,
 				3B4DEE2EB2331B3F5BB20CB2 /* PlaylistsView.swift */,
 				32550B9D7779BCA0DDA5827D /* SearchView.swift */,
@@ -509,6 +512,7 @@
 				5DB383E665EE8EAE33D78E9C /* LibraryStore.swift in Sources */,
 				A10BD1CC54DC77E7DF551BA6 /* LibraryView.swift in Sources */,
 				116A7F3DD4FF063CD5776F50 /* LiveActivityController.swift in Sources */,
+				C47BFF9A3192AFF82CDC5440 /* LlamaSilhouette.swift in Sources */,
 				D14CC8746BAA04AFF959DFB5 /* MetadataExtractor.swift in Sources */,
 				3EE13B1011444446AF4C9346 /* MusicIndexer.swift in Sources */,
 				409179BD52B576D6D435FD06 /* NowPlayingManager.swift in Sources */,
