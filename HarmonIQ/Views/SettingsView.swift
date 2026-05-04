@@ -21,6 +21,16 @@ struct SettingsView: View {
     @State private var showPicker = false
     @State private var refreshSheetRoot: LibraryRoot?
 
+    // Ephemeral state for the About-screen easter egg (issue #123). Five taps
+    // on the Version row within a 2s window flip `showLlama`; nothing here is
+    // persisted, and `.onDisappear` resets all of it so the llama is hidden
+    // again on every fresh entry into About.
+    @State private var versionTapCount: Int = 0
+    @State private var firstVersionTapAt: Date?
+    @State private var showLlama: Bool = false
+    private static let llamaTapWindow: TimeInterval = 2
+    private static let llamaTapsRequired: Int = 5
+
     var body: some View {
         List {
             Section {
@@ -138,7 +148,11 @@ struct SettingsView: View {
 
             Section {
                 LabeledContent("App", value: "HarmonIQ")
-                LabeledContent("Version", value: BuildInfo.version)
+                Button(action: registerVersionTap) {
+                    LabeledContent("Version", value: BuildInfo.version)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
                 LabeledContent("Build", value: BuildInfo.build)
                 LabeledContent("Commit", value: BuildInfo.gitCommit)
                 LabeledContent("Release tag", value: BuildInfo.gitTag)
@@ -150,10 +164,23 @@ struct SettingsView: View {
                 } label: {
                     Label("Copy build info", systemImage: "doc.on.doc")
                 }
+                if showLlama {
+                    HStack {
+                        Spacer()
+                        LlamaEasterEgg()
+                            .padding(.top, 8)
+                        Spacer()
+                    }
+                }
             } header: {
                 Text("About")
             } footer: {
                 Text("Tap “Copy build info” to grab a multi-line block (version + build + commit + tag + timestamp) for bug reports.")
+            }
+            .onDisappear {
+                showLlama = false
+                versionTapCount = 0
+                firstVersionTapAt = nil
             }
         }
         .navigationTitle("Settings")
@@ -167,6 +194,27 @@ struct SettingsView: View {
             NavigationView {
                 RefreshDriveSheet(root: root)
             }
+        }
+    }
+
+    /// Counts taps on the Version row. A 5-tap burst within `llamaTapWindow`
+    /// reveals the llama; the counter resets on success or whenever the
+    /// elapsed window is exceeded.
+    private func registerVersionTap() {
+        let now = Date()
+        if let first = firstVersionTapAt, now.timeIntervalSince(first) > Self.llamaTapWindow {
+            firstVersionTapAt = now
+            versionTapCount = 1
+            return
+        }
+        if firstVersionTapAt == nil {
+            firstVersionTapAt = now
+        }
+        versionTapCount += 1
+        if versionTapCount >= Self.llamaTapsRequired {
+            showLlama = true
+            versionTapCount = 0
+            firstVersionTapAt = nil
         }
     }
 
