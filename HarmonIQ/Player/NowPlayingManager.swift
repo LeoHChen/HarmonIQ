@@ -2,6 +2,11 @@ import Foundation
 import MediaPlayer
 import UIKit
 
+/// Bridges `MPRemoteCommandCenter` / `MPNowPlayingInfoCenter` to
+/// `AudioPlayerManager` and is the **single fan-out point** for now-playing
+/// state. All updates flow through `publish(_:)` (issue #103) so the
+/// MPNowPlayingInfo widget and the Live Activity always carry the same
+/// snapshot — they cannot disagree on play state, elapsed time, or artwork.
 @MainActor
 final class NowPlayingManager {
     static let shared = NowPlayingManager()
@@ -61,36 +66,34 @@ final class NowPlayingManager {
         self.onSeek = onSeek
     }
 
-    func update(track: Track, isPlaying: Bool, currentTime: TimeInterval, duration: TimeInterval) {
+    /// Atomically push `snapshot` to **both** MPNowPlayingInfoCenter and the
+    /// Live Activity. Caller responsibility: pass the same snapshot you want
+    /// the user to see on the lock screen — the two surfaces are always
+    /// derived from this one value here, never read independently.
+    func publish(_ snapshot: NowPlayingSnapshot) {
+        writeNowPlayingInfo(snapshot)
+        LiveActivityController.shared.publish(snapshot)
+    }
+
+    private func writeNowPlayingInfo(_ snapshot: NowPlayingSnapshot) {
+        guard let track = snapshot.track else {
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+            return
+        }
         var info: [String: Any] = [:]
         info[MPMediaItemPropertyTitle] = track.displayTitle
         info[MPMediaItemPropertyArtist] = track.displayArtist
         info[MPMediaItemPropertyAlbumTitle] = track.displayAlbum
-        info[MPMediaItemPropertyPlaybackDuration] = duration
-        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
-        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
-
-        if let path = track.artworkPath {
-            let url = LibraryStore.shared.artworkDirectory.appendingPathComponent(path)
-            if let image = UIImage(contentsOfFile: url.path) {
-                info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
-            }
+        info[MPMediaItemPropertyPlaybackDuration] = snapshot.duration
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = snapshot.elapsed
+        info[MPNowPlayingInfoPropertyPlaybackRate] = snapshot.isPlaying ? 1.0 : 0.0
+        if let image = snapshot.artwork {
+            // Capturing `image` directly means the system never has to
+            // re-read the file when the lazy `requestHandler` fires —
+            // critical because the source may be the local sandbox mirror
+            // and we want the same image the Live Activity is showing.
+            info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
         }
-
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-    }
-
-    func updatePlaybackState(isPlaying: Bool, currentTime: TimeInterval, rate: Float) {
-        var info = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
-        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
-        info[MPNowPlayingInfoPropertyPlaybackRate] = rate
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-    }
-
-    func updateElapsed(_ time: TimeInterval, isPlaying: Bool) {
-        var info = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
-        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = time
-        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 }

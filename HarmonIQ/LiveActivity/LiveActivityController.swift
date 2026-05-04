@@ -6,18 +6,27 @@ import ActivityKit
 
 /// Wraps the lifecycle of the Now Playing Live Activity.
 ///
-/// `AudioPlayerManager` calls `start/update/end` at track-change, play/pause,
-/// and tick boundaries. Updates are rate-limited (~once per second while
-/// playing) per Apple's Activity update budget guidance.
+/// As of issue #103 the controller is **driven by `NowPlayingSnapshot`** so
+/// every update lands at the same time as the matching MPNowPlayingInfo
+/// write — see `NowPlayingManager.publish(_:)`. `publish` is the only
+/// public state-change entry point: pass a snapshot with `track == nil`
+/// to end the activity.
+///
+/// Updates are still rate-limited to ~one per wall-clock second per Apple's
+/// ActivityKit budget guidance, but the throttle is now keyed on the
+/// snapshot — meaning a play/pause flip or a track change always pushes
+/// immediately, only same-second elapsed-only updates are coalesced.
 ///
 /// All methods are no-ops on iOS 16.0 — ActivityKit only ships with 16.1+.
 @MainActor
 final class LiveActivityController {
     static let shared = LiveActivityController()
 
-    /// Last second we pushed an update. Throttles tick-driven progress
-    /// updates to one per second to stay well under Apple's budget.
+    /// Last second we pushed an update for — combined with `lastIsPlaying`
+    /// and `lastTrackID` to skip redundant elapsed-only updates.
     private var lastUpdateSecond: Int = -1
+    private var lastIsPlaying: Bool = false
+    private var lastTrackID: String? = nil
 
     #if canImport(ActivityKit)
     @available(iOS 16.1, *)
@@ -28,23 +37,58 @@ final class LiveActivityController {
     private var storage: Any?
     #endif
 
-    /// Start an activity for `track`, ending any prior one. No-op when
-    /// activities are disabled in Settings or unavailable on this OS.
-    func start(track: Track, isPlaying: Bool, currentTime: TimeInterval, duration: TimeInterval) {
+    /// Atomically reflect `snapshot` on the Live Activity. Called from
+    /// `NowPlayingManager.publish(_:)` — do not call from elsewhere.
+    func publish(_ snapshot: NowPlayingSnapshot) {
         #if canImport(ActivityKit)
         guard #available(iOS 16.1, *) else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        // End any in-flight activity first — only one per session.
-        endInternal()
+
+        // Empty snapshot -> tear the activity down.
+        guard let track = snapshot.track else {
+            endInternal()
+            return
+        }
+
+        let trackID = track.stableID
+        let trackChanged = (trackID != lastTrackID)
+        let stateChanged = (snapshot.isPlaying != lastIsPlaying)
+        let sec = Int(snapshot.elapsed)
+        let secondChanged = (sec != lastUpdateSecond)
+
+        // Coalesce same-second elapsed-only updates while playing/paused
+        // unchanged on the same track. Play/pause flips and track changes
+        // always go through immediately.
+        if !trackChanged && !stateChanged && !secondChanged { return }
 
         let state = HarmonIQActivityAttributes.State(
             trackTitle: track.displayTitle,
             artist: track.displayArtist,
-            albumArt: smallArtworkData(for: track),
-            elapsed: currentTime,
-            duration: duration,
-            isPlaying: isPlaying
+            albumArt: smallArtworkData(snapshot),
+            elapsed: snapshot.elapsed,
+            duration: snapshot.duration,
+            isPlaying: snapshot.isPlaying
         )
+
+        if let activity = activity, !trackChanged {
+            Task { await activity.update(using: state) }
+        } else {
+            // Track change: end the prior activity (if any) and start a
+            // fresh one. Doing it via end+start keeps the attributes
+            // simple — no need to mutate `sessionStart` mid-flight.
+            endInternal()
+            startActivity(state: state)
+        }
+
+        lastTrackID = trackID
+        lastIsPlaying = snapshot.isPlaying
+        lastUpdateSecond = sec
+        #endif
+    }
+
+    #if canImport(ActivityKit)
+    @available(iOS 16.1, *)
+    private func startActivity(state: HarmonIQActivityAttributes.State) {
         let attrs = HarmonIQActivityAttributes(sessionStart: Date())
         do {
             let act = try Activity<HarmonIQActivityAttributes>.request(
@@ -53,60 +97,12 @@ final class LiveActivityController {
                 pushType: nil
             )
             activity = act
-            lastUpdateSecond = Int(currentTime)
             AudioPlayerManager.log.info("liveActivity start id=\(act.id, privacy: .public)")
         } catch {
             AudioPlayerManager.log.error("liveActivity start failed: \(String(describing: error), privacy: .public)")
         }
-        #endif
     }
-
-    /// Push the current playback state to the running activity. Throttled
-    /// to one update per wall-clock second to respect ActivityKit budgets.
-    func tick(currentTime: TimeInterval, isPlaying: Bool) {
-        #if canImport(ActivityKit)
-        guard #available(iOS 16.1, *) else { return }
-        guard let activity = activity else { return }
-        let sec = Int(currentTime)
-        if sec == lastUpdateSecond && isPlaying == (activity.contentState.isPlaying) { return }
-        lastUpdateSecond = sec
-        var state = activity.contentState
-        state.elapsed = currentTime
-        state.isPlaying = isPlaying
-        Task { await activity.update(using: state) }
-        #endif
-    }
-
-    /// Track changed — replace the activity's title/artist/duration without
-    /// ending and restarting (smoother visual transition).
-    func updateTrack(_ track: Track, isPlaying: Bool, currentTime: TimeInterval, duration: TimeInterval) {
-        #if canImport(ActivityKit)
-        guard #available(iOS 16.1, *) else { return }
-        guard let activity = activity else {
-            start(track: track, isPlaying: isPlaying, currentTime: currentTime, duration: duration)
-            return
-        }
-        let state = HarmonIQActivityAttributes.State(
-            trackTitle: track.displayTitle,
-            artist: track.displayArtist,
-            albumArt: smallArtworkData(for: track),
-            elapsed: currentTime,
-            duration: duration,
-            isPlaying: isPlaying
-        )
-        lastUpdateSecond = Int(currentTime)
-        Task { await activity.update(using: state) }
-        #endif
-    }
-
-    /// End the current activity. Called on queue empty / pause-too-long /
-    /// app teardown.
-    func end() {
-        #if canImport(ActivityKit)
-        guard #available(iOS 16.1, *) else { return }
-        endInternal()
-        #endif
-    }
+    #endif
 
     #if canImport(ActivityKit)
     @available(iOS 16.1, *)
@@ -115,18 +111,17 @@ final class LiveActivityController {
         Task { await activity.end(dismissalPolicy: .immediate) }
         self.activity = nil
         lastUpdateSecond = -1
+        lastIsPlaying = false
+        lastTrackID = nil
     }
     #endif
 
-    /// Resize artwork into a small JPEG so it fits comfortably under the
-    /// activity content-state size limit. Returns nil when no artwork is
-    /// available.
-    private func smallArtworkData(for track: Track) -> Data? {
-        guard let path = track.artworkPath else { return nil }
-        let url = LibraryStore.shared.artworkDirectory.appendingPathComponent(path)
-        guard let image = UIImage(contentsOfFile: url.path) else { return nil }
-        // Downscale to ~120×120 logical px → small JPEG; lock-screen banner
-        // and Dynamic Island both render at small sizes.
+    /// Resize the snapshot's artwork into a small JPEG so it fits comfortably
+    /// under the activity content-state size limit. Returns nil when no
+    /// artwork is available — the widget then renders the same music-note
+    /// placeholder MPNowPlayingInfo's empty artwork tile shows.
+    private func smallArtworkData(_ snapshot: NowPlayingSnapshot) -> Data? {
+        guard let image = snapshot.artwork else { return nil }
         let target = CGSize(width: 120, height: 120)
         let renderer = UIGraphicsImageRenderer(size: target)
         let small = renderer.image { _ in
