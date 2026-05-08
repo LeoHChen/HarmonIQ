@@ -1,6 +1,7 @@
 # HarmonIQ
 
 **Website:** [www.leochen.net/HarmonIQ](https://www.leochen.net/HarmonIQ/) — landing site lives in [`docs/`](docs/).
+**TestFlight:** [Join the public beta](https://testflight.apple.com/join/y4Nmt7V1) (iOS 16+).
 
 > **Music for your own collections, ported to your iPhone.**
 
@@ -95,7 +96,7 @@ project.yml                  # XcodeGen source
 
 ## Releases
 
-See [GitHub Releases](https://github.com/LeoHChen/HarmonIQ/releases) for the full notes and tag history.
+See [GitHub Releases](https://github.com/LeoHChen/HarmonIQ/releases) for the full notes and tag history. The latest build is on TestFlight at [testflight.apple.com/join/y4Nmt7V1](https://testflight.apple.com/join/y4Nmt7V1).
 
 ### v1.1 — 2026-05-03
 
