@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarmonIQ — Privacy Policy</title>
+  <meta name="description" content="HarmonIQ's privacy policy. The short version: HarmonIQ collects nothing, has no servers, has no analytics. Two opt-in network features (artwork fetcher and cloud AI) reach the internet only after you turn them on.">
+  <meta property="og:title" content="HarmonIQ — Privacy Policy">
+  <meta property="og:description" content="The short version: HarmonIQ collects nothing, has no servers, has no analytics. Opt-in network features only reach the internet after you turn them on.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <section class="band">
+    <div class="container">
+      <p class="kicker">// privacy policy</p>
+      <h2>HarmonIQ collects nothing.</h2>
+      <p class="lede">There is no HarmonIQ server. There are no analytics, no telemetry, no crash reports, no tracking pixels, no advertising identifiers, no listening-history uploads, no recommendation graph. The app does not send anything anywhere by default.</p>
+      <p class="muted">Effective date: 2026-05-10. App version: 1.1.</p>
+    </div>
+  </section>
+
+  <section class="band alt">
+    <div class="container">
+      <p class="kicker">// what stays on your device</p>
+      <h2>Your library is yours.</h2>
+      <p class="lede">When you point HarmonIQ at a folder on a drive, it reads the audio files and writes an index next to them in a <code>HarmonIQ/</code> subfolder on that drive. The index — track titles, artists, albums, durations, artwork — lives on the drive itself and travels with it.</p>
+      <p class="lede">On your iPhone, HarmonIQ keeps two small things in its app sandbox: a list of the drives you've granted access to (so it can reconnect after a relaunch), and a local mirror of the artwork from those drives (so the lock-screen widget can show covers without keeping a drive open).</p>
+      <p class="lede">Nothing in either store is uploaded. Nothing is shared with us. Nothing is shared with Apple beyond what iOS itself does for any app.</p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container">
+      <p class="kicker">// optional network features</p>
+      <h2>Off by default. On only if you ask.</h2>
+      <p class="lede">HarmonIQ has three features that can reach the internet. Each is off by default and labeled clearly in Settings. Turning one on is your explicit consent for that specific kind of request.</p>
+
+      <ol class="hack-list">
+        <li>
+          <h3>Album artwork fetcher</h3>
+          <p>When enabled, HarmonIQ asks <a href="https://musicbrainz.org/">MusicBrainz</a> for the release-group ID of an album that's missing artwork, then asks the <a href="https://coverartarchive.org/">Cover Art Archive</a> for that album's cover. Each request contains the album title and primary artist of the album HarmonIQ is looking up — nothing more. Failures are silent. Rate-limited to 1 request per second per their published etiquette.</p>
+        </li>
+        <li>
+          <h3>Artist photo fetcher</h3>
+          <p>When enabled, HarmonIQ resolves an artist on <a href="https://musicbrainz.org/">MusicBrainz</a>, then walks a fallback chain — <a href="https://www.wikidata.org/">Wikidata</a> (and <a href="https://commons.wikimedia.org/">Wikimedia Commons</a>), <a href="https://www.theaudiodb.com/">TheAudioDB</a>, and <a href="https://en.wikipedia.org/">Wikipedia</a> — until it finds a public-domain or freely-licensed portrait. Each request contains only the artist name being looked up. The tile is always a real headshot or a generic placeholder; album covers are never used as artist photos.</p>
+        </li>
+        <li>
+          <h3>AI Smart Play (cloud fallback)</h3>
+          <p>HarmonIQ's AI playlist modes (Vibe Match, Storyteller, Sonic Contrast) prefer Apple Intelligence's on-device foundation model when it's available — that path is fully on-device and reaches no server. If your device cannot run Apple Intelligence and you have entered your own Anthropic API key in Settings → AI, HarmonIQ will send a curation request to <a href="https://www.anthropic.com/">Anthropic</a>'s <code>api.anthropic.com</code> endpoint to build the queue. The request contains only the track titles, artists, and (where available) genres of candidate tracks plus your text vibe; it does not contain your full library, your listening history, your name, your device identifier, or your iCloud account. Your Anthropic API key is stored locally on your device only and is never transmitted to anyone but Anthropic.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="band alt">
+    <div class="container">
+      <p class="kicker">// third parties</p>
+      <h2>What the services above may log.</h2>
+      <p class="lede">When you opt into a network feature, the request goes to a third-party service whose logging and retention practices are their own:</p>
+      <ul>
+        <li><a href="https://metabrainz.org/privacy">MusicBrainz / Cover Art Archive (MetaBrainz Foundation)</a></li>
+        <li><a href="https://foundation.wikimedia.org/wiki/Policy:Privacy_policy">Wikidata / Wikimedia Commons / Wikipedia (Wikimedia Foundation)</a></li>
+        <li><a href="https://www.theaudiodb.com/">TheAudioDB</a></li>
+        <li><a href="https://www.anthropic.com/legal/privacy">Anthropic (Claude API)</a> — only if you have entered your own API key</li>
+      </ul>
+      <p class="lede">HarmonIQ has no business relationship with any of these services and receives no data from them beyond the artwork or response payload of the request you opted into. We do not aggregate, monetize, or share any of it.</p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container">
+      <p class="kicker">// system permissions</p>
+      <h2>What iOS asks you to grant.</h2>
+      <ul>
+        <li><strong>Files / Folders.</strong> When you add a music drive, iOS asks you to grant HarmonIQ access to that folder. HarmonIQ stores a security-scoped bookmark so it can reconnect to the same folder after a relaunch. It never reads anything outside the folders you've explicitly added.</li>
+        <li><strong>Media library.</strong> Listed in the app's <code>NSAppleMusicUsageDescription</code> key as a future-facing permission. HarmonIQ does not currently read your iCloud Music Library or Apple Music subscription content; the description is present only because iOS surfaces it for any app that touches the audio framework.</li>
+        <li><strong>Background audio.</strong> The standard iOS audio-playback background mode, so playback continues when the screen is off or you switch apps.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="band alt">
+    <div class="container">
+      <p class="kicker">// children</p>
+      <h2>Children's privacy.</h2>
+      <p class="lede">HarmonIQ is rated 4+ and contains no objectionable content. It does not knowingly collect personal information from anyone, including children under 13. Because the app does not collect any personal information at all, COPPA-style data-collection concerns do not apply.</p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container">
+      <p class="kicker">// changes</p>
+      <h2>Changes to this policy.</h2>
+      <p class="lede">If this policy changes in a material way, the "effective date" at the top of this page will move forward and the relevant App Store update will mention it in its release notes. Past versions are visible in the <a href="https://github.com/LeoHChen/HarmonIQ/commits/main/docs/privacy.html">git history of this file</a>.</p>
+    </div>
+  </section>
+
+  <section class="band alt">
+    <div class="container">
+      <p class="kicker">// contact</p>
+      <h2>Contact.</h2>
+      <p class="lede">Questions, corrections, or "this is wrong" reports:</p>
+      <ul>
+        <li>Email: <a href="mailto:hao@leochen.net">hao@leochen.net</a></li>
+        <li>GitHub: <a href="https://github.com/LeoHChen/HarmonIQ/issues">file an issue</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>HarmonIQ — MIT-licensed.<br>
+      Back to the <a href="index.html">landing page</a>.</p>
+    </div>
+  </footer>
+</body>
+</html>
