@@ -102,6 +102,13 @@ See [GitHub Releases](https://github.com/LeoHChen/HarmonIQ/releases) for the ful
 
 The "make it look right, find it fast, keep it offline" release. Polish across the palette, the browse modes, the maintenance flows, and the lock-screen — without giving up the offline-first stance.
 
+#### v1.1 build 6 — 2026-05-09
+
+A small App Store submission build over the same v1.1 release. No tag bump.
+
+- **About-screen easter egg.** Quietly tap the Version row five times. (#123)
+- **Export-compliance flag.** Sets `ITSAppUsesNonExemptEncryption = false` in Info.plist so App Store Connect can auto-answer the export-compliance question on every future upload. The app uses only standard OS-provided HTTPS for the opt-in album-art / artist-photo fetchers — no custom or non-exempt cryptography.
+
 **Charcoal Phosphor.** A more authentically Winamp-2.x palette: graphite chassis, deeper CRT-green LCD, sharper corners, amber + red chromatic accents in the spectrum visualizer. The whole player feels heavier and more "machined" without changing a single feature. (#76)
 
 **Browse by language.** New Library → **Language** hub partitions the library into Chinese / English / Others using a heuristic CJK + Latin classifier. Useful when your collection sprawls across scripts. (#91)
