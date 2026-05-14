@@ -1,7 +1,7 @@
 # HarmonIQ
 
 **Website:** [www.leochen.net/HarmonIQ](https://www.leochen.net/HarmonIQ/) — landing site lives in [`docs/`](docs/).
-**TestFlight:** [Join the public beta](https://testflight.apple.com/join/y4Nmt7V1) (iOS 16+).
+**App Store:** [Download HarmonIQ Music Player](https://apps.apple.com/us/app/harmoniq-music-player/id6765739658) (iOS 16+).
 
 > **Music for your own collections, ported to your iPhone.**
 
@@ -96,7 +96,7 @@ project.yml                  # XcodeGen source
 
 ## Releases
 
-See [GitHub Releases](https://github.com/LeoHChen/HarmonIQ/releases) for the full notes and tag history. The latest build is on TestFlight at [testflight.apple.com/join/y4Nmt7V1](https://testflight.apple.com/join/y4Nmt7V1).
+See [GitHub Releases](https://github.com/LeoHChen/HarmonIQ/releases) for the full notes and tag history. The shipping build is on the App Store at [apps.apple.com/us/app/harmoniq-music-player/id6765739658](https://apps.apple.com/us/app/harmoniq-music-player/id6765739658).
 
 ### v1.1 — 2026-05-03
 
