@@ -162,6 +162,11 @@ final class LibraryStore: ObservableObject {
             mergePlaylists(forRoot: root.id, with: mapped)
         }
 
+        // Regenerate the VLC .m3u8 sidecars from whatever we just loaded. This is
+        // what makes playlists created before the export feature shipped (or by
+        // another device) appear on the drive without the user editing them.
+        exportVLCPlaylists(forRoot: root.id)
+
         // Adopt any artwork files that landed on disk between launches but
         // aren't referenced in library.json yet (issue #77). This is a
         // cheap pass: scan the Artwork folder, match by sha1 filename,
@@ -383,19 +388,50 @@ final class LibraryStore: ObservableObject {
             try? SandboxRootStore.writePlaylists(file, rootID: root.id)
             return
         }
-        // Resolve each owned playlist's track IDs to tracks (in playlist order) so
-        // we can also emit VLC-compatible .m3u8 sidecars onto the drive. IDs that
-        // don't resolve — e.g. another drive's tracks, or rows missing in memory —
-        // are dropped; the line is only written when we know the on-drive path.
-        let byID: [String: Track] = Dictionary(
-            tracks.filter { $0.rootBookmarkID == rootID }.map { ($0.stableID, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
-        let resolved: [(name: String, tracks: [Track])] = owned.map { playlist in
-            (name: playlist.name, tracks: playlist.trackIDs.compactMap { byID[$0] })
-        }
+        let resolved = resolvedPlaylists(forRoot: rootID)
         withDriveAccess(root) { driveURL in
             try DriveLibraryStore.writePlaylists(file, driveRoot: driveURL)
+            try M3UPlaylistExporter.export(resolved, driveRoot: driveURL)
+        }
+    }
+
+    /// Resolves every playlist owned by `rootID` to `(name, orderedTracks)` for the
+    /// VLC `.m3u8` export, plus a synthetic "All Tracks" entry containing the drive's
+    /// entire library so the whole drive opens in VLC with one file. Track IDs that
+    /// don't resolve — another drive's tracks, or rows missing from memory (e.g.
+    /// drive offline) — are dropped, so a line is only emitted when we know the
+    /// on-drive path.
+    private func resolvedPlaylists(forRoot rootID: UUID) -> [(name: String, tracks: [Track])] {
+        // `tracks` is already kept in a stable display order by mergeTracks, so the
+        // "All Tracks" list mirrors how the library reads in the app.
+        let driveTracks = tracks.filter { $0.rootBookmarkID == rootID }
+        let byID: [String: Track] = Dictionary(
+            driveTracks.map { ($0.stableID, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        var result: [(name: String, tracks: [Track])] = []
+        // Drive-named so it doesn't collide with a user playlist literally called
+        // "All Tracks". Listed first so it reliably keeps its clean filename.
+        if !driveTracks.isEmpty {
+            let driveName = roots.first(where: { $0.id == rootID })?.displayName ?? "Drive"
+            result.append((name: "All Tracks (\(driveName))", tracks: driveTracks))
+        }
+        result.append(contentsOf: playlists
+            .filter { $0.rootBookmarkID == rootID }
+            .map { playlist in (name: playlist.name, tracks: playlist.trackIDs.compactMap { byID[$0] }) })
+        return result
+    }
+
+    /// (Re)writes only the VLC-compatible `.m3u8` sidecars for `rootID` — no
+    /// `playlists.json` rewrite. Called on drive load and after a reindex so the
+    /// sidecars exist (and stay path-fresh) for playlists that haven't been edited
+    /// since the feature shipped. The exporter regenerates the whole `Playlists/`
+    /// folder, so this is idempotent and self-healing. No-op for read-only roots
+    /// (the drive can't be written) and when the drive is offline.
+    func exportVLCPlaylists(forRoot rootID: UUID) {
+        guard let root = roots.first(where: { $0.id == rootID }), !root.isReadOnly else { return }
+        let resolved = resolvedPlaylists(forRoot: rootID)
+        withDriveAccess(root) { driveURL in
             try M3UPlaylistExporter.export(resolved, driveRoot: driveURL)
         }
     }
@@ -484,6 +520,9 @@ final class LibraryStore: ObservableObject {
         withDriveAccess(root) { driveURL in
             try DriveLibraryStore.writeLibrary(file, driveRoot: driveURL)
         }
+        // A reindex can change track paths (moved/renamed files). Refresh the VLC
+        // .m3u8 sidecars so their relative entries point at the new locations.
+        exportVLCPlaylists(forRoot: rootID)
     }
 
     private func mergeTracks(forRoot rootID: UUID, with newTracks: [Track]) {
