@@ -62,6 +62,7 @@
 		D0B58783C53C00AAF777EA5B /* SkinnedEqualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91184AF88772B10074EACE0A /* SkinnedEqualizerView.swift */; };
 		D14CC8746BAA04AFF959DFB5 /* MetadataExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F53B7620084258E7F659C7D7 /* MetadataExtractor.swift */; };
 		D2EA2CFCD49E1790A8904149 /* WinampTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A34D43E2D09B36F9A92DF67 /* WinampTheme.swift */; };
+		D9E50AE7D183BBE67686E775 /* M3UPlaylistExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70DB80B15C7353CE910DB21 /* M3UPlaylistExporter.swift */; };
 		DA3451E853523F3F3794A302 /* ArtistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21D6E4A738A357E6A860D0E0 /* ArtistsView.swift */; };
 		DAC622E13BE984A57D2E9C86 /* HarmonIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA4029B61958E1D8F6162CCA /* HarmonIQApp.swift */; };
 		DC9F3F437F7B059AD8D253B5 /* DriveLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEFB4D3197C2EC465A4B964C /* DriveLibraryStore.swift */; };
@@ -147,6 +148,7 @@
 		C20AD805166CAC672F2833BC /* HarmonIQ.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HarmonIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4D685B9A89C2B6EDCCCB4AB /* AlbumsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumsView.swift; sourceTree = "<group>"; };
 		C6203F24B0D3D962883456DA /* SpriteButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteButton.swift; sourceTree = "<group>"; };
+		C70DB80B15C7353CE910DB21 /* M3UPlaylistExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = M3UPlaylistExporter.swift; sourceTree = "<group>"; };
 		C9A3E5FF59C499E1F16218AA /* SmartPlayAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlayAI.swift; sourceTree = "<group>"; };
 		CB2650366DAD3EEB077B33CD /* LiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityController.swift; sourceTree = "<group>"; };
 		CC4F2B572BEA8AA004255D82 /* HarmonIQActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonIQActivityAttributes.swift; sourceTree = "<group>"; };
@@ -328,6 +330,7 @@
 				9BA0C5DAF97A47E057019501 /* BookmarkStore.swift */,
 				BEFB4D3197C2EC465A4B964C /* DriveLibraryStore.swift */,
 				9F130079612D4D04F3BDAF75 /* LibraryStore.swift */,
+				C70DB80B15C7353CE910DB21 /* M3UPlaylistExporter.swift */,
 				F220F64AA1D95133ED5A5159 /* SandboxRootStore.swift */,
 			);
 			path = Persistence;
@@ -513,6 +516,7 @@
 				A10BD1CC54DC77E7DF551BA6 /* LibraryView.swift in Sources */,
 				116A7F3DD4FF063CD5776F50 /* LiveActivityController.swift in Sources */,
 				C47BFF9A3192AFF82CDC5440 /* LlamaSilhouette.swift in Sources */,
+				D9E50AE7D183BBE67686E775 /* M3UPlaylistExporter.swift in Sources */,
 				D14CC8746BAA04AFF959DFB5 /* MetadataExtractor.swift in Sources */,
 				3EE13B1011444446AF4C9346 /* MusicIndexer.swift in Sources */,
 				409179BD52B576D6D435FD06 /* NowPlayingManager.swift in Sources */,
