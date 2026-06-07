@@ -98,6 +98,16 @@ project.yml                  # XcodeGen source
 
 See [GitHub Releases](https://github.com/LeoHChen/HarmonIQ/releases) for the full notes and tag history. The latest build is on TestFlight at [testflight.apple.com/join/y4Nmt7V1](https://testflight.apple.com/join/y4Nmt7V1).
 
+### v1.1.1 — 2026-06-07
+
+The "take your playlists with you" release. HarmonIQ now writes standard VLC-compatible playlists onto the drive, so the same library plays on the desktop without re-exporting anything.
+
+#### v1.1.1 build 7 — 2026-06-07
+
+- **VLC-compatible playlist export.** Every playlist is mirrored to the drive as a standard Extended M3U file at `<Drive>/HarmonIQ/Playlists/<name>.m3u8`, with relative paths that resolve wherever the drive is mounted (Mac/PC). Plug the drive into a computer and open them straight in VLC. (#134, #135)
+- **Whole-drive "All Tracks" playlist.** A `All Tracks (<DriveName>).m3u8` containing the entire drive library is exported alongside the per-playlist files, so the whole collection opens in one click. (#135)
+- **Automatic + self-healing.** Sidecars are (re)generated on every playlist edit, drive load, and reindex — so playlists made before this release, or on another device, appear without any manual step, and entries follow files that move between scans. (#135)
+
 ### v1.1 — 2026-05-03
 
 The "make it look right, find it fast, keep it offline" release. Polish across the palette, the browse modes, the maintenance flows, and the lock-screen — without giving up the offline-first stance.

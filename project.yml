@@ -42,8 +42,8 @@ targets:
       path: HarmonIQ/Info.plist
       properties:
         CFBundleDisplayName: HarmonIQ
-        CFBundleShortVersionString: "1.1"
-        CFBundleVersion: "6"
+        CFBundleShortVersionString: "1.1.1"
+        CFBundleVersion: "7"
         ITSAppUsesNonExemptEncryption: false
         UILaunchScreen:
           UIImageName: LaunchImage
@@ -116,8 +116,8 @@ targets:
       path: HarmonIQLiveActivity/Info.plist
       properties:
         CFBundleDisplayName: HarmonIQ Live Activity
-        CFBundleShortVersionString: "1.1"
-        CFBundleVersion: "6"
+        CFBundleShortVersionString: "1.1.1"
+        CFBundleVersion: "7"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
