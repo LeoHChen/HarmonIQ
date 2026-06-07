@@ -383,8 +383,20 @@ final class LibraryStore: ObservableObject {
             try? SandboxRootStore.writePlaylists(file, rootID: root.id)
             return
         }
+        // Resolve each owned playlist's track IDs to tracks (in playlist order) so
+        // we can also emit VLC-compatible .m3u8 sidecars onto the drive. IDs that
+        // don't resolve — e.g. another drive's tracks, or rows missing in memory —
+        // are dropped; the line is only written when we know the on-drive path.
+        let byID: [String: Track] = Dictionary(
+            tracks.filter { $0.rootBookmarkID == rootID }.map { ($0.stableID, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let resolved: [(name: String, tracks: [Track])] = owned.map { playlist in
+            (name: playlist.name, tracks: playlist.trackIDs.compactMap { byID[$0] })
+        }
         withDriveAccess(root) { driveURL in
             try DriveLibraryStore.writePlaylists(file, driveRoot: driveURL)
+            try M3UPlaylistExporter.export(resolved, driveRoot: driveURL)
         }
     }
 
