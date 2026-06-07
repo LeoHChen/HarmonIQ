@@ -396,17 +396,30 @@ final class LibraryStore: ObservableObject {
     }
 
     /// Resolves every playlist owned by `rootID` to `(name, orderedTracks)` for the
-    /// VLC `.m3u8` export. Track IDs that don't resolve — another drive's tracks, or
-    /// rows missing from memory (e.g. drive offline) — are dropped, so a line is only
-    /// emitted when we know the on-drive path.
+    /// VLC `.m3u8` export, plus a synthetic "All Tracks" entry containing the drive's
+    /// entire library so the whole drive opens in VLC with one file. Track IDs that
+    /// don't resolve — another drive's tracks, or rows missing from memory (e.g.
+    /// drive offline) — are dropped, so a line is only emitted when we know the
+    /// on-drive path.
     private func resolvedPlaylists(forRoot rootID: UUID) -> [(name: String, tracks: [Track])] {
+        // `tracks` is already kept in a stable display order by mergeTracks, so the
+        // "All Tracks" list mirrors how the library reads in the app.
+        let driveTracks = tracks.filter { $0.rootBookmarkID == rootID }
         let byID: [String: Track] = Dictionary(
-            tracks.filter { $0.rootBookmarkID == rootID }.map { ($0.stableID, $0) },
+            driveTracks.map { ($0.stableID, $0) },
             uniquingKeysWith: { first, _ in first }
         )
-        return playlists
+        var result: [(name: String, tracks: [Track])] = []
+        // Drive-named so it doesn't collide with a user playlist literally called
+        // "All Tracks". Listed first so it reliably keeps its clean filename.
+        if !driveTracks.isEmpty {
+            let driveName = roots.first(where: { $0.id == rootID })?.displayName ?? "Drive"
+            result.append((name: "All Tracks (\(driveName))", tracks: driveTracks))
+        }
+        result.append(contentsOf: playlists
             .filter { $0.rootBookmarkID == rootID }
-            .map { playlist in (name: playlist.name, tracks: playlist.trackIDs.compactMap { byID[$0] }) }
+            .map { playlist in (name: playlist.name, tracks: playlist.trackIDs.compactMap { byID[$0] }) })
+        return result
     }
 
     /// (Re)writes only the VLC-compatible `.m3u8` sidecars for `rootID` — no
